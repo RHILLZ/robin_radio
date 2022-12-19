@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "275246812933",
+    "project_id": "robin-radio",
+    "storage_bucket": "robin-radio.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275246812933:android:68635e538830d5346c316c",
+        "android_client_info": {
+          "package_name": "com.rlxcoded.robin_radio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "275246812933-ba15maob1uutsvuor5snt4pltuago1d2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxzljYMisByRgddXKfHgIbbVoHtBxBFJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "275246812933-ba15maob1uutsvuor5snt4pltuago1d2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "275246812933-shva4cibpmda9v4ckvafq2t0q27mc5fk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rlxcoded.robinradio"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275246812933:android:1d694024cccfcfbb6c316c",
+        "android_client_info": {
+          "package_name": "com.rlxcoded.robinradio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "275246812933-9pvjcm86jjj4eo78rrg25k1g3tm2h2lv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rlxcoded.robinradio",
+            "certificate_hash": "9bbb3186b2189ef16d8f272bdab59362c395cbb4"
+          }
+        },
+        {
+          "client_id": "275246812933-ba15maob1uutsvuor5snt4pltuago1d2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxzljYMisByRgddXKfHgIbbVoHtBxBFJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "275246812933-ba15maob1uutsvuor5snt4pltuago1d2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "275246812933-shva4cibpmda9v4ckvafq2t0q27mc5fk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rlxcoded.robinradio"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
