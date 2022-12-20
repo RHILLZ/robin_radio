@@ -111,5 +111,8 @@ class PlayerView extends GetView<PlayerController> {
           controller.coverURL!,
           fit: BoxFit.cover,
         )
-      : Image.asset('assets/logo/rr-logo.png');
+      : Image.asset(
+          'assets/logo/rr-logo.png',
+          height: 50.h,
+        );
 }

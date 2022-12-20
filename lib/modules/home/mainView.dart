@@ -20,7 +20,7 @@ class MainView extends StatelessWidget {
             headerSliverBuilder: ((context, innerBoxIsScrolled) => [
                   SliverAppBar(
                     actions: [
-                      Obx(() => playerController.playerIcon(30, null)),
+                      // Obx(() => playerController.playerIcon(30, null)),
                       IconButton(
                           onPressed: () => playerController.closePlayer(),
                           icon: const Icon(Icons.close))

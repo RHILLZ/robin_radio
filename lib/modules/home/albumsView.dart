@@ -18,7 +18,7 @@ class AlbumsView extends GetView<AppController> {
         //     child: const Text('Get Music')),
         Expanded(
             child: Obx(() => ListView.separated(
-                separatorBuilder: (context, index) => SizedBox(
+                separatorBuilder: (context, index) => const SizedBox(
                     // height: 2.h,
                     ),
                 itemCount: controller.robinsMusic.length,
@@ -31,8 +31,11 @@ class AlbumsView extends GetView<AppController> {
                               controller.robinsMusic[index],
                             ),
                             child: AlbumCover(
-                                imageUrl:
-                                    controller.robinsMusic[index].albumCover),
+                              imageUrl:
+                                  controller.robinsMusic[index].albumCover,
+                              albumName:
+                                  controller.robinsMusic[index].albumName,
+                            ),
                           ),
                           // Text(controller.robinsMusic[index].albumName),
                         ],

@@ -1,25 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:sizer/sizer.dart';
 
 class AlbumCover extends StatelessWidget {
-  const AlbumCover({super.key, String? imageUrl}) : _imageUrl = imageUrl;
+  const AlbumCover({super.key, String? imageUrl, String? albumName})
+      : _imageUrl = imageUrl,
+        _albumName = albumName;
 
-  final String? _imageUrl;
+  final String? _imageUrl, _albumName;
 
   @override
   Widget build(BuildContext context) {
     final logoImage = Image.asset(
       'assets/logo/rr-logo.png',
-      scale: 6,
       // fit: BoxFit.contain,
-      width: 20.w,
+      // width: 20.w,
+      height: 40.h,
     );
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
+    return Stack(fit: StackFit.loose, children: [
+      Container(
+        decoration: BoxDecoration(
+          border: _imageUrl != null
+              ? null
+              : Border.all(color: const Color(0XFF6C30C4), width: 5),
+          color: Colors.grey.shade300,
+        ),
+        child: _imageUrl != null ? Image.network(_imageUrl!) : logoImage,
       ),
-      child: Image.network(_imageUrl!),
-    );
+      _imageUrl == null
+          ? Positioned(
+              bottom: 40,
+              left: 120,
+              child: Center(
+                child: Text(
+                  "Album: $_albumName",
+                  style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 20),
+                ),
+              ),
+            )
+          : const SizedBox(),
+    ]);
   }
 }

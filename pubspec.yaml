@@ -56,7 +56,7 @@ dev_dependencies:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/logo/rr-earphones.png"
+  image_path: "assets/logo/appstore.png"
   remove_alpha_ios: true
 
 flutter_native_splash:

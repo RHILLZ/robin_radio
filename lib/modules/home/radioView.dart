@@ -23,7 +23,7 @@ class RadioView extends GetView<PlayerController> {
                 ),
                 controller.currentRadioSong.artist.isEmpty
                     ? ColorSonar(
-                        contentAreaRadius: 100,
+                        contentAreaRadius: 80,
                         child: ElevatedButton.icon(
                             style: ButtonStyle(
                                 elevation: MaterialStatePropertyAll(15),
@@ -37,7 +37,7 @@ class RadioView extends GetView<PlayerController> {
                                     const MaterialStatePropertyAll<Color>(
                                         Color(0XFF6C30C4)),
                                 fixedSize: MaterialStatePropertyAll<Size>(
-                                    Size(50.w, 50.w))),
+                                    Size(40.w, 40.w))),
                             onPressed: () => controller.playRadio(),
                             icon: const Icon(Icons.play_arrow),
                             label: const Text(
@@ -95,7 +95,7 @@ class RadioView extends GetView<PlayerController> {
                           height: 30.w,
                           width: 30.w,
                           decoration: BoxDecoration(
-                              shape: BoxShape.circle, color: Colors.grey[300]),
+                              shape: BoxShape.circle, color: Colors.grey[400]),
                           child: controller.playerIcon(
                               50, const Color(0XFF6C30C4))),
                       IconButton(

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,27 @@ void main() async {
   final themeJson = jsonDecode(themeStr);
   final theme = ThemeDecoder.decodeThemeData(themeJson)!;
   await Firebase.initializeApp();
+  final AudioContext audioContext = AudioContext(
+    iOS: AudioContextIOS(
+      defaultToSpeaker: true,
+      category: AVAudioSessionCategory.ambient,
+      options: [
+        AVAudioSessionOptions.defaultToSpeaker,
+        AVAudioSessionOptions.mixWithOthers,
+        AVAudioSessionOptions.allowBluetooth,
+        AVAudioSessionOptions.allowBluetoothA2DP,
+        AVAudioSessionOptions.allowAirPlay
+      ],
+    ),
+    android: AudioContextAndroid(
+      isSpeakerphoneOn: true,
+      stayAwake: true,
+      contentType: AndroidContentType.sonification,
+      usageType: AndroidUsageType.assistanceSonification,
+      audioFocus: AndroidAudioFocus.none,
+    ),
+  );
+  AudioPlayer.global.setGlobalAudioContext(audioContext);
   runApp(MyApp(
     theme: theme,
   ));
