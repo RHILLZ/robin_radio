@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:json_theme/json_theme.dart';
+import 'package:robin_radio/modules/app/app_view.dart';
 import 'package:robin_radio/routes/views.dart';
 import 'package:sizer/sizer.dart';
 
@@ -53,9 +54,13 @@ class MyApp extends StatelessWidget {
               DeviceType deviceType) =>
           GetMaterialApp(
         title: 'Robin Radio',
+        debugShowCheckedModeBanner: false,
         theme: _theme,
         getPages: Views.routes,
         initialRoute: Routes.appViewRoute,
+        builder: (context, _) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+            child: const AppView()),
       ),
     );
   }
