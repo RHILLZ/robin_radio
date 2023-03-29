@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:json_theme/json_theme.dart';
 import 'package:robin_radio/modules/app/app_view.dart';
+import 'package:robin_radio/modules/app/main_bindings.dart';
 import 'package:robin_radio/routes/views.dart';
 import 'package:sizer/sizer.dart';
 
@@ -37,6 +38,7 @@ void main() async {
     ),
   );
   AudioPlayer.global.setGlobalAudioContext(audioContext);
+  MainBindings().dependencies();
   runApp(MyApp(
     theme: theme,
   ));

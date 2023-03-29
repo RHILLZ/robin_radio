@@ -4,9 +4,7 @@ import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
 import 'package:robin_radio/data/models/album.dart';
 import 'package:robin_radio/data/models/song.dart';
-import 'package:robin_radio/global/trackItem.dart';
 import 'package:robin_radio/modules/home/trackListView.dart';
-import 'package:robin_radio/modules/player/player_controller.dart';
 
 class AppController extends GetxController {
   final MiniplayerController miniPlayerController = MiniplayerController();
@@ -15,7 +13,7 @@ class AppController extends GetxController {
   dynamic artist;
   dynamic listFiles;
   final RxList _robinsMusic = [].obs;
-  int _currentMax = 15;
+  final int _currentMax = 15;
 
   get robinsMusic => _robinsMusic;
 

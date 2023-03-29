@@ -1,12 +1,10 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:robin_radio/data/models/song.dart';
 import 'package:robin_radio/modules/app/app_controller.dart';
 import 'dart:math';
-
-import 'package:sizer/sizer.dart';
 
 enum Mode { radio, album }
 
@@ -99,8 +97,12 @@ class PlayerController extends GetxController {
     mode = Mode.album;
     final url = UrlSource(_tracks[trackIndex].songUrl);
     await player.play(url);
-    print('TRACK INDEX: $trackIndex');
-    print('TRACKS LENGTH: ${tracks.length}');
+    if (kDebugMode) {
+      print('TRACK INDEX: $trackIndex');
+    }
+    if (kDebugMode) {
+      print('TRACKS LENGTH: ${tracks.length}');
+    }
   }
 
   next() async {

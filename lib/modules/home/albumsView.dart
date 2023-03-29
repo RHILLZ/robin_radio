@@ -1,10 +1,9 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:robin_radio/global/albumCover.dart';
 import 'package:robin_radio/modules/app/app_controller.dart';
-import 'package:robin_radio/modules/home/trackListView.dart';
-import 'package:robin_radio/modules/player/player_controller.dart';
-import 'package:sizer/sizer.dart';
 
 class AlbumsView extends GetView<AppController> {
   const AlbumsView({super.key});

@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
@@ -33,8 +35,8 @@ class TrackListView extends GetView<AppController> {
                   if (Get.isBottomSheetOpen == true) {
                     Get.back();
                   }
-                  Future.delayed(
-                      Duration(seconds: 1), () => playerController.playTrack());
+                  Future.delayed(const Duration(seconds: 1),
+                      () => playerController.playTrack());
                 },
                 child: TrackListItem(song: _album.tracks[index])))),
       ),
