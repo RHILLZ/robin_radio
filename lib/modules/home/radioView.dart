@@ -1,6 +1,6 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:get/get.dart';
 import 'package:im_animations/im_animations.dart';
 import 'package:robin_radio/modules/player/player_controller.dart';
@@ -26,7 +26,7 @@ class RadioView extends GetView<PlayerController> {
                         contentAreaRadius: 80,
                         child: ElevatedButton.icon(
                             style: ButtonStyle(
-                                elevation: MaterialStatePropertyAll(15),
+                                elevation: const MaterialStatePropertyAll(15),
                                 shadowColor: const MaterialStatePropertyAll(
                                     Colors.black),
                                 shape: const MaterialStatePropertyAll<
