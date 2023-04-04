@@ -14,7 +14,10 @@ class TrackListItem extends GetWidget<PlayerController> {
   Widget build(BuildContext context) {
     return ListTile(
       leading: Text(_song.songName.substring(0, 2)),
-      title: Text(_song.songName.substring(3).split('.')[0]),
+      title: Text(
+        _song.songName.substring(3).split('.')[0],
+        style: const TextStyle(fontSize: 18),
+      ),
       subtitle: Text(_song.albumName ?? 'unknown'),
     );
   }

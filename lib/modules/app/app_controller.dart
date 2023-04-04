@@ -13,9 +13,10 @@ class AppController extends GetxController {
   dynamic artist;
   dynamic listFiles;
   final RxList _robinsMusic = [].obs;
-  final int _currentMax = 15;
+  final musicRetrieved = false.obs;
 
   get robinsMusic => _robinsMusic;
+  get isMusicRetrieved => musicRetrieved.value;
 
   @override
   void onInit() async {
@@ -56,10 +57,13 @@ class AppController extends GetxController {
             albumName: nameOfAlbum, tracks: tracks, albumCover: albumArt));
       }
     }
+    musicRetrieved.value = true;
   }
 
-  openTrackList(Album album) => Get.bottomSheet(TrackListView(album: album),
-      isScrollControlled: true,
-      isDismissible: true,
-      backgroundColor: Colors.transparent);
+  openTrackList(Album album) {
+    Get.bottomSheet(Scaffold(body: TrackListView(album: album)),
+        isScrollControlled: true,
+        isDismissible: true,
+        backgroundColor: Colors.transparent);
+  }
 }

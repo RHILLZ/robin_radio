@@ -7,9 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:json_theme/json_theme.dart';
 import 'package:robin_radio/modules/app/app_view.dart';
-import 'package:robin_radio/modules/app/main_bindings.dart';
 import 'package:robin_radio/routes/views.dart';
 import 'package:sizer/sizer.dart';
+
+import 'modules/app/main_bindings.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,19 +52,17 @@ class MyApp extends StatelessWidget {
   final ThemeData _theme;
   @override
   Widget build(BuildContext context) {
-    return Sizer(
-      builder: (BuildContext context, Orientation orientation,
-              DeviceType deviceType) =>
-          GetMaterialApp(
+    return GetMaterialApp(
         title: 'Robin Radio',
         debugShowCheckedModeBanner: false,
-        theme: _theme,
         getPages: Views.routes,
+        theme: _theme,
         initialRoute: Routes.appViewRoute,
         builder: (context, _) => MediaQuery(
             data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
-            child: const AppView()),
-      ),
-    );
+            child: Sizer(
+                builder: (BuildContext contextxx, Orientation orientation,
+                        DeviceType deviceType) =>
+                    const AppView())));
   }
 }

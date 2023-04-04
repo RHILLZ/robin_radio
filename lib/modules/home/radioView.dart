@@ -55,6 +55,7 @@ class RadioView extends GetView<PlayerController> {
                                 color: Color(0XFF6C30C4),
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
                           ),
                           SizedBox(
                             height: 2.h,
@@ -65,6 +66,7 @@ class RadioView extends GetView<PlayerController> {
                                 color: Colors.black,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w400),
+                            textAlign: TextAlign.center,
                           ),
                           Text(
                             'album: ${controller.currentRadioSong.albumName}',
@@ -72,6 +74,7 @@ class RadioView extends GetView<PlayerController> {
                                 color: Colors.black,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w400),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),

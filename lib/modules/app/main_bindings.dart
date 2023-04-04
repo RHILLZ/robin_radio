@@ -11,8 +11,8 @@ class MainBindings implements Bindings {
 
   void _injectDependencies() {
     Get
-      ..lazyPut<AppController>(() => AppController())
-      ..lazyPut<PlayerController>(() => PlayerController());
+      ..put<AppController>(AppController())
+      ..put<PlayerController>(PlayerController());
   }
 
   void _injectServices() {}

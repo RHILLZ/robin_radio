@@ -33,11 +33,12 @@ dependencies:
   cupertino_icons: ^1.0.2
   firebase_core: ^2.3.0
   firebase_storage: ^11.0.6
-  flip_card: ^0.6.0
+  flip_card: ^0.7.0
   flutter:
     sdk: flutter
   flutter_native_splash: ^2.2.16
-  get: ^4.6.5
+  flutter_spinkit: ^5.1.0
+  get: any
   im_animations: ^0.1.2
   json_annotation: ^4.7.0
   json_theme: ^4.0.3+2
