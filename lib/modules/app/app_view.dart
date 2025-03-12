@@ -25,10 +25,8 @@ class AppView extends GetView<AppController> {
 
             // Player
             Offstage(
-              offstage: (playerController.tracks.isEmpty &&
-                      playerController.playerMode != PlayerMode.radio) ||
-                  (playerController.playerMode == PlayerMode.radio &&
-                      playerController.hidePlayerInRadioView),
+              offstage: (playerController.tracks.isEmpty) ||
+                  playerController.hidePlayerInRadioView,
               child: Miniplayer(
                   controller: controller.miniPlayerController,
                   minHeight: 12.h,

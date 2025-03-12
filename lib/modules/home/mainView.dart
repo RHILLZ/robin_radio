@@ -77,10 +77,10 @@ class MainView extends StatelessWidget {
             ),
             bottom: TabBar(
               indicatorWeight: 3.0,
-              indicatorColor: Theme.of(context).colorScheme.primary,
-              labelColor: Theme.of(context).colorScheme.primary,
+              indicatorColor: Colors.white,
+              labelColor: Colors.white,
               unselectedLabelColor:
-                  Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                  Theme.of(context).colorScheme.onSurface.withAlpha(100),
               tabs: const [
                 Tab(
                   icon: Icon(Icons.radio),

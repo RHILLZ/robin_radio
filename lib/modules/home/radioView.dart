@@ -80,19 +80,43 @@ class RadioView extends GetView<PlayerController> {
         elevation: 15,
         shape: const CircleBorder(),
         padding: EdgeInsets.all(12.w),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor:
+            const Color(0xFF6C30C4), // Match AppBar color from theme
       ),
       onPressed: () {
         // Just play the radio without showing the player
         controller.playRadio();
-        // Don't animate the player to full screen
+        // Explicitly hide the player
+        controller.hidePlayer();
       },
-      child: Text(
-        'Start Radio',
-        style: TextStyle(
-          fontSize: 18,
-          color: Theme.of(context).colorScheme.onPrimary,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Play Radio',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0.8, end: 1.2),
+            duration: const Duration(seconds: 1),
+            curve: Curves.easeInOut,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: value,
+                child: Icon(
+                  Icons.radio,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  size: 40,
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

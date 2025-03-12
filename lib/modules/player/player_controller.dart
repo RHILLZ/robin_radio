@@ -95,6 +95,8 @@ class PlayerController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Hide player by default when app starts
+    _hidePlayerInRadioView.value = true;
     _initializePlayer();
   }
 
@@ -246,7 +248,7 @@ class PlayerController extends GetxController {
     _coverURL.value = album.albumCover;
     tracks = album.tracks;
     _trackIndex.value = startIndex.clamp(0, _tracks.length - 1);
-    // Reset flag to show player in album mode
+    // Show player in album mode
     _hidePlayerInRadioView.value = false;
     await playTrack();
   }
@@ -408,6 +410,16 @@ class PlayerController extends GetxController {
         color: color ?? Colors.white,
       ),
     );
+  }
+
+  // Method to explicitly show the player
+  void showPlayer() {
+    _hidePlayerInRadioView.value = false;
+  }
+
+  // Method to explicitly hide the player
+  void hidePlayer() {
+    _hidePlayerInRadioView.value = true;
   }
 
   @override
