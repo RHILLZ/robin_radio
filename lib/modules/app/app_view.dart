@@ -56,14 +56,35 @@ class AppView extends GetView<AppController> {
                     children: [
                       CircularProgressIndicator(
                         color: Theme.of(context).colorScheme.primary,
+                        value: controller.loadingProgress,
                       ),
                       SizedBox(height: 2.h),
                       Text(
-                        'Loading Music...',
+                        'Loading Music... ${(controller.loadingProgress * 100).toInt()}%',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 1.h),
+                      Text(
+                        controller.loadingStatusMessage,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 2.h),
+                      SizedBox(
+                        width: 80.w,
+                        child: LinearProgressIndicator(
+                          value: controller.loadingProgress,
+                          backgroundColor: Colors.white24,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary,
+                          ),
                         ),
                       ),
                     ],

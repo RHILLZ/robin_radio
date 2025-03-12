@@ -8,14 +8,71 @@ import 'package:robin_radio/global/albumCover.dart';
 import 'package:robin_radio/modules/app/app_controller.dart';
 import 'package:sizer/sizer.dart';
 
-class AlbumsView extends StatelessWidget {
+class AlbumsView extends StatefulWidget {
   const AlbumsView({super.key});
+
+  @override
+  State<AlbumsView> createState() => _AlbumsViewState();
+}
+
+class _AlbumsViewState extends State<AlbumsView> {
+  // Create a RxString for the search query
+  final RxString searchQuery = ''.obs;
+  // Create a computed list of filtered albums
+  final Rx<List<Album>> filteredAlbums = Rx<List<Album>>([]);
+  // Create a TextEditingController for the search field
+  final TextEditingController _searchController = TextEditingController();
+  // Create a FocusNode for the search field
+  final FocusNode _searchFocusNode = FocusNode();
+  // Track if search field is visible
+  final RxBool isSearchVisible = false.obs;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize with all albums
+    final controller = Get.find<AppController>();
+    filteredAlbums.value = controller.albums;
+
+    // Update filtered albums when search query changes
+    ever(searchQuery, (query) {
+      final controller = Get.find<AppController>();
+      filteredAlbums.value = controller.searchAlbums(query);
+    });
+
+    // Add listener to focus node to hide search when focus is lost
+    _searchFocusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    // If focus is lost and search is empty, hide the search field
+    if (!_searchFocusNode.hasFocus && searchQuery.value.isEmpty) {
+      isSearchVisible.value = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    // Dispose of the TextEditingController when the widget is disposed
+    _searchController.dispose();
+    // Remove listener before disposing focus node
+    _searchFocusNode.removeListener(_onFocusChange);
+    // Dispose of the FocusNode when the widget is disposed
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return GetX<AppController>(
       init: Get.find<AppController>(),
       builder: (controller) {
+        // Update filtered albums when controller albums change and not searching
+        if (searchQuery.value.isEmpty) {
+          filteredAlbums.value = controller.albums;
+        }
+
         // Show error state if there's an error
         if (controller.hasError) {
           return _buildErrorView(context, controller);
@@ -41,68 +98,114 @@ class AlbumsView extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          // Search bar (optional)
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search albums...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+          // Search bar (conditionally visible)
+          Obx(() => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: isSearchVisible.value ? 12.h : 0,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: isSearchVisible.value ? 1.0 : 0.0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: TextField(
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      decoration: InputDecoration(
+                        hintText: 'Search albums...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            searchQuery.value = '';
+                            isSearchVisible.value = false;
+                          },
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onChanged: (value) {
+                        // Update search query when text changes
+                        searchQuery.value = value;
+                      },
+                    ),
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onChanged: (value) {
-                // Implement search functionality here
-                // This would filter the albums based on the search term
-              },
-            ),
-          ),
+              )),
 
           // Albums grid
           Expanded(
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (ScrollNotification scrollInfo) {
-                // Load more albums when reaching the bottom
-                if (scrollInfo.metrics.pixels ==
-                        scrollInfo.metrics.maxScrollExtent &&
-                    controller.hasMoreAlbums &&
-                    !controller.isLoadingMore) {
-                  controller.loadMoreAlbums();
-                }
-                return false;
-              },
-              child: GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.75,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                itemCount: controller.albums.length +
-                    (controller.hasMoreAlbums ? 1 : 0),
-                itemBuilder: (context, index) {
-                  // Show loading indicator at the end when loading more
-                  if (index == controller.albums.length) {
-                    return _buildLoadingCard(context);
-                  }
+            child: Obx(() {
+              // Show empty search results message if needed
+              if (searchQuery.value.isNotEmpty &&
+                  filteredAlbums.value.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.search_off,
+                        size: 80,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 2.h),
+                      const Text(
+                        'No Results Found',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 1.h),
+                      Text(
+                        'No albums match "${searchQuery.value}"',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                );
+              }
 
-                  // Show album card
-                  return _buildAlbumCard(
-                      context, controller.albums[index], controller);
+              return NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification scrollInfo) {
+                  // Pagination removed - no need to load more albums
+                  return false;
                 },
-              ),
-            ),
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: filteredAlbums.value.length,
+                  itemBuilder: (context, index) {
+                    // Show album card
+                    return _buildAlbumCard(
+                        context, filteredAlbums.value[index], controller);
+                  },
+                ),
+              );
+            }),
           ),
         ],
       ),
-      // Add pull-to-refresh
+      // Search floating action button
       floatingActionButton: FloatingActionButton(
-        onPressed: () => controller.refreshMusic(),
-        tooltip: 'Refresh',
-        child: const Icon(Icons.refresh),
+        onPressed: () {
+          // Show search field and request focus
+          isSearchVisible.value = true;
+          // Use a small delay to ensure the field is visible before focusing
+          Future.delayed(const Duration(milliseconds: 100), () {
+            _searchFocusNode.requestFocus();
+          });
+        },
+        tooltip: 'Search',
+        backgroundColor: const Color(0xFF6C30C4), // Match AppBar color
+        foregroundColor: Colors.white, // White icon
+        child: const Icon(Icons.search),
       ),
     );
   }
@@ -198,14 +301,35 @@ class AlbumsView extends StatelessWidget {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 1.h),
-          const Text(
-            'Please wait while we prepare your music',
-            style: TextStyle(fontSize: 16),
+          Text(
+            controller.loadingStatusMessage,
+            style: const TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
           ),
           SizedBox(height: 3.h),
           SizedBox(
             width: 80.w,
-            child: const LinearProgressIndicator(),
+            child: Column(
+              children: [
+                LinearProgressIndicator(
+                  value: controller.loadingProgress,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                SizedBox(height: 1.h),
+                Text(
+                  '${(controller.loadingProgress * 100).toInt()}% Complete',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

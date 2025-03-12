@@ -28,7 +28,7 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
           // Player content
           Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
+              color: const Color(0xFF6C30C4), // Match AppBar color
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withAlpha(26),
@@ -63,6 +63,8 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
+                            color: Colors
+                                .white, // Ensure text is visible on purple background
                           ),
                         ),
                         SizedBox(height: 1.h),
@@ -72,11 +74,9 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
                           currentTrack?.artist ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withAlpha(179),
+                          style: const TextStyle(
+                            color: Colors
+                                .white70, // Lighter white for subtitle on purple background
                           ),
                         ),
                       ],
@@ -91,7 +91,11 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
                 IconButton(
                   onPressed: controller.closePlayer,
                   iconSize: 24,
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors
+                        .white, // Ensure icon is visible on purple background
+                  ),
                   tooltip: 'Close player',
                 ),
 
@@ -104,10 +108,10 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
           LinearProgressIndicator(
             value: controller.getProgressValue(),
             valueColor: AlwaysStoppedAnimation<Color>(
-              Theme.of(context).colorScheme.primary,
+              Colors.white, // White progress for better visibility on purple
             ),
             backgroundColor:
-                Theme.of(context).colorScheme.surfaceContainerHighest,
+                Colors.white24, // Semi-transparent white background
             minHeight: 2,
           ),
         ],
@@ -128,12 +132,13 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
 
   Widget _buildFallbackCover() {
     return Container(
-      color: Get.theme.colorScheme.primaryContainer,
+      color: const Color(0xFF6C30C4), // Match AppBar color
       child: Center(
         child: Icon(
           Icons.music_note,
           size: 40,
-          color: Get.theme.colorScheme.primary,
+          color: Colors
+              .white, // White icon for better contrast on purple background
         ),
       ),
     );
@@ -146,7 +151,10 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
         // Previous button (only in album mode)
         if (controller.playerMode == PlayerMode.album)
           IconButton(
-            icon: const Icon(Icons.skip_previous),
+            icon: const Icon(
+              Icons.skip_previous,
+              color: Colors.white, // White icon for better contrast
+            ),
             onPressed: controller.previous,
             iconSize: 24,
             tooltip: 'Previous',
@@ -157,7 +165,10 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
 
         // Next button
         IconButton(
-          icon: const Icon(Icons.skip_next),
+          icon: const Icon(
+            Icons.skip_next,
+            color: Colors.white, // White icon for better contrast
+          ),
           onPressed: controller.next,
           iconSize: 24,
           tooltip: 'Next',

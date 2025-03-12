@@ -16,11 +16,9 @@ class AppController extends GetxController {
   final RxBool _hasError = false.obs;
   final RxString _errorMessage = ''.obs;
 
-  // Pagination control
-  final int _pageSize = 5; // Number of albums to load at once
-  final RxBool _hasMoreAlbums = true.obs;
-  final RxBool _isLoadingMore = false.obs;
-  final RxInt _currentPage = 0.obs;
+  // Loading progress tracking
+  final RxDouble _loadingProgress = 0.0.obs;
+  final RxString _loadingStatusMessage = 'Initializing...'.obs;
 
   // Cache control
   static const String _cacheKey = 'robin_radio_music_cache';
@@ -31,8 +29,11 @@ class AppController extends GetxController {
   bool get isLoading => _isLoading.value;
   bool get hasError => _hasError.value;
   String get errorMessage => _errorMessage.value;
-  bool get hasMoreAlbums => _hasMoreAlbums.value;
-  bool get isLoadingMore => _isLoadingMore.value;
+  double get loadingProgress => _loadingProgress.value;
+  String get loadingStatusMessage => _loadingStatusMessage.value;
+  // These properties are kept for compatibility but will be deprecated
+  bool get hasMoreAlbums => false;
+  bool get isLoadingMore => false;
 
   @override
   void onInit() async {
@@ -44,13 +45,22 @@ class AppController extends GetxController {
     try {
       _isLoading.value = true;
       _hasError.value = false;
+      _loadingProgress.value = 0.0;
+      _loadingStatusMessage.value = 'Initializing...';
 
       // Try to load from cache first
+      _loadingStatusMessage.value = 'Checking cache...';
+      _loadingProgress.value = 0.1;
       final bool cacheLoaded = await _loadFromCache();
 
       // If cache is expired or empty, load from Firebase
       if (!cacheLoaded) {
-        await _loadInitialBatch();
+        _loadingStatusMessage.value = 'Loading from cloud...';
+        _loadingProgress.value = 0.2;
+        await _loadAllAlbums();
+      } else {
+        _loadingProgress.value = 1.0;
+        _loadingStatusMessage.value = 'Music loaded from cache';
       }
     } catch (e) {
       _handleError('Failed to initialize music: $e');
@@ -70,6 +80,8 @@ class AppController extends GetxController {
 
         // Check if cache is still valid
         if (DateTime.now().difference(cachedTime) < _cacheExpiry) {
+          _loadingStatusMessage.value = 'Loading from cache...';
+          _loadingProgress.value = 0.5;
           final List<dynamic> decoded = jsonDecode(cachedData);
           _albums.value = decoded.map((item) => Album.fromJson(item)).toList();
           return true;
@@ -84,6 +96,8 @@ class AppController extends GetxController {
 
   Future<void> _saveToCache() async {
     try {
+      _loadingStatusMessage.value = 'Saving to cache...';
+      _loadingProgress.value = 0.9;
       final prefs = await SharedPreferences.getInstance();
       final String encoded =
           jsonEncode(_albums.map((album) => album.toJson()).toList());
@@ -91,47 +105,32 @@ class AppController extends GetxController {
 
       final now = DateTime.now();
       await prefs.setString('${_cacheKey}_time', now.toIso8601String());
+
+      _loadingProgress.value = 1.0;
+      _loadingStatusMessage.value = 'Music loaded successfully';
     } catch (e) {
       debugPrint('Cache saving error: $e');
     }
   }
 
-  Future<void> _loadInitialBatch() async {
-    _currentPage.value = 0;
-    _albums.clear();
-    _hasMoreAlbums.value = true;
-    await loadMoreAlbums();
-  }
-
-  Future<void> loadMoreAlbums() async {
-    if (_isLoadingMore.value || !_hasMoreAlbums.value) return;
-
+  Future<void> _loadAllAlbums() async {
     try {
-      _isLoadingMore.value = true;
+      _albums.clear();
 
       final storageRef = storage.ref().child('Artist');
+      _loadingStatusMessage.value = 'Fetching artists...';
+      _loadingProgress.value = 0.3;
       final ListResult artistResult = await storageRef.listAll();
-
-      // Calculate pagination indices
-      final int startIndex = _currentPage.value * _pageSize;
-      final int endIndex = startIndex + _pageSize;
-      final int totalArtists = artistResult.prefixes.length;
-
-      // Check if we've reached the end
-      if (startIndex >= totalArtists) {
-        _hasMoreAlbums.value = false;
-        return;
-      }
-
-      // Get the subset of artists for this page
-      final artistsToLoad = artistResult.prefixes.sublist(
-          startIndex, endIndex > totalArtists ? totalArtists : endIndex);
-
       final List<Album> newAlbums = [];
 
+      final int totalArtists = artistResult.prefixes.length;
+      int processedArtists = 0;
+
       // Process each artist
-      for (final artist in artistsToLoad) {
+      for (final artist in artistResult.prefixes) {
         final nameOfArtist = artist.name;
+        _loadingStatusMessage.value = 'Loading music from $nameOfArtist...';
+
         final ListResult albumsResult = await artist.listAll();
 
         // Process each album
@@ -197,35 +196,43 @@ class AppController extends GetxController {
             ));
           }
         }
+
+        // Update progress after each artist is processed
+        processedArtists++;
+        // Calculate progress between 0.3 and 0.8 based on artist processing
+        _loadingProgress.value =
+            0.3 + (0.5 * (processedArtists / totalArtists));
       }
 
-      // Add new albums to the list
+      // Add all albums to the list
       _albums.addAll(newAlbums);
-      _currentPage.value++;
 
-      // Update hasMoreAlbums flag
-      _hasMoreAlbums.value = endIndex < totalArtists;
-
-      // Save to cache if we've loaded all albums or have a significant number
-      if (!_hasMoreAlbums.value || _albums.length >= 10) {
-        _saveToCache();
-      }
+      // Save to cache
+      _saveToCache();
     } catch (e) {
-      _handleError('Failed to load more albums: $e');
-    } finally {
-      _isLoadingMore.value = false;
+      _handleError('Failed to load albums: $e');
     }
+  }
+
+  // This method is kept for compatibility but now loads all albums
+  Future<void> loadMoreAlbums() async {
+    if (_isLoading.value) return;
+    refreshMusic();
   }
 
   void refreshMusic() async {
     _isLoading.value = true;
-    await _loadInitialBatch();
+    _loadingProgress.value = 0.0;
+    _loadingStatusMessage.value = 'Refreshing music...';
+    await _loadAllAlbums();
     _isLoading.value = false;
   }
 
   void _handleError(String message) {
     _hasError.value = true;
     _errorMessage.value = message;
+    _loadingProgress.value = 0.0;
+    _loadingStatusMessage.value = 'Error loading music';
     debugPrint(message);
   }
 

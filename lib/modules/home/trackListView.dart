@@ -123,6 +123,9 @@ class TrackListView extends StatelessWidget {
     Get.find<AppController>().miniPlayerController.animateToHeight(
           state: PanelState.MAX,
         );
+
+    // Close the bottom sheet
+    Get.back();
   }
 
   void _playAlbumShuffled(PlayerController controller) {
@@ -133,6 +136,9 @@ class TrackListView extends StatelessWidget {
     Get.find<AppController>().miniPlayerController.animateToHeight(
           state: PanelState.MAX,
         );
+
+    // Close the bottom sheet
+    Get.back();
   }
 
   void _playTrack(PlayerController controller, int index) {
@@ -142,5 +148,8 @@ class TrackListView extends StatelessWidget {
     Get.find<AppController>().miniPlayerController.animateToHeight(
           state: PanelState.MAX,
         );
+
+    // Close the bottom sheet
+    Get.back();
   }
 }
