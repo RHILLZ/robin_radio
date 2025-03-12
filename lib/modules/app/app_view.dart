@@ -14,32 +14,67 @@ class AppView extends GetView<AppController> {
   @override
   Widget build(BuildContext context) {
     final playerController = Get.find<PlayerController>();
+
     return Scaffold(
-        backgroundColor: Colors.grey.shade200,
-        // bottomNavigationBar: const NavBarCirle(),
-        body: Obx(
-          () => Stack(
-            children: [
-              const MainView(),
-              Offstage(
-                offstage: playerController.tracks.isEmpty,
-                child: Miniplayer(
-                    controller: controller.miniPlayerController,
-                    minHeight: 12.h,
-                    maxHeight: MediaQuery.of(context).size.height,
-                    builder: (height, percentage) {
-                      if (height <= 12.h + 50.0) {
-                        return Container(
-                            decoration:
-                                const BoxDecoration(color: Color(0XFF6C30C4)),
-                            child: const MiniPlayerWidget());
-                      } else {
-                        return const PlayerView();
-                      }
-                    }),
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: Obx(
+        () => Stack(
+          children: [
+            // Main content
+            const MainView(),
+
+            // Player
+            Offstage(
+              offstage: (playerController.tracks.isEmpty &&
+                      playerController.playerMode != PlayerMode.radio) ||
+                  (playerController.playerMode == PlayerMode.radio &&
+                      playerController.hidePlayerInRadioView),
+              child: Miniplayer(
+                  controller: controller.miniPlayerController,
+                  minHeight: 12.h,
+                  maxHeight: MediaQuery.of(context).size.height,
+                  elevation: 4,
+                  curve: Curves.easeOut,
+                  duration: const Duration(milliseconds: 300),
+                  builder: (height, percentage) {
+                    // Show mini player when collapsed
+                    if (height <= 12.h + 50.0) {
+                      return const MiniPlayerWidget();
+                    }
+                    // Show full player when expanded
+                    else {
+                      return const PlayerView();
+                    }
+                  }),
+            ),
+
+            // Loading overlay
+            if (controller.isLoading)
+              Container(
+                color: Colors.black54,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        'Loading Music...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
-        ));
+          ],
+        ),
+      ),
+    );
   }
 }

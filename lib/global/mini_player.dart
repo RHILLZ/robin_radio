@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:robin_radio/data/models/song.dart';
 import 'package:robin_radio/modules/player/player_controller.dart';
 import 'package:sizer/sizer.dart';
 
@@ -8,16 +10,44 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() => Column(
-          children: [
-            Row(
+    return Obx(() {
+      final bool hasTrack = controller.tracks.isNotEmpty;
+      final Song? currentTrack = controller.currentSong ??
+          (controller.playerMode == PlayerMode.radio
+              ? controller.currentRadioSong
+              : null);
+
+      // Don't show the player if there's no track
+      if (!hasTrack && controller.playerMode != PlayerMode.radio) {
+        return const SizedBox.shrink();
+      }
+
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Player content
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(26),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // Album cover
                 SizedBox(
                   width: 25.w,
                   height: 12.h - 6.0,
-                  child: albumCover(),
+                  child: _buildAlbumCover(),
                 ),
+
+                // Track info
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -25,58 +55,122 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Flexible(
-                            child: !controller.tracks.isEmpty
-                                ? Text(
-                                    controller
-                                        .tracks[controller.trackIndex].songName
-                                        .substring(3)
-                                        .split('.')[0],
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  )
-                                : const Text('')),
-                        SizedBox(
-                          height: 1.h,
+                        // Track title
+                        Text(
+                          _formatTrackTitle(currentTrack?.songName),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
                         ),
-                        Flexible(
-                            child: !controller.tracks.isEmpty
-                                ? Text(
-                                    'by: ${controller.tracks[controller.trackIndex].artist}',
-                                    overflow: TextOverflow.ellipsis,
-                                  )
-                                : const Text('')),
+                        SizedBox(height: 1.h),
+
+                        // Artist name
+                        Text(
+                          currentTrack?.artist ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withAlpha(179),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-                controller.playerIcon(50, null),
+
+                // Player controls
+                _buildPlayerControls(context),
+
+                // Close button
                 IconButton(
-                    onPressed: () => controller.closePlayer(),
-                    iconSize: 40,
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                    )),
-                SizedBox(
-                  width: 4.w,
-                )
+                  onPressed: controller.closePlayer,
+                  iconSize: 24,
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Close player',
+                ),
+
+                SizedBox(width: 2.w),
               ],
             ),
-            LinearProgressIndicator(
-                value: controller.linearProgressValue(),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.grey)),
-          ],
-        ));
+          ),
+
+          // Progress bar
+          LinearProgressIndicator(
+            value: controller.getProgressValue(),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Theme.of(context).colorScheme.primary,
+            ),
+            backgroundColor:
+                Theme.of(context).colorScheme.surfaceContainerHighest,
+            minHeight: 2,
+          ),
+        ],
+      );
+    });
   }
 
-  albumCover() => controller.coverURL != null
-      ? Image.network(
-          controller.coverURL!,
-          fit: BoxFit.cover,
-        )
-      : Image.asset(
-          'assets/logo/rr-logo.png',
-          fit: BoxFit.cover,
-        );
+  Widget _buildAlbumCover() {
+    return controller.coverURL != null
+        ? CachedNetworkImage(
+            imageUrl: controller.coverURL!,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => _buildFallbackCover(),
+            errorWidget: (context, url, error) => _buildFallbackCover(),
+          )
+        : _buildFallbackCover();
+  }
+
+  Widget _buildFallbackCover() {
+    return Container(
+      color: Get.theme.colorScheme.primaryContainer,
+      child: Center(
+        child: Icon(
+          Icons.music_note,
+          size: 40,
+          color: Get.theme.colorScheme.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerControls(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Previous button (only in album mode)
+        if (controller.playerMode == PlayerMode.album)
+          IconButton(
+            icon: const Icon(Icons.skip_previous),
+            onPressed: controller.previous,
+            iconSize: 24,
+            tooltip: 'Previous',
+          ),
+
+        // Play/pause button
+        controller.playerIcon(size: 40),
+
+        // Next button
+        IconButton(
+          icon: const Icon(Icons.skip_next),
+          onPressed: controller.next,
+          iconSize: 24,
+          tooltip: 'Next',
+        ),
+      ],
+    );
+  }
+
+  String _formatTrackTitle(String? name) {
+    if (name == null || name.isEmpty) return '';
+    if (name.length < 3) return name;
+
+    final parts = name.substring(3).split('.');
+    return parts.isNotEmpty ? parts[0] : name;
+  }
 }

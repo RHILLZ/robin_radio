@@ -32,3 +32,33 @@ Runner/GeneratedPluginRegistrant.*
 !default.mode2v3
 !default.pbxuser
 !default.perspectivev3
+
+# iOS build files
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# CocoaPods
+Pods/
+*.xcworkspace
+
+# Xcode
+*.xcarchive
+*.xcuserstate
+.DS_Store
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace/
+
+# App specific
+GoogleService-Info.plist
+*.mobileprovision
+*.cer
+
+# Swift Package Manager
+.build/
+Packages/
+Package.pins
+Package.resolved
+.swiftpm/

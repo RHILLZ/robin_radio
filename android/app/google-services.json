@@ -84,6 +84,42 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275246812933:android:213c25ea2338e6176c316c",
+        "android_client_info": {
+          "package_name": "com.tauristTechnologies.robinRadio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "275246812933-ba15maob1uutsvuor5snt4pltuago1d2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxzljYMisByRgddXKfHgIbbVoHtBxBFJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "275246812933-ba15maob1uutsvuor5snt4pltuago1d2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "275246812933-shva4cibpmda9v4ckvafq2t0q27mc5fk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rlxcoded.robinradio"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

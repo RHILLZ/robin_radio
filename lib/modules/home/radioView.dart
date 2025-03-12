@@ -3,8 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:im_animations/im_animations.dart';
+import 'package:miniplayer/miniplayer.dart';
 import 'package:robin_radio/modules/player/player_controller.dart';
 import 'package:sizer/sizer.dart';
+import 'package:robin_radio/modules/app/app_controller.dart';
 
 class RadioView extends GetView<PlayerController> {
   const RadioView({super.key});
@@ -12,109 +14,203 @@ class RadioView extends GetView<PlayerController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() => Container(
-          color: Colors.grey[300],
+          color: Theme.of(context).colorScheme.surface,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(
-                  child: Image.asset('assets/logo/rr-logo.png'),
-                ),
-                controller.currentRadioSong.artist.isEmpty
-                    ? ColorSonar(
-                        contentAreaRadius: 80,
-                        child: ElevatedButton.icon(
-                            style: ButtonStyle(
-                                elevation: const MaterialStatePropertyAll(15),
-                                shadowColor: const MaterialStatePropertyAll(
-                                    Colors.black),
-                                shape: const MaterialStatePropertyAll<
-                                    OutlinedBorder>(CircleBorder()),
-                                iconSize:
-                                    const MaterialStatePropertyAll<double>(60),
-                                backgroundColor:
-                                    const MaterialStatePropertyAll<Color>(
-                                        Color(0XFF6C30C4)),
-                                fixedSize: MaterialStatePropertyAll<Size>(
-                                    Size(40.w, 40.w))),
-                            onPressed: () => controller.playRadio(),
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text(
-                              'Start Radio',
-                              style: TextStyle(fontSize: 18),
-                            )),
-                      )
-                    : Column(
-                        children: [
-                          Text(
-                            '${controller.currentRadioSong.songName}'
-                                .substring(3)
-                                .split('.')[0],
-                            style: const TextStyle(
-                                color: Color(0XFF6C30C4),
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(
-                            height: 2.h,
-                          ),
-                          Text(
-                            'by: ${controller.currentRadioSong.artist}',
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w400),
-                            textAlign: TextAlign.center,
-                          ),
-                          Text(
-                            'album: ${controller.currentRadioSong.albumName}',
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w400),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                Visibility(
-                  visible: controller.currentRadioSong.artist.isNotEmpty,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    // mainAxisSize: MainAxisSize.max,
-                    children: [
-                      IconButton(
-                        alignment: Alignment.center,
-                        onPressed: () => controller.previous(),
-                        icon: const Icon(
-                          Icons.skip_previous,
-                          color: Color(0XFF6C30C4),
-                        ),
-                        iconSize: 50,
-                      ),
-                      Container(
-                          height: 30.w,
-                          width: 30.w,
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle, color: Colors.grey[400]),
-                          child: controller.playerIcon(
-                              50, const Color(0XFF6C30C4))),
-                      IconButton(
-                        onPressed: () => controller.next(),
-                        icon: const Icon(
-                          Icons.skip_next,
-                          color: Color(0XFF6C30C4),
-                        ),
-                        iconSize: 50,
-                      ),
-                    ],
-                  ),
-                ),
+                // Logo or album art
+                _buildLogoOrAlbumArt(context),
+
+                // Song info or start button
+                _isRadioPlaying
+                    ? _buildNowPlayingInfo(context)
+                    : _buildStartRadioButton(context),
+
+                // Player controls
+                if (_isRadioPlaying) _buildPlayerControls(context),
               ],
             ),
           ),
         ));
+  }
+
+  bool get _isRadioPlaying =>
+      controller.playerMode == PlayerMode.radio &&
+      controller.currentRadioSong != null &&
+      controller.currentRadioSong!.songName.isNotEmpty;
+
+  Widget _buildLogoOrAlbumArt(BuildContext context) {
+    if (_isRadioPlaying && controller.coverURL != null) {
+      return Container(
+        width: 60.w,
+        height: 60.w,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(51),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.network(
+            controller.coverURL!,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                Image.asset('assets/logo/rr-logo.png'),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: 60.w,
+      child: Image.asset('assets/logo/rr-logo.png'),
+    );
+  }
+
+  Widget _buildStartRadioButton(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        elevation: 15,
+        shape: const CircleBorder(),
+        padding: EdgeInsets.all(12.w),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
+      onPressed: () {
+        // Just play the radio without showing the player
+        controller.playRadio();
+        // Don't animate the player to full screen
+      },
+      child: Text(
+        'Start Radio',
+        style: TextStyle(
+          fontSize: 18,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNowPlayingInfo(BuildContext context) {
+    final song = controller.currentRadioSong!;
+    final songTitle = _formatSongTitle(song.songName);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      width: 80.w,
+      decoration: BoxDecoration(
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withAlpha(179),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'NOW PLAYING',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+            ),
+          ),
+          SizedBox(height: 1.h),
+          Text(
+            songTitle,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: 1.h),
+          Text(
+            'by ${song.artist}',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (song.albumName != null && song.albumName!.isNotEmpty)
+            Text(
+              'from ${song.albumName}',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayerControls(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      decoration: BoxDecoration(
+        color:
+            Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(77),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed: () => controller.previous(),
+            icon: Icon(
+              Icons.skip_previous,
+              color: Theme.of(context).colorScheme.primary,
+              size: 36,
+            ),
+          ),
+          SizedBox(width: 4.w),
+          Container(
+            height: 20.w,
+            width: 20.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Theme.of(context).colorScheme.primaryContainer,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(26),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: controller.playerIcon(size: 40),
+          ),
+          SizedBox(width: 4.w),
+          IconButton(
+            onPressed: () => controller.next(),
+            icon: Icon(
+              Icons.skip_next,
+              color: Theme.of(context).colorScheme.primary,
+              size: 36,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatSongTitle(String name) {
+    if (name.length < 3) return name;
+    final parts = name.substring(3).split('.');
+    return parts.isNotEmpty ? parts[0] : name;
   }
 }

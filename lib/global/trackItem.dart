@@ -6,19 +6,98 @@ import 'package:robin_radio/data/models/song.dart';
 import 'package:robin_radio/modules/player/player_controller.dart';
 
 class TrackListItem extends GetWidget<PlayerController> {
-  const TrackListItem({super.key, required Song song}) : _song = song;
+  const TrackListItem({
+    super.key,
+    required this.song,
+    this.index,
+    this.onTap,
+  });
 
-  final Song _song;
+  final Song song;
+  final int? index;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final songTitle = _formatSongTitle(song.songName);
+    // ignore: unused_local_variable
+    final albumName = song.albumName ?? 'Unknown';
+
     return ListTile(
-      leading: Text(_song.songName.substring(0, 2)),
-      title: Text(
-        _song.songName.substring(3).split('.')[0],
-        style: const TextStyle(fontSize: 18),
+      leading: CircleAvatar(
+        backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(51),
+        child: index != null
+            ? Text(
+                '${index! + 1}',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            : Text(
+                _getInitials(songTitle),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
-      subtitle: Text(_song.albumName ?? 'unknown'),
+      title: Text(
+        songTitle,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        song.artist,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      onTap: onTap ??
+          () {
+            // Handle song selection based on your controller's API
+            final songIndex = controller.tracks.indexOf(song);
+            if (songIndex >= 0) {
+              controller.trackIndex = songIndex;
+              controller.playTrack();
+            }
+          },
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (song.duration != null)
+            Text(
+              _formatDuration(song.duration!),
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodySmall?.color,
+                fontSize: 12,
+              ),
+            ),
+        ],
+      ),
     );
+  }
+
+  String _formatSongTitle(String name) {
+    if (name.length < 3) return name;
+
+    final parts = name.substring(3).split('.');
+    return parts.isNotEmpty ? parts[0] : name;
+  }
+
+  String _getInitials(String title) {
+    final words = title.split(' ');
+    if (words.isEmpty) return '';
+    if (words.length == 1) {
+      return words[0].isNotEmpty ? words[0].substring(0, 1).toUpperCase() : '';
+    }
+
+    return '${words[0].isNotEmpty ? words[0][0].toUpperCase() : ''}${words.length > 1 && words[1].isNotEmpty ? words[1][0].toUpperCase() : ''}';
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 }
