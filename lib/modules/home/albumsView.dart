@@ -280,15 +280,6 @@ class _AlbumsViewState extends State<AlbumsView> {
     );
   }
 
-  Widget _buildLoadingCard(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-
   Widget _buildLoadingView(BuildContext context, AppController controller) {
     return Center(
       child: Column(

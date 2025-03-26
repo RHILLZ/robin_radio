@@ -2,11 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:im_animations/im_animations.dart';
-import 'package:miniplayer/miniplayer.dart';
 import 'package:robin_radio/modules/player/player_controller.dart';
 import 'package:sizer/sizer.dart';
-import 'package:robin_radio/modules/app/app_controller.dart';
 
 class RadioView extends GetView<PlayerController> {
   const RadioView({super.key});
