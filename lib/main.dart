@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:json_theme/json_theme.dart';
-import 'package:robin_radio/firebase_options.dart';
-import 'package:robin_radio/modules/app/app_view.dart';
-import 'package:robin_radio/routes/views.dart';
+import 'data/services/audio_player_service.dart';
+import 'data/services/performance_service.dart';
+import 'firebase_options.dart';
+import 'modules/app/app_view.dart';
+import 'routes/views.dart';
 import 'package:sizer/sizer.dart';
 
 import 'modules/app/main_bindings.dart';
@@ -26,23 +28,34 @@ void main() async {
     // Initialize Firebase
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
-    ).catchError((error) {
+    ).catchError((Object error) {
       debugPrint('Failed to initialize Firebase: $error');
       // Return the result of a new initialization attempt with default options
       return Firebase.app();
     });
 
+    // Start app startup performance trace
+    final performanceService = PerformanceService();
+    await performanceService.startAppStartTrace();
+
+    // Initialize Performance Monitoring
+    await performanceService.initialize();
+
+    // Initialize centralized AudioPlayerService
+    final audioPlayerService = AudioPlayerService();
+    await audioPlayerService.initialize();
+
     // Configure audio context
-    final AudioContext audioContext = AudioContext(
+    final audioContext = AudioContext(
       iOS: AudioContextIOS(
         category: AVAudioSessionCategory.playAndRecord,
-        options: {
+        options: const {
           AVAudioSessionOptions.defaultToSpeaker,
           AVAudioSessionOptions.allowBluetoothA2DP,
-          AVAudioSessionOptions.allowAirPlay
+          AVAudioSessionOptions.allowAirPlay,
         },
       ),
-      android: AudioContextAndroid(
+      android: const AudioContextAndroid(
         isSpeakerphoneOn: true,
         stayAwake: true,
         contentType: AndroidContentType.sonification,
@@ -55,30 +68,33 @@ void main() async {
     // Initialize dependencies
     MainBindings().dependencies();
 
+    // Stop app startup trace before running the app
+    await performanceService.stopAppStartTrace();
+
     runApp(MyApp(theme: theme));
   } catch (e, stackTrace) {
     debugPrint('Error during initialization: $e\n$stackTrace');
     // You might want to show a user-friendly error screen here
-    runApp(MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Failed to initialize app: $e'),
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Text('Failed to initialize app: $e'),
+          ),
         ),
       ),
-    ));
+    );
   }
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required ThemeData theme}) : _theme = theme;
+  const MyApp({required ThemeData theme, super.key}) : _theme = theme;
 
   final ThemeData _theme;
 
   @override
-  Widget build(BuildContext context) {
-    return Sizer(
-      builder: (context, orientation, deviceType) {
-        return GetMaterialApp(
+  Widget build(BuildContext context) => Sizer(
+        builder: (context, orientation, deviceType) => GetMaterialApp(
           title: 'Robin Radio',
           debugShowCheckedModeBanner: false,
           getPages: Views.routes,
@@ -90,14 +106,12 @@ class MyApp extends StatelessWidget {
             return MediaQuery(
               data: MediaQuery.of(context).copyWith(
                 platformBrightness: Theme.of(context).brightness,
-                textScaler: TextScaler.linear(1.0),
+                textScaler: const TextScaler.linear(1),
               ),
               child: child ?? const SizedBox(),
             );
           },
           home: const AppView(),
-        );
-      },
-    );
-  }
+        ),
+      );
 }

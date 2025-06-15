@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
 import 'package:robin_radio/global/mini_player.dart';
+import 'package:robin_radio/global/widgets/performance_dashboard.dart';
 import 'package:robin_radio/modules/app/app_controller.dart';
 import 'package:robin_radio/modules/home/mainView.dart';
 import 'package:robin_radio/modules/player/player_controller.dart';
@@ -45,6 +46,9 @@ class AppView extends GetView<AppController> {
                     }
                   }),
             ),
+
+            // Performance Dashboard (debug mode only)
+            const PerformanceDashboard(),
 
             // Loading overlay
             if (controller.isLoading)

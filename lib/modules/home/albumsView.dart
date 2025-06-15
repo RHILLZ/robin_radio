@@ -27,6 +27,9 @@ class _AlbumsViewState extends State<AlbumsView> {
   // Track if search field is visible
   final RxBool isSearchVisible = false.obs;
 
+  // Store the worker reference for proper disposal
+  Worker? _searchWorker;
+
   @override
   void initState() {
     super.initState();
@@ -36,7 +39,8 @@ class _AlbumsViewState extends State<AlbumsView> {
     filteredAlbums.value = controller.albums;
 
     // Update filtered albums when search query changes
-    ever(searchQuery, (query) {
+    // Store the worker reference for proper disposal
+    _searchWorker = ever(searchQuery, (query) {
       final controller = Get.find<AppController>();
       filteredAlbums.value = controller.searchAlbums(query);
     });
@@ -54,6 +58,9 @@ class _AlbumsViewState extends State<AlbumsView> {
 
   @override
   void dispose() {
+    // Dispose of the worker to prevent memory leaks
+    _searchWorker?.dispose();
+
     // Dispose of the TextEditingController when the widget is disposed
     _searchController.dispose();
     // Remove listener before disposing focus node

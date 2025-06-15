@@ -2,9 +2,11 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:robin_radio/data/models/song.dart';
-import 'package:robin_radio/data/models/album.dart';
-import 'package:robin_radio/modules/app/app_controller.dart';
+import '../../data/models/song.dart';
+import '../../data/models/album.dart';
+import '../../data/services/audio_player_service.dart';
+import '../../data/services/performance_service.dart';
+import '../app/app_controller.dart';
 import 'dart:math';
 
 enum PlayerMode { radio, album }
@@ -14,8 +16,8 @@ enum PlayerRepeatMode { none, all, one }
 enum PlayerShuffleMode { off, on }
 
 class PlayerController extends GetxController {
-  // Core player components
-  final player = AudioPlayer();
+  // Core player components - now using centralized service
+  final AudioPlayerService _audioService = AudioPlayerService();
   final appController = Get.find<AppController>();
 
   // Observable state variables
@@ -86,7 +88,7 @@ class PlayerController extends GetxController {
   set coverURL(String? value) => _coverURL.value = value;
   set volume(double value) {
     _volume.value = value;
-    player.setVolume(value);
+    _audioService.setVolume(value);
   }
 
   set playerMode(PlayerMode value) => _playerMode.value = value;
@@ -100,20 +102,28 @@ class PlayerController extends GetxController {
     _initializePlayer();
   }
 
-  void _initializePlayer() {
+  Future<void> _initializePlayer() async {
+    // Start player initialization performance trace
+    final performanceService = PerformanceService();
+    await performanceService.startPlayerInitTrace();
+
     // Set up player event listeners
-    player.onDurationChanged.listen(_onDurationChanged);
-    player.onPositionChanged.listen(_onPositionChanged);
-    player.onPlayerStateChanged.listen(_onPlayerStateChanged);
-    player.onPlayerComplete.listen(_onPlayerComplete);
+    _audioService.onDurationChanged.listen(_onDurationChanged);
+    _audioService.onPositionChanged.listen(_onPositionChanged);
+    _audioService.onPlayerStateChanged.listen(_onPlayerStateChanged);
+    _audioService.onPlayerComplete.listen(_onPlayerComplete);
 
     // Set up error handling
-    player.onLog.listen((String message) {
-      debugPrint('AudioPlayer log: $message');
+    _audioService.onError.listen((message) {
+      debugPrint('AudioPlayer error: $message');
+      _playbackError.value = message;
     });
 
     // Set initial volume
-    player.setVolume(_volume.value);
+    _audioService.setVolume(_volume.value);
+
+    // Stop player initialization trace
+    await performanceService.stopPlayerInitTrace(playerMode: 'audio_player');
   }
 
   void _onDurationChanged(Duration duration) {
@@ -130,7 +140,7 @@ class PlayerController extends GetxController {
         _playerPosition.value.inMilliseconds == 0;
   }
 
-  void _onPlayerComplete(void _) async {
+  Future<void> _onPlayerComplete(void _) async {
     if (playerMode == PlayerMode.radio) {
       await playRadio();
       return;
@@ -151,22 +161,22 @@ class PlayerController extends GetxController {
       await playTrack();
     } else {
       // End of playlist
-      Get.back();
+      Get.back<void>();
       await closePlayer();
     }
   }
 
   double getProgressValue() {
     if (durationAsDouble <= 0.0) {
-      return 0.0;
+      return 0;
     }
     return positionAsDouble / durationAsDouble;
   }
 
   String formatDuration(Duration dur) {
-    String minutes = dur.inMinutes.remainder(60).toString().padLeft(2, '0');
-    String seconds = dur.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$minutes:$seconds";
+    final minutes = dur.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = dur.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   Future<void> play() async {
@@ -187,13 +197,13 @@ class PlayerController extends GetxController {
       // Get a random album from the available albums
       final albums = appController.albums;
       if (albums.isEmpty) {
-        _playbackError.value = "No music available for radio mode";
+        _playbackError.value = 'No music available for radio mode';
         return;
       }
 
       final randomAlbum = albums[Random().nextInt(albums.length)];
       if (randomAlbum.tracks.isEmpty) {
-        _playbackError.value = "Selected album has no tracks";
+        _playbackError.value = 'Selected album has no tracks';
         return;
       }
 
@@ -204,11 +214,10 @@ class PlayerController extends GetxController {
       _coverURL.value = randomAlbum.albumCover;
 
       // Play the track
-      final url = UrlSource(randomTrack.songUrl);
-      await player.play(url);
+      await _audioService.play(randomTrack.songUrl);
     } catch (e) {
-      _playbackError.value = "Error playing radio: $e";
-      debugPrint("Radio playback error: $e");
+      _playbackError.value = 'Error playing radio: $e';
+      debugPrint('Radio playback error: $e');
     }
   }
 
@@ -218,28 +227,27 @@ class PlayerController extends GetxController {
       playerMode = PlayerMode.album;
 
       if (_tracks.isEmpty) {
-        _playbackError.value = "No tracks available to play";
+        _playbackError.value = 'No tracks available to play';
         return;
       }
 
       if (_trackIndex.value < 0 || _trackIndex.value >= _tracks.length) {
-        _playbackError.value = "Track index out of bounds";
+        _playbackError.value = 'Track index out of bounds';
         return;
       }
 
       final currentTrack = _tracks[_trackIndex.value];
       _currentSong.value = currentTrack;
 
-      final url = UrlSource(currentTrack.songUrl);
-      await player.play(url);
+      await _audioService.play(currentTrack.songUrl);
 
       if (kDebugMode) {
         print('TRACK INDEX: ${_trackIndex.value}');
         print('TRACKS LENGTH: ${_tracks.length}');
       }
     } catch (e) {
-      _playbackError.value = "Error playing track: $e";
-      debugPrint("Track playback error: $e");
+      _playbackError.value = 'Error playing track: $e';
+      debugPrint('Track playback error: $e');
     }
   }
 
@@ -266,7 +274,7 @@ class PlayerController extends GetxController {
       _trackIndex.value = 0;
       await playTrack();
     } else {
-      Get.back();
+      Get.back<void>();
       await closePlayer();
     }
   }
@@ -288,23 +296,23 @@ class PlayerController extends GetxController {
   }
 
   Future<void> pause() async {
-    await player.pause();
+    await _audioService.pause();
   }
 
   Future<void> resume() async {
-    await player.resume();
+    await _audioService.resume();
   }
 
   Future<void> stop() async {
-    await player.stop();
+    await _audioService.stop();
   }
 
   Future<void> seek(double seconds) async {
-    await player.seek(Duration(seconds: seconds.toInt()));
+    await _audioService.seek(Duration(seconds: seconds.toInt()));
   }
 
   Future<void> closePlayer() async {
-    await player.release();
+    await _audioService.release();
     _tracks.clear();
     _trackIndex.value = 0;
     _currentSong.value = null;
@@ -378,13 +386,13 @@ class PlayerController extends GetxController {
     // Only show loading indicator when buffering and not yet playing
     if (isBuffering && _playerPosition.value.inMilliseconds == 0) {
       return IconButton(
-        onPressed: () => pause(),
+        onPressed: pause,
         iconSize: size,
         icon: SizedBox(
           width: size,
           height: size,
           child: CircularProgressIndicator(
-            strokeWidth: 2.0,
+            strokeWidth: 2,
             color: color ?? Colors.white,
           ),
         ),
@@ -393,7 +401,7 @@ class PlayerController extends GetxController {
 
     if (isPlaying) {
       return IconButton(
-        onPressed: () => pause(),
+        onPressed: pause,
         iconSize: size,
         icon: Icon(
           Icons.pause,
@@ -403,7 +411,7 @@ class PlayerController extends GetxController {
     }
 
     return IconButton(
-      onPressed: isPaused ? () => resume() : () => play(),
+      onPressed: isPaused ? resume : play,
       iconSize: size,
       icon: Icon(
         Icons.play_arrow,
@@ -424,7 +432,7 @@ class PlayerController extends GetxController {
 
   @override
   void onClose() {
-    player.dispose();
+    _audioService.dispose();
     super.onClose();
   }
 }

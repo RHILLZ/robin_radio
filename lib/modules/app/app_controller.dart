@@ -2,9 +2,10 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
-import 'package:robin_radio/data/models/album.dart';
-import 'package:robin_radio/data/models/song.dart';
-import 'package:robin_radio/modules/home/trackListView.dart';
+import '../../data/models/album.dart';
+import '../../data/models/song.dart';
+import '../../data/services/performance_service.dart';
+import '../home/trackListView.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
@@ -36,7 +37,7 @@ class AppController extends GetxController {
   bool get isLoadingMore => false;
 
   @override
-  void onInit() async {
+  Future<void> onInit() async {
     super.onInit();
     await _initializeMusic();
   }
@@ -48,10 +49,14 @@ class AppController extends GetxController {
       _loadingProgress.value = 0.0;
       _loadingStatusMessage.value = 'Initializing...';
 
+      // Start music loading performance trace
+      final performanceService = PerformanceService();
+      await performanceService.startMusicLoadTrace();
+
       // Try to load from cache first
       _loadingStatusMessage.value = 'Checking cache...';
       _loadingProgress.value = 0.1;
-      final bool cacheLoaded = await _loadFromCache();
+      final cacheLoaded = await _loadFromCache();
 
       // If cache is expired or empty, load from Firebase
       if (!cacheLoaded) {
@@ -62,6 +67,15 @@ class AppController extends GetxController {
         _loadingProgress.value = 1.0;
         _loadingStatusMessage.value = 'Music loaded from cache';
       }
+
+      // Stop music loading trace with metrics
+      final totalSongs =
+          _albums.fold<int>(0, (sum, album) => sum + album.tracks.length);
+      await performanceService.stopMusicLoadTrace(
+        albumCount: _albums.length,
+        songCount: totalSongs,
+        fromCache: cacheLoaded,
+      );
     } catch (e) {
       _handleError('Failed to initialize music: $e');
     } finally {
@@ -72,8 +86,8 @@ class AppController extends GetxController {
   Future<bool> _loadFromCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final String? cachedData = prefs.getString(_cacheKey);
-      final String? cachedTimeStr = prefs.getString('${_cacheKey}_time');
+      final cachedData = prefs.getString(_cacheKey);
+      final cachedTimeStr = prefs.getString('${_cacheKey}_time');
 
       if (cachedData != null && cachedTimeStr != null) {
         final cachedTime = DateTime.parse(cachedTimeStr);
@@ -82,8 +96,10 @@ class AppController extends GetxController {
         if (DateTime.now().difference(cachedTime) < _cacheExpiry) {
           _loadingStatusMessage.value = 'Loading from cache...';
           _loadingProgress.value = 0.5;
-          final List<dynamic> decoded = jsonDecode(cachedData);
-          _albums.value = decoded.map((item) => Album.fromJson(item)).toList();
+          final decoded = jsonDecode(cachedData) as List<dynamic>;
+          _albums.value = decoded
+              .map((item) => Album.fromJson(item as Map<String, dynamic>))
+              .toList();
           return true;
         }
       }
@@ -99,7 +115,7 @@ class AppController extends GetxController {
       _loadingStatusMessage.value = 'Saving to cache...';
       _loadingProgress.value = 0.9;
       final prefs = await SharedPreferences.getInstance();
-      final String encoded =
+      final encoded =
           jsonEncode(_albums.map((album) => album.toJson()).toList());
       await prefs.setString(_cacheKey, encoded);
 
@@ -120,27 +136,27 @@ class AppController extends GetxController {
       final storageRef = storage.ref().child('Artist');
       _loadingStatusMessage.value = 'Fetching artists...';
       _loadingProgress.value = 0.3;
-      final ListResult artistResult = await storageRef.listAll();
-      final List<Album> newAlbums = [];
+      final artistResult = await storageRef.listAll();
+      final newAlbums = <Album>[];
 
-      final int totalArtists = artistResult.prefixes.length;
-      int processedArtists = 0;
+      final totalArtists = artistResult.prefixes.length;
+      var processedArtists = 0;
 
       // Process each artist
       for (final artist in artistResult.prefixes) {
         final nameOfArtist = artist.name;
         _loadingStatusMessage.value = 'Loading music from $nameOfArtist...';
 
-        final ListResult albumsResult = await artist.listAll();
+        final albumsResult = await artist.listAll();
 
         // Process each album
         for (final album in albumsResult.prefixes) {
           final nameOfAlbum = album.name;
           String? albumArt;
-          final List<Song> tracks = [];
+          final tracks = <Song>[];
 
           // Get all songs in the album
-          final ListResult songsResult = await album.listAll();
+          final songsResult = await album.listAll();
 
           // First pass: find album art
           for (final item in songsResult.items) {
@@ -164,36 +180,40 @@ class AppController extends GetxController {
 
             // Get song URL with retry logic
             String? url;
-            for (int attempt = 0; attempt < 3; attempt++) {
+            for (var attempt = 0; attempt < 3; attempt++) {
               try {
                 url = await song.getDownloadURL();
                 break;
               } catch (e) {
                 if (attempt == 2) rethrow;
-                await Future.delayed(const Duration(seconds: 1));
+                await Future<void>.delayed(const Duration(seconds: 1));
               }
             }
 
             if (url != null) {
-              tracks.add(Song(
-                id: '${nameOfArtist}_${nameOfAlbum}_$nameOfSong',
-                songName: nameOfSong,
-                songUrl: url,
-                artist: nameOfArtist,
-                albumName: nameOfAlbum,
-              ));
+              tracks.add(
+                Song(
+                  id: '${nameOfArtist}_${nameOfAlbum}_$nameOfSong',
+                  songName: nameOfSong,
+                  songUrl: url,
+                  artist: nameOfArtist,
+                  albumName: nameOfAlbum,
+                ),
+              );
             }
           }
 
           // Only add albums that have tracks
           if (tracks.isNotEmpty) {
-            newAlbums.add(Album(
-              id: '${nameOfArtist}_$nameOfAlbum',
-              albumName: nameOfAlbum,
-              tracks: tracks,
-              albumCover: albumArt,
-              artist: nameOfArtist,
-            ));
+            newAlbums.add(
+              Album(
+                id: '${nameOfArtist}_$nameOfAlbum',
+                albumName: nameOfAlbum,
+                tracks: tracks,
+                albumCover: albumArt,
+                artist: nameOfArtist,
+              ),
+            );
           }
         }
 
@@ -220,7 +240,7 @@ class AppController extends GetxController {
     refreshMusic();
   }
 
-  void refreshMusic() async {
+  Future<void> refreshMusic() async {
     _isLoading.value = true;
     _loadingProgress.value = 0.0;
     _loadingStatusMessage.value = 'Refreshing music...';
@@ -236,12 +256,20 @@ class AppController extends GetxController {
     debugPrint(message);
   }
 
-  void openTrackList(Album album) {
-    Get.bottomSheet(
+  Future<void> openTrackList(Album album) async {
+    // Track album loading performance
+    final performanceService = PerformanceService();
+    await performanceService.startAlbumLoadTrace(album.id ?? 'unknown_album');
+
+    Get.bottomSheet<void>(
       Scaffold(body: TrackListView(album: album)),
       isScrollControlled: true,
-      isDismissible: true,
       backgroundColor: Colors.transparent,
+    );
+
+    // Stop album loading trace
+    await performanceService.stopAlbumLoadTrace(
+      trackCount: album.tracks.length,
     );
   }
 
@@ -259,17 +287,20 @@ class AppController extends GetxController {
     if (query.isEmpty) return _albums;
 
     final lowercaseQuery = query.toLowerCase();
-    return _albums.where((album) {
-      return album.albumName.toLowerCase().contains(lowercaseQuery) ||
-          (album.artist?.toLowerCase().contains(lowercaseQuery) ?? false);
-    }).toList();
+    return _albums
+        .where(
+          (album) =>
+              album.albumName.toLowerCase().contains(lowercaseQuery) ||
+              (album.artist?.toLowerCase().contains(lowercaseQuery) ?? false),
+        )
+        .toList();
   }
 
   List<Song> searchSongs(String query) {
     if (query.isEmpty) return [];
 
     final lowercaseQuery = query.toLowerCase();
-    final List<Song> results = [];
+    final results = <Song>[];
 
     for (final album in _albums) {
       for (final song in album.tracks) {
@@ -281,5 +312,22 @@ class AppController extends GetxController {
     }
 
     return results;
+  }
+
+  @override
+  void onClose() {
+    // Clear all reactive variables to prevent memory leaks
+    _albums.clear();
+    _isLoading.value = false;
+    _hasError.value = false;
+    _errorMessage.value = '';
+    _loadingProgress.value = 0.0;
+    _loadingStatusMessage.value = '';
+
+    // Dispose of the MiniplayerController
+    miniPlayerController.dispose();
+
+    // Call super to complete disposal
+    super.onClose();
   }
 }

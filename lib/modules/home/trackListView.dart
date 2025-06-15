@@ -3,19 +3,18 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
-import 'package:robin_radio/data/models/album.dart';
-import 'package:robin_radio/global/albumCover.dart';
-import 'package:robin_radio/global/trackItem.dart';
-import 'package:robin_radio/modules/player/player_controller.dart';
-import 'package:robin_radio/modules/app/app_controller.dart';
+import '../../data/models/album.dart';
+import '../../global/albumCover.dart';
+import '../../global/trackItem.dart';
+import '../player/player_controller.dart';
+import '../app/app_controller.dart';
 
 class TrackListView extends StatelessWidget {
-  final Album album;
-
   const TrackListView({
-    super.key,
     required this.album,
+    super.key,
   });
+  final Album album;
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +47,11 @@ class TrackListView extends StatelessWidget {
           Expanded(
             child: ListView.builder(
               itemCount: album.tracks.length,
-              itemBuilder: (context, index) {
-                return TrackListItem(
-                  song: album.tracks[index],
-                  index: index,
-                  onTap: () => _playTrack(controller, index),
-                );
-              },
+              itemBuilder: (context, index) => TrackListItem(
+                song: album.tracks[index],
+                index: index,
+                onTap: () => _playTrack(controller, index),
+              ),
             ),
           ),
         ],
@@ -62,59 +59,58 @@ class TrackListView extends StatelessWidget {
     );
   }
 
-  Widget _buildAlbumHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color:
-          Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(128),
-      child: Row(
-        children: [
-          Hero(
-            tag: 'album-${album.id}',
-            child: AlbumCover(
-              imageUrl: album.albumCover,
-              albumName: album.albumName,
-              size: 100,
-              borderRadius: 8,
+  Widget _buildAlbumHeader(BuildContext context) => Container(
+        padding: const EdgeInsets.all(16),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withAlpha(128),
+        child: Row(
+          children: [
+            Hero(
+              tag: 'album-${album.id}',
+              child: AlbumCover(
+                imageUrl: album.albumCover,
+                albumName: album.albumName,
+                size: 100,
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  album.albumName,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    album.albumName,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  album.artist ?? 'Unknown Artist',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  const SizedBox(height: 4),
+                  Text(
+                    album.artist ?? 'Unknown Artist',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${album.trackCount} tracks',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  const SizedBox(height: 8),
+                  Text(
+                    '${album.trackCount} tracks',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+      );
 
   void _playAlbum(PlayerController controller) {
     controller.playAlbum(album);
@@ -125,7 +121,7 @@ class TrackListView extends StatelessWidget {
         );
 
     // Close the bottom sheet
-    Get.back();
+    Get.back<void>();
   }
 
   void _playAlbumShuffled(PlayerController controller) {
@@ -138,7 +134,7 @@ class TrackListView extends StatelessWidget {
         );
 
     // Close the bottom sheet
-    Get.back();
+    Get.back<void>();
   }
 
   void _playTrack(PlayerController controller, int index) {
@@ -150,6 +146,6 @@ class TrackListView extends StatelessWidget {
         );
 
     // Close the bottom sheet
-    Get.back();
+    Get.back<void>();
   }
 }
