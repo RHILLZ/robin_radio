@@ -7,6 +7,7 @@ import '../../data/repositories/music_repository.dart';
 import '../../data/repositories/firebase_music_repository.dart';
 import '../../data/exceptions/repository_exception.dart';
 import '../../data/services/performance_service.dart';
+import '../../data/services/image_preload_service.dart';
 import '../home/trackListView.dart';
 
 class AppController extends GetxController {
@@ -35,7 +36,15 @@ class AppController extends GetxController {
   @override
   Future<void> onInit() async {
     super.onInit();
+    await _initializeServices();
     await _initializeMusic();
+  }
+
+  Future<void> _initializeServices() async {
+    // Initialize image preload service with conservative settings
+    ImagePreloadService.instance.initialize(
+      config: ImagePreloadConfig.conservative,
+    );
   }
 
   Future<void> _initializeMusic() async {

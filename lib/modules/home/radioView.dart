@@ -2,36 +2,38 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:robin_radio/modules/player/player_controller.dart';
+import '../player/player_controller.dart';
+import '../../global/widgets/widgets.dart';
 import 'package:sizer/sizer.dart';
+import '../../global/widgets/common/image_loader.dart';
 
 class RadioView extends GetView<PlayerController> {
   const RadioView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Obx(() => Container(
+  Widget build(BuildContext context) => Obx(
+        () => ColoredBox(
           color: Theme.of(context).colorScheme.surface,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Logo or album art
                 _buildLogoOrAlbumArt(context),
 
                 // Song info or start button
-                _isRadioPlaying
-                    ? _buildNowPlayingInfo(context)
-                    : _buildStartRadioButton(context),
+                if (_isRadioPlaying)
+                  _buildNowPlayingInfo(context)
+                else
+                  _buildStartRadioButton(context),
 
                 // Player controls
                 if (_isRadioPlaying) _buildPlayerControls(context),
               ],
             ),
           ),
-        ));
-  }
+        ),
+      );
 
   bool get _isRadioPlaying =>
       controller.playerMode == PlayerMode.radio &&
@@ -55,11 +57,17 @@ class RadioView extends GetView<PlayerController> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: Image.network(
-            controller.coverURL!,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) =>
-                Image.asset('assets/logo/rr-logo.png'),
+          child: ImageLoader(
+            imageUrl: controller.coverURL!,
+            width: 60.w,
+            height: 60.w,
+            context: ImageContext.detailView,
+            transitionDuration: const Duration(milliseconds: 700),
+            heroTag: 'radio_cover_${controller.currentRadioSong?.songName}',
+            errorWidget: (context, url, error) => Image.asset(
+              'assets/logo/rr-logo.webp',
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       );
@@ -67,56 +75,52 @@ class RadioView extends GetView<PlayerController> {
 
     return SizedBox(
       width: 60.w,
-      child: Image.asset('assets/logo/rr-logo.png'),
+      child: Image.asset('assets/logo/rr-logo.webp'),
     );
   }
 
-  Widget _buildStartRadioButton(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        elevation: 15,
-        shape: const CircleBorder(),
-        padding: EdgeInsets.all(12.w),
-        backgroundColor:
-            const Color(0xFF6C30C4), // Match AppBar color from theme
-      ),
-      onPressed: () {
-        // Just play the radio without showing the player
-        controller.playRadio();
-        // Explicitly hide the player
-        controller.hidePlayer();
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Play Radio',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-              color: Theme.of(context).colorScheme.onPrimary,
+  Widget _buildStartRadioButton(BuildContext context) => ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          elevation: 15,
+          shape: const CircleBorder(),
+          padding: EdgeInsets.all(12.w),
+          backgroundColor:
+              const Color(0xFF6C30C4), // Match AppBar color from theme
+        ),
+        onPressed: () {
+          // Just play the radio without showing the player
+          controller.playRadio();
+          // Explicitly hide the player
+          controller.hidePlayer();
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Play Radio',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0.8, end: 1.2),
-            duration: const Duration(seconds: 1),
-            curve: Curves.easeInOut,
-            builder: (context, value, child) {
-              return Transform.scale(
+            const SizedBox(height: 8),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.8, end: 1.2),
+              duration: const Duration(seconds: 1),
+              curve: Curves.easeInOut,
+              builder: (context, value, child) => Transform.scale(
                 scale: value,
                 child: Icon(
                   Icons.radio,
                   color: Theme.of(context).colorScheme.onPrimary,
                   size: 40,
                 ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+              ),
+            ),
+          ],
+        ),
+      );
 
   Widget _buildNowPlayingInfo(BuildContext context) {
     final song = controller.currentRadioSong!;
@@ -178,56 +182,50 @@ class RadioView extends GetView<PlayerController> {
     );
   }
 
-  Widget _buildPlayerControls(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-      decoration: BoxDecoration(
-        color:
-            Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(77),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton(
-            onPressed: () => controller.previous(),
-            icon: Icon(
-              Icons.skip_previous,
+  Widget _buildPlayerControls(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        decoration: BoxDecoration(
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withAlpha(77),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            PlayerControlButton(
+              icon: Icons.skip_previous,
+              onPressed: () => controller.previous(),
               color: Theme.of(context).colorScheme.primary,
-              size: 36,
             ),
-          ),
-          SizedBox(width: 4.w),
-          Container(
-            height: 20.w,
-            width: 20.w,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Theme.of(context).colorScheme.primaryContainer,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(26),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
+            SizedBox(width: 4.w),
+            Container(
+              height: 20.w,
+              width: 20.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.primaryContainer,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(26),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: controller.playerIcon(size: 40),
             ),
-            child: controller.playerIcon(size: 40),
-          ),
-          SizedBox(width: 4.w),
-          IconButton(
-            onPressed: () => controller.next(),
-            icon: Icon(
-              Icons.skip_next,
+            SizedBox(width: 4.w),
+            PlayerControlButton(
+              icon: Icons.skip_next,
+              onPressed: () => controller.next(),
               color: Theme.of(context).colorScheme.primary,
-              size: 36,
             ),
-          ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+      );
 
   String _formatSongTitle(String name) {
     if (name.length < 3) return name;
