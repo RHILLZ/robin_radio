@@ -205,71 +205,136 @@ class FirebaseMusicRepository implements MusicRepository {
     final albums = <Album>[];
 
     try {
+      // Add connection timeout for Firebase operations
       final storageRef = _storage.ref().child('Artist');
-      final artistResult = await _executeWithRetry(storageRef.listAll);
+      final artistResult = await _executeWithRetry(() async {
+        return await storageRef.listAll().timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => throw TimeoutException('Firebase connection timeout', const Duration(seconds: 15)),
+        );
+      });
 
-      for (final artist in artistResult.prefixes) {
+      debugPrint('MusicRepository: Found ${artistResult.prefixes.length} artists');
+      
+      for (int artistIndex = 0; artistIndex < artistResult.prefixes.length; artistIndex++) {
+        final artist = artistResult.prefixes[artistIndex];
         final artistName = artist.name;
-        final albumsResult = await _executeWithRetry(artist.listAll);
+        
+        try {
+          final albumsResult = await _executeWithRetry(() async {
+            return await artist.listAll().timeout(
+              const Duration(seconds: 10),
+              onTimeout: () => throw TimeoutException('Artist listing timeout for $artistName', const Duration(seconds: 10)),
+            );
+          });
 
-        for (final albumRef in albumsResult.prefixes) {
-          final albumName = albumRef.name;
-          String? albumArt;
-          final tracks = <Song>[];
+          debugPrint('MusicRepository: Artist $artistName has ${albumsResult.prefixes.length} albums');
 
-          final songsResult = await _executeWithRetry(albumRef.listAll);
+          for (int albumIndex = 0; albumIndex < albumsResult.prefixes.length; albumIndex++) {
+            final albumRef = albumsResult.prefixes[albumIndex];
+            final albumName = albumRef.name;
+            
+            try {
+              String? albumArt;
+              final tracks = <Song>[];
 
-          // First pass: find album art
-          for (final item in songsResult.items) {
-            final itemName = item.name;
-            if (_isImageFile(itemName)) {
-              albumArt = await _executeWithRetry(item.getDownloadURL);
-              break;
+              final songsResult = await _executeWithRetry(() async {
+                return await albumRef.listAll().timeout(
+                  const Duration(seconds: 8),
+                  onTimeout: () => throw TimeoutException('Album listing timeout for $albumName', const Duration(seconds: 8)),
+                );
+              });
+
+              // First pass: find album art (with timeout)
+              for (final item in songsResult.items) {
+                final itemName = item.name;
+                if (_isImageFile(itemName)) {
+                  try {
+                    albumArt = await _executeWithRetry(() async {
+                      return await item.getDownloadURL().timeout(
+                        const Duration(seconds: 5),
+                        onTimeout: () => throw TimeoutException('Album art URL timeout', const Duration(seconds: 5)),
+                      );
+                    });
+                    break;
+                  } catch (e) {
+                    debugPrint('MusicRepository: Failed to get album art for $albumName: $e');
+                    // Continue without album art
+                  }
+                }
+              }
+
+              // Second pass: process songs (with timeout and error recovery)
+              for (final songRef in songsResult.items) {
+                final songName = songRef.name;
+
+                // Skip image files
+                if (_isImageFile(songName)) continue;
+
+                try {
+                  final songUrl = await _executeWithRetry(() async {
+                    return await songRef.getDownloadURL().timeout(
+                      const Duration(seconds: 5),
+                      onTimeout: () => throw TimeoutException('Song URL timeout for $songName', const Duration(seconds: 5)),
+                    );
+                  });
+
+                  tracks.add(
+                    Song(
+                      id: '${artistName}_${albumName}_$songName',
+                      songName: songName,
+                      songUrl: songUrl,
+                      artist: artistName,
+                      albumName: albumName,
+                    ),
+                  );
+                } catch (e) {
+                  debugPrint('MusicRepository: Failed to load song $songName: $e');
+                  // Continue with other songs
+                }
+              }
+
+              // Only add albums that have tracks
+              if (tracks.isNotEmpty) {
+                albums.add(
+                  Album(
+                    id: '${artistName}_$albumName',
+                    albumName: albumName,
+                    tracks: tracks,
+                    albumCover: albumArt,
+                    artist: artistName,
+                  ),
+                );
+                debugPrint('MusicRepository: Added album $albumName with ${tracks.length} tracks');
+              }
+            } catch (e) {
+              debugPrint('MusicRepository: Failed to load album $albumName: $e');
+              // Continue with other albums
             }
           }
-
-          // Second pass: process songs
-          for (final songRef in songsResult.items) {
-            final songName = songRef.name;
-
-            // Skip image files
-            if (_isImageFile(songName)) continue;
-
-            final songUrl = await _executeWithRetry(songRef.getDownloadURL);
-
-            tracks.add(
-              Song(
-                id: '${artistName}_${albumName}_$songName',
-                songName: songName,
-                songUrl: songUrl,
-                artist: artistName,
-                albumName: albumName,
-              ),
-            );
-          }
-
-          // Only add albums that have tracks
-          if (tracks.isNotEmpty) {
-            albums.add(
-              Album(
-                id: '${artistName}_$albumName',
-                albumName: albumName,
-                tracks: tracks,
-                albumCover: albumArt,
-                artist: artistName,
-              ),
-            );
-          }
+        } catch (e) {
+          debugPrint('MusicRepository: Failed to load artist $artistName: $e');
+          // Continue with other artists
         }
       }
 
       debugPrint(
-        'MusicRepository: Loaded ${albums.length} albums from Firebase',
+        'MusicRepository: Successfully loaded ${albums.length} albums from Firebase',
       );
+      
+      if (albums.isEmpty) {
+        throw const DataRepositoryException.notFound();
+      }
+      
       return albums;
+    } on TimeoutException catch (e) {
+      debugPrint('MusicRepository: Timeout error: ${e.message}');
+      throw NetworkRepositoryException('Connection timeout: ${e.message}', 'FIREBASE_TIMEOUT');
     } on FirebaseException catch (e) {
+      debugPrint('MusicRepository: Firebase error: ${e.message}');
       throw FirebaseRepositoryException('Firebase error: ${e.message}', e.code);
     } catch (e) {
+      debugPrint('MusicRepository: Unexpected error: $e');
       throw NetworkRepositoryException('Network error: $e', 'NETWORK_ERROR');
     }
   }
