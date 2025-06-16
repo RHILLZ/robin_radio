@@ -12,7 +12,7 @@ class MonitoredHttpClient extends BaseClient {
   Future<StreamedResponse> send(BaseRequest request) async {
     // Custom network monitoring is not supported for web.
     // https://firebase.google.com/docs/perf-mon/custom-network-traces?platform=android
-    final HttpMetric metric = FirebasePerformance.instance
+    final metric = FirebasePerformance.instance
         .newHttpMetric(request.url.toString(), _getHttpMethod(request.method));
 
     // Set request payload size if available
@@ -48,7 +48,9 @@ class MonitoredHttpClient extends BaseClient {
       // Add response attributes
       metric.putAttribute('response_status', response.statusCode.toString());
       metric.putAttribute(
-          'response_success', (response.statusCode < 400).toString());
+        'response_success',
+        (response.statusCode < 400).toString(),
+      );
 
       // Add cache status if available
       final cacheControl = response.headers['cache-control'];

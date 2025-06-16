@@ -2,13 +2,13 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:robin_radio/data/services/performance_service.dart';
+import 'performance_service.dart';
 
 /// Centralized audio player service with proper lifecycle management and resource cleanup
 class AudioPlayerService with WidgetsBindingObserver {
-  static final AudioPlayerService _instance = AudioPlayerService._internal();
   factory AudioPlayerService() => _instance;
   AudioPlayerService._internal();
+  static final AudioPlayerService _instance = AudioPlayerService._internal();
 
   // Core audio player
   AudioPlayer? _player;
@@ -43,7 +43,7 @@ class AudioPlayerService with WidgetsBindingObserver {
   Duration _currentDuration = Duration.zero;
   Duration _currentPosition = Duration.zero;
   String? _currentUrl;
-  double _currentVolume = 1.0;
+  double _currentVolume = 1;
 
   // Getters for current state
   PlayerState get currentState => _currentState;
@@ -73,7 +73,8 @@ class AudioPlayerService with WidgetsBindingObserver {
       _isInitialized = true;
 
       await performanceService.stopPlayerInitTrace(
-          playerMode: 'centralized_service');
+        playerMode: 'centralized_service',
+      );
 
       if (kDebugMode) {
         print('AudioPlayerService initialized successfully');
@@ -335,17 +336,15 @@ class AudioPlayerService with WidgetsBindingObserver {
 
   /// Get current playback progress (0.0 to 1.0)
   double get progress {
-    if (_currentDuration.inMilliseconds <= 0) return 0.0;
+    if (_currentDuration.inMilliseconds <= 0) return 0;
     return _currentPosition.inMilliseconds / _currentDuration.inMilliseconds;
   }
 
   /// Format duration as MM:SS
   String formatDuration(Duration duration) {
-    String minutes =
-        duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    String seconds =
-        duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$minutes:$seconds";
+    var minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    var seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   /// Get formatted current position
