@@ -2,10 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:robin_radio/modules/app/app_controller.dart';
-import 'package:robin_radio/modules/home/albumsView.dart';
-import 'package:robin_radio/modules/home/radioView.dart';
-import 'package:robin_radio/modules/player/player_controller.dart';
+import '../app/app_controller.dart';
+import 'albumsView.dart';
+import 'radioView.dart';
+import '../player/player_controller.dart';
+import '../../global/widgets/widgets.dart';
 import 'package:sizer/sizer.dart';
 
 class MainView extends StatelessWidget {
@@ -43,24 +44,18 @@ class MainView extends StatelessWidget {
                 itemBuilder: (context) => [
                   const PopupMenuItem(
                     value: 'refresh',
-                    child: Row(
-                      children: [
-                        Icon(Icons.refresh),
-                        SizedBox(width: 8),
-                        Text('Refresh Music'),
-                      ],
+                    child: IconTextRow(
+                      icon: Icons.refresh,
+                      text: 'Refresh Music',
                     ),
                   ),
                   if (playerController.tracks.isNotEmpty ||
                       playerController.playerMode == PlayerMode.radio)
                     const PopupMenuItem(
                       value: 'close_player',
-                      child: Row(
-                        children: [
-                          Icon(Icons.close),
-                          SizedBox(width: 8),
-                          Text('Close Player'),
-                        ],
+                      child: IconTextRow(
+                        icon: Icons.close,
+                        text: 'Close Player',
                       ),
                     ),
                 ],
@@ -69,30 +64,19 @@ class MainView extends StatelessWidget {
             floating: true,
             snap: true,
             expandedHeight: 5.h,
-            title: const Text(
-              'Robin Radio',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            title: const AppTitle(),
             bottom: TabBar(
-              indicatorWeight: 3.0,
+              indicatorWeight: 3,
               indicatorColor: Colors.white,
               labelColor: Colors.white,
               unselectedLabelColor:
                   Theme.of(context).colorScheme.onSurface.withAlpha(100),
               tabs: const [
-                Tab(
-                  icon: Icon(Icons.radio),
-                  text: 'Radio',
-                ),
-                Tab(
-                  icon: Icon(Icons.album),
-                  text: 'Albums',
-                ),
+                RadioTab(),
+                AlbumsTab(),
               ],
             ),
-          )
+          ),
         ],
         body: const TabBarView(
           children: [

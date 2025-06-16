@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:miniplayer/miniplayer.dart';
 import '../app/app_controller.dart';
 import 'player_controller.dart';
+import '../../global/widgets/widgets.dart';
 import 'package:sizer/sizer.dart';
+import '../../global/widgets/common/image_loader.dart';
 
 class PlayerView extends GetView<PlayerController> {
   const PlayerView({super.key});
@@ -30,7 +31,23 @@ class PlayerView extends GetView<PlayerController> {
                   _buildAppBar(context),
 
                   // Album cover
-                  _buildAlbumCover(context),
+                  SizedBox(
+                    height: 80.w,
+                    width: 80.w,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: ImageLoader(
+                        imageUrl: controller.coverURL ?? '',
+                        width: 80.w,
+                        height: 80.w,
+                        context: ImageContext.detailView,
+                        progressiveMode: ProgressiveLoadingMode.twoPhase,
+                        transitionDuration: const Duration(milliseconds: 800),
+                        heroTag:
+                            'player_cover_${controller.currentSong?.songName}',
+                      ),
+                    ),
+                  ),
 
                   // Track info
                   _buildTrackInfo(context, currentTrack),
@@ -86,30 +103,34 @@ class PlayerView extends GetView<PlayerController> {
         ),
       );
 
-  Widget _buildAlbumCover(BuildContext context) => Container(
-        width: 80.w,
-        height: 80.w,
-        margin: EdgeInsets.symmetric(vertical: 2.h),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(51),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: controller.coverURL != null
-              ? CachedNetworkImage(
-                  imageUrl: controller.coverURL!,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => _buildFallbackCover(),
-                  errorWidget: (context, url, error) => _buildFallbackCover(),
-                )
-              : _buildFallbackCover(),
+  Widget _buildAlbumCover(BuildContext context) => RepaintBoundary(
+        child: Container(
+          width: 80.w,
+          height: 80.w,
+          margin: EdgeInsets.symmetric(vertical: 2.h),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(51),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: controller.coverURL != null
+                ? ImageLoader(
+                    imageUrl: controller.coverURL!,
+                    width: 80.w,
+                    height: 80.w,
+                    borderRadius: 12,
+                    context: ImageContext.detailView,
+                    errorWidget: (context, url, error) => _buildFallbackCover(),
+                  )
+                : _buildFallbackCover(),
+          ),
         ),
       );
 
@@ -124,7 +145,7 @@ class PlayerView extends GetView<PlayerController> {
         ),
       );
 
-  Widget _buildTrackInfo(BuildContext context, dynamic song) {
+  Widget _buildTrackInfo(BuildContext context, song) {
     final songTitle = _formatSongTitle(song.songName as String);
 
     return Padding(
@@ -213,10 +234,10 @@ class PlayerView extends GetView<PlayerController> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            IconButton(
-              icon: const Icon(Icons.skip_previous),
+            PlayerControlButton(
+              icon: Icons.skip_previous,
               onPressed: controller.previous,
-              iconSize: 40,
+              size: 40,
               color: Theme.of(context).colorScheme.onSurface,
             ),
             SizedBox(width: 4.w),
@@ -237,10 +258,10 @@ class PlayerView extends GetView<PlayerController> {
               child: controller.playerIcon(size: 50),
             ),
             SizedBox(width: 4.w),
-            IconButton(
-              icon: const Icon(Icons.skip_next),
+            PlayerControlButton(
+              icon: Icons.skip_next,
               onPressed: controller.next,
-              iconSize: 40,
+              size: 40,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ],
@@ -352,6 +373,9 @@ class PlayerView extends GetView<PlayerController> {
                   final isCurrentTrack = index == controller.trackIndex;
 
                   return ListTile(
+                    key: ValueKey(
+                      track.id ?? '${track.songName}_${track.artist}_$index',
+                    ),
                     leading: isCurrentTrack
                         ? Icon(
                             Icons.play_arrow,

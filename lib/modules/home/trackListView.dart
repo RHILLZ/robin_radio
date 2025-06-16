@@ -6,6 +6,7 @@ import 'package:miniplayer/miniplayer.dart';
 import '../../data/models/album.dart';
 import '../../global/albumCover.dart';
 import '../../global/trackItem.dart';
+import '../../global/widgets/widgets.dart';
 import '../player/player_controller.dart';
 import '../app/app_controller.dart';
 
@@ -29,13 +30,13 @@ class TrackListView extends StatelessWidget {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.play_circle_filled),
+          PlayerControlButton(
+            icon: Icons.play_circle_filled,
             onPressed: () => _playAlbum(controller),
             tooltip: 'Play all',
           ),
-          IconButton(
-            icon: const Icon(Icons.shuffle),
+          PlayerControlButton(
+            icon: Icons.shuffle,
             onPressed: () => _playAlbumShuffled(controller),
             tooltip: 'Shuffle',
           ),
@@ -47,11 +48,17 @@ class TrackListView extends StatelessWidget {
           Expanded(
             child: ListView.builder(
               itemCount: album.tracks.length,
-              itemBuilder: (context, index) => TrackListItem(
-                song: album.tracks[index],
-                index: index,
-                onTap: () => _playTrack(controller, index),
-              ),
+              itemBuilder: (context, index) {
+                final track = album.tracks[index];
+                return TrackListItem(
+                  key: ValueKey(
+                    track.id ?? '${track.songName}_${track.artist}_$index',
+                  ),
+                  song: track,
+                  index: index,
+                  onTap: () => _playTrack(controller, index),
+                );
+              },
             ),
           ),
         ],

@@ -1,17 +1,18 @@
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
 import '../../data/models/album.dart';
 import '../../data/models/song.dart';
+import '../../data/repositories/music_repository.dart';
+import '../../data/repositories/firebase_music_repository.dart';
+import '../../data/exceptions/repository_exception.dart';
 import '../../data/services/performance_service.dart';
+import '../../data/services/image_preload_service.dart';
 import '../home/trackListView.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 class AppController extends GetxController {
   final MiniplayerController miniPlayerController = MiniplayerController();
-  final storage = FirebaseStorage.instance;
+  final MusicRepository _musicRepository = FirebaseMusicRepository();
   final RxList<Album> _albums = <Album>[].obs;
   final RxBool _isLoading = true.obs;
   final RxBool _hasError = false.obs;
@@ -20,10 +21,6 @@ class AppController extends GetxController {
   // Loading progress tracking
   final RxDouble _loadingProgress = 0.0.obs;
   final RxString _loadingStatusMessage = 'Initializing...'.obs;
-
-  // Cache control
-  static const String _cacheKey = 'robin_radio_music_cache';
-  static const Duration _cacheExpiry = Duration(hours: 24);
 
   // Getters
   List<Album> get albums => _albums;
@@ -39,7 +36,15 @@ class AppController extends GetxController {
   @override
   Future<void> onInit() async {
     super.onInit();
+    await _initializeServices();
     await _initializeMusic();
+  }
+
+  Future<void> _initializeServices() async {
+    // Initialize image preload service with conservative settings
+    ImagePreloadService.instance.initialize(
+      config: ImagePreloadConfig.conservative,
+    );
   }
 
   Future<void> _initializeMusic() async {
@@ -53,20 +58,15 @@ class AppController extends GetxController {
       final performanceService = PerformanceService();
       await performanceService.startMusicLoadTrace();
 
-      // Try to load from cache first
-      _loadingStatusMessage.value = 'Checking cache...';
-      _loadingProgress.value = 0.1;
-      final cacheLoaded = await _loadFromCache();
+      _loadingStatusMessage.value = 'Loading music...';
+      _loadingProgress.value = 0.2;
 
-      // If cache is expired or empty, load from Firebase
-      if (!cacheLoaded) {
-        _loadingStatusMessage.value = 'Loading from cloud...';
-        _loadingProgress.value = 0.2;
-        await _loadAllAlbums();
-      } else {
-        _loadingProgress.value = 1.0;
-        _loadingStatusMessage.value = 'Music loaded from cache';
-      }
+      // Load albums using repository
+      final albums = await _musicRepository.getAlbums();
+      _albums.value = albums;
+
+      _loadingProgress.value = 1.0;
+      _loadingStatusMessage.value = 'Music loaded successfully';
 
       // Stop music loading trace with metrics
       final totalSongs =
@@ -74,163 +74,14 @@ class AppController extends GetxController {
       await performanceService.stopMusicLoadTrace(
         albumCount: _albums.length,
         songCount: totalSongs,
-        fromCache: cacheLoaded,
+        fromCache: false, // Repository handles caching internally
       );
+    } on RepositoryException catch (e) {
+      _handleError(e.message);
     } catch (e) {
       _handleError('Failed to initialize music: $e');
     } finally {
       _isLoading.value = false;
-    }
-  }
-
-  Future<bool> _loadFromCache() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final cachedData = prefs.getString(_cacheKey);
-      final cachedTimeStr = prefs.getString('${_cacheKey}_time');
-
-      if (cachedData != null && cachedTimeStr != null) {
-        final cachedTime = DateTime.parse(cachedTimeStr);
-
-        // Check if cache is still valid
-        if (DateTime.now().difference(cachedTime) < _cacheExpiry) {
-          _loadingStatusMessage.value = 'Loading from cache...';
-          _loadingProgress.value = 0.5;
-          final decoded = jsonDecode(cachedData) as List<dynamic>;
-          _albums.value = decoded
-              .map((item) => Album.fromJson(item as Map<String, dynamic>))
-              .toList();
-          return true;
-        }
-      }
-      return false;
-    } catch (e) {
-      debugPrint('Cache loading error: $e');
-      return false;
-    }
-  }
-
-  Future<void> _saveToCache() async {
-    try {
-      _loadingStatusMessage.value = 'Saving to cache...';
-      _loadingProgress.value = 0.9;
-      final prefs = await SharedPreferences.getInstance();
-      final encoded =
-          jsonEncode(_albums.map((album) => album.toJson()).toList());
-      await prefs.setString(_cacheKey, encoded);
-
-      final now = DateTime.now();
-      await prefs.setString('${_cacheKey}_time', now.toIso8601String());
-
-      _loadingProgress.value = 1.0;
-      _loadingStatusMessage.value = 'Music loaded successfully';
-    } catch (e) {
-      debugPrint('Cache saving error: $e');
-    }
-  }
-
-  Future<void> _loadAllAlbums() async {
-    try {
-      _albums.clear();
-
-      final storageRef = storage.ref().child('Artist');
-      _loadingStatusMessage.value = 'Fetching artists...';
-      _loadingProgress.value = 0.3;
-      final artistResult = await storageRef.listAll();
-      final newAlbums = <Album>[];
-
-      final totalArtists = artistResult.prefixes.length;
-      var processedArtists = 0;
-
-      // Process each artist
-      for (final artist in artistResult.prefixes) {
-        final nameOfArtist = artist.name;
-        _loadingStatusMessage.value = 'Loading music from $nameOfArtist...';
-
-        final albumsResult = await artist.listAll();
-
-        // Process each album
-        for (final album in albumsResult.prefixes) {
-          final nameOfAlbum = album.name;
-          String? albumArt;
-          final tracks = <Song>[];
-
-          // Get all songs in the album
-          final songsResult = await album.listAll();
-
-          // First pass: find album art
-          for (final item in songsResult.items) {
-            final nameOfItem = item.name;
-            if (nameOfItem.endsWith('.jpg') || nameOfItem.endsWith('.png')) {
-              albumArt = await item.getDownloadURL();
-              break;
-            }
-          }
-
-          // Second pass: process songs
-          for (final song in songsResult.items) {
-            final nameOfSong = song.name;
-
-            // Skip image files
-            if (nameOfSong.endsWith('.jpg') ||
-                nameOfSong.endsWith('.png') ||
-                nameOfSong.endsWith('.jpeg')) {
-              continue;
-            }
-
-            // Get song URL with retry logic
-            String? url;
-            for (var attempt = 0; attempt < 3; attempt++) {
-              try {
-                url = await song.getDownloadURL();
-                break;
-              } catch (e) {
-                if (attempt == 2) rethrow;
-                await Future<void>.delayed(const Duration(seconds: 1));
-              }
-            }
-
-            if (url != null) {
-              tracks.add(
-                Song(
-                  id: '${nameOfArtist}_${nameOfAlbum}_$nameOfSong',
-                  songName: nameOfSong,
-                  songUrl: url,
-                  artist: nameOfArtist,
-                  albumName: nameOfAlbum,
-                ),
-              );
-            }
-          }
-
-          // Only add albums that have tracks
-          if (tracks.isNotEmpty) {
-            newAlbums.add(
-              Album(
-                id: '${nameOfArtist}_$nameOfAlbum',
-                albumName: nameOfAlbum,
-                tracks: tracks,
-                albumCover: albumArt,
-                artist: nameOfArtist,
-              ),
-            );
-          }
-        }
-
-        // Update progress after each artist is processed
-        processedArtists++;
-        // Calculate progress between 0.3 and 0.8 based on artist processing
-        _loadingProgress.value =
-            0.3 + (0.5 * (processedArtists / totalArtists));
-      }
-
-      // Add all albums to the list
-      _albums.addAll(newAlbums);
-
-      // Save to cache
-      _saveToCache();
-    } catch (e) {
-      _handleError('Failed to load albums: $e');
     }
   }
 
@@ -241,11 +92,25 @@ class AppController extends GetxController {
   }
 
   Future<void> refreshMusic() async {
-    _isLoading.value = true;
-    _loadingProgress.value = 0.0;
-    _loadingStatusMessage.value = 'Refreshing music...';
-    await _loadAllAlbums();
-    _isLoading.value = false;
+    try {
+      _isLoading.value = true;
+      _loadingProgress.value = 0.0;
+      _loadingStatusMessage.value = 'Refreshing music...';
+
+      // Clear cache and reload from repository
+      await _musicRepository.refreshCache();
+      final albums = await _musicRepository.getAlbums();
+      _albums.value = albums;
+
+      _loadingProgress.value = 1.0;
+      _loadingStatusMessage.value = 'Music refreshed successfully';
+    } on RepositoryException catch (e) {
+      _handleError(e.message);
+    } catch (e) {
+      _handleError('Failed to refresh music: $e');
+    } finally {
+      _isLoading.value = false;
+    }
   }
 
   void _handleError(String message) {

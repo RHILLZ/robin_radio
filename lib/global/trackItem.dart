@@ -2,13 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:robin_radio/data/models/song.dart';
-import 'package:robin_radio/modules/player/player_controller.dart';
+import '../data/models/song.dart';
+import '../modules/player/player_controller.dart';
 
 class TrackListItem extends GetWidget<PlayerController> {
   const TrackListItem({
-    super.key,
     required this.song,
+    super.key,
     this.index,
     this.onTap,
   });
@@ -23,57 +23,59 @@ class TrackListItem extends GetWidget<PlayerController> {
     // ignore: unused_local_variable
     final albumName = song.albumName ?? 'Unknown';
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(51),
-        child: index != null
-            ? Text(
-                '${index! + 1}',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+    return RepaintBoundary(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(51),
+          child: index != null
+              ? Text(
+                  '${index! + 1}',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : Text(
+                  _getInitials(songTitle),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              )
-            : Text(
-                _getInitials(songTitle),
+        ),
+        title: Text(
+          songTitle,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          song.artist,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        onTap: onTap ??
+            () {
+              // Handle song selection based on your controller's API
+              final songIndex = controller.tracks.indexOf(song);
+              if (songIndex >= 0) {
+                controller.trackIndex = songIndex;
+                controller.playTrack();
+              }
+            },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (song.duration != null)
+              Text(
+                _formatDuration(song.duration!),
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                  fontSize: 12,
                 ),
               ),
-      ),
-      title: Text(
-        songTitle,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        song.artist,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      onTap: onTap ??
-          () {
-            // Handle song selection based on your controller's API
-            final songIndex = controller.tracks.indexOf(song);
-            if (songIndex >= 0) {
-              controller.trackIndex = songIndex;
-              controller.playTrack();
-            }
-          },
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (song.duration != null)
-            Text(
-              _formatDuration(song.duration!),
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodySmall?.color,
-                fontSize: 12,
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

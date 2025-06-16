@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
-import 'package:robin_radio/global/mini_player.dart';
-import 'package:robin_radio/global/widgets/performance_dashboard.dart';
-import 'package:robin_radio/modules/app/app_controller.dart';
-import 'package:robin_radio/modules/home/mainView.dart';
-import 'package:robin_radio/modules/player/player_controller.dart';
-import 'package:robin_radio/modules/player/player_view.dart';
+import '../../global/mini_player.dart';
+import '../../global/widgets/performance_dashboard.dart';
+import 'app_controller.dart';
+import '../home/mainView.dart';
+import '../player/player_controller.dart';
+import '../../data/services/image_preload_service.dart';
+import '../player/player_view.dart';
 import 'package:sizer/sizer.dart';
 
 class AppView extends GetView<AppController> {
@@ -15,6 +16,13 @@ class AppView extends GetView<AppController> {
   @override
   Widget build(BuildContext context) {
     final playerController = Get.find<PlayerController>();
+
+    // Preload essential assets when app is not loading
+    if (!controller.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ImagePreloadService.instance.preloadEssentialAssets(context);
+      });
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -29,22 +37,21 @@ class AppView extends GetView<AppController> {
               offstage: (playerController.tracks.isEmpty) ||
                   playerController.hidePlayerInRadioView,
               child: Miniplayer(
-                  controller: controller.miniPlayerController,
-                  minHeight: 12.h,
-                  maxHeight: MediaQuery.of(context).size.height,
-                  elevation: 4,
-                  curve: Curves.easeOut,
-                  duration: const Duration(milliseconds: 300),
-                  builder: (height, percentage) {
-                    // Show mini player when collapsed
-                    if (height <= 12.h + 50.0) {
-                      return const MiniPlayerWidget();
-                    }
-                    // Show full player when expanded
-                    else {
-                      return const PlayerView();
-                    }
-                  }),
+                controller: controller.miniPlayerController,
+                minHeight: 12.h,
+                maxHeight: MediaQuery.of(context).size.height,
+                elevation: 4,
+                builder: (height, percentage) {
+                  // Show mini player when collapsed
+                  if (height <= 12.h + 50.0) {
+                    return const MiniPlayerWidget();
+                  }
+                  // Show full player when expanded
+                  else {
+                    return const PlayerView();
+                  }
+                },
+              ),
             ),
 
             // Performance Dashboard (debug mode only)
@@ -52,7 +59,7 @@ class AppView extends GetView<AppController> {
 
             // Loading overlay
             if (controller.isLoading)
-              Container(
+              ColoredBox(
                 color: Colors.black54,
                 child: Center(
                   child: Column(
@@ -65,7 +72,7 @@ class AppView extends GetView<AppController> {
                       SizedBox(height: 2.h),
                       Text(
                         'Loading Music... ${(controller.loadingProgress * 100).toInt()}%',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -74,7 +81,7 @@ class AppView extends GetView<AppController> {
                       SizedBox(height: 1.h),
                       Text(
                         controller.loadingStatusMessage,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 14,
                         ),
