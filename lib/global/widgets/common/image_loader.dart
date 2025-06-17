@@ -354,7 +354,10 @@ class _ImageLoaderState extends State<ImageLoader>
             placeholder: widget.placeholder ?? _defaultPlaceholder,
             errorWidget: widget.errorWidget ?? _defaultErrorWidget,
             imageBuilder: (context, imageProvider) {
-              _onThumbnailLoaded();
+              // Fix: Wrap setState call in addPostFrameCallback to avoid calling setState during build
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _onThumbnailLoaded();
+              });
               return Image(image: imageProvider, fit: widget.fit);
             },
           ),
