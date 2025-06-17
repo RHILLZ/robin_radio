@@ -1,20 +1,19 @@
+import 'app_exception.dart';
+
 /// Base exception class for audio service operations
-abstract class AudioServiceException implements Exception {
-  const AudioServiceException(this.message, this.errorCode);
-
-  /// Human-readable error message
-  final String message;
-
-  /// Machine-readable error code for programmatic handling
-  final String errorCode;
+abstract class AudioServiceException extends AppException {
+  const AudioServiceException(super.message, super.errorCode, [super.cause]);
 
   @override
-  String toString() => 'AudioServiceException($errorCode): $message';
+  String get category => 'audio';
+
+  @override
+  bool get isRecoverable => true; // Most audio errors can be retried
 }
 
 /// Exception thrown when audio playback fails
 class AudioPlaybackException extends AudioServiceException {
-  const AudioPlaybackException(super.message, super.errorCode);
+  const AudioPlaybackException(super.message, super.errorCode, [super.cause]);
 
   /// Creates a playback exception for file loading failures
   const AudioPlaybackException.loadFailed(String url)
@@ -43,11 +42,18 @@ class AudioPlaybackException extends AudioServiceException {
           'Playback failed: $reason',
           'PLAYBACK_FAILED',
         );
+
+  @override
+  ExceptionSeverity get severity => ExceptionSeverity.medium;
 }
 
 /// Exception thrown when audio service initialization fails
 class AudioInitializationException extends AudioServiceException {
-  const AudioInitializationException(super.message, super.errorCode);
+  const AudioInitializationException(
+    super.message,
+    super.errorCode, [
+    super.cause,
+  ]);
 
   /// Creates an initialization exception for service startup failures
   const AudioInitializationException.initFailed()
@@ -69,11 +75,14 @@ class AudioInitializationException extends AudioServiceException {
           'Audio device is not available or has errors',
           'DEVICE_ERROR',
         );
+
+  @override
+  ExceptionSeverity get severity => ExceptionSeverity.high;
 }
 
 /// Exception thrown when audio operations are invalid
 class AudioOperationException extends AudioServiceException {
-  const AudioOperationException(super.message, super.errorCode);
+  const AudioOperationException(super.message, super.errorCode, [super.cause]);
 
   /// Creates an operation exception for invalid state
   const AudioOperationException.invalidState(String operation, String state)
@@ -95,11 +104,14 @@ class AudioOperationException extends AudioServiceException {
           'Invalid parameter $parameter: $value',
           'INVALID_PARAMETER',
         );
+
+  @override
+  ExceptionSeverity get severity => ExceptionSeverity.low;
 }
 
 /// Exception thrown when queue operations fail
 class AudioQueueException extends AudioServiceException {
-  const AudioQueueException(super.message, super.errorCode);
+  const AudioQueueException(super.message, super.errorCode, [super.cause]);
 
   /// Creates a queue exception for empty queue operations
   const AudioQueueException.emptyQueue()
@@ -121,4 +133,7 @@ class AudioQueueException extends AudioServiceException {
           'Queue is full (maximum size: $maxSize)',
           'QUEUE_FULL',
         );
+
+  @override
+  ExceptionSeverity get severity => ExceptionSeverity.low;
 }

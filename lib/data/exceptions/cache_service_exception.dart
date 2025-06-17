@@ -1,18 +1,14 @@
+import 'app_exception.dart';
+
 /// Base exception class for cache service errors.
-abstract class CacheServiceException implements Exception {
-  const CacheServiceException(this.message, this.errorCode, [this.cause]);
-
-  /// Human-readable error message
-  final String message;
-
-  /// Machine-readable error code for programmatic handling
-  final String errorCode;
-
-  /// Optional underlying cause of the exception
-  final dynamic cause;
+abstract class CacheServiceException extends AppException {
+  const CacheServiceException(super.message, super.errorCode, [super.cause]);
 
   @override
-  String toString() => 'CacheServiceException: $message (Code: $errorCode)';
+  String get category => 'cache';
+
+  @override
+  bool get isRecoverable => true; // Most cache errors can be retried
 }
 
 /// Exception thrown when cache read operations fail.

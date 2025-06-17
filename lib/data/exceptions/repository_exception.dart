@@ -1,15 +1,14 @@
+import 'app_exception.dart';
+
 /// Base exception class for repository operations.
-abstract class RepositoryException implements Exception {
-  const RepositoryException(this.message, this.errorCode);
-
-  /// Human-readable error message.
-  final String message;
-
-  /// Machine-readable error code for programmatic handling.
-  final String errorCode;
+abstract class RepositoryException extends AppException {
+  const RepositoryException(super.message, super.errorCode, [super.cause]);
 
   @override
-  String toString() => 'RepositoryException($errorCode): $message';
+  String get category => 'repository';
+
+  @override
+  bool get isRecoverable => true; // Most repository errors can be retried
 }
 
 /// Exception thrown when network operations fail.

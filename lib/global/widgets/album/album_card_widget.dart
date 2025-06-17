@@ -35,7 +35,6 @@ class AlbumCardWidget extends StatelessWidget {
                         child: AlbumCover(
                           imageUrl: album.albumCover,
                           albumName: album.albumName,
-                          size: double.infinity,
                         ),
                       ),
                     ),

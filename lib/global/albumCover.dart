@@ -1,7 +1,6 @@
 // ignore_for_file: file_names
 
 import 'package:flutter/material.dart';
-import 'package:sizer/sizer.dart';
 import 'widgets/common/image_loader.dart';
 
 class AlbumCover extends StatelessWidget {
@@ -20,7 +19,9 @@ class AlbumCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final coverSize = size ?? 40.h;
+    // If size is provided and valid, use it; otherwise let the parent constrain us
+    final useExplicitSize = size != null && size!.isFinite && size! > 0;
+    final coverSize = useExplicitSize ? size : null;
 
     // If no image URL, show fallback immediately
     if (imageUrl == null || imageUrl!.isEmpty) {

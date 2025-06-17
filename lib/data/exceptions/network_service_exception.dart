@@ -1,24 +1,23 @@
+import 'app_exception.dart';
+
 /// Base exception class for network service errors.
-abstract class NetworkServiceException implements Exception {
-  const NetworkServiceException(this.message, this.errorCode, [this.cause]);
-
-  /// Human-readable error message
-  final String message;
-
-  /// Machine-readable error code for programmatic handling
-  final String errorCode;
-
-  /// Optional underlying cause of the exception
-  final dynamic cause;
+abstract class NetworkServiceException extends AppException {
+  const NetworkServiceException(super.message, super.errorCode, [super.cause]);
 
   @override
-  String toString() => 'NetworkServiceException: $message (Code: $errorCode)';
+  String get category => 'network';
+
+  @override
+  bool get isRecoverable => true; // Most network errors can be retried
 }
 
 /// Exception thrown when network connectivity operations fail.
 class NetworkConnectivityException extends NetworkServiceException {
-  const NetworkConnectivityException(super.message, super.errorCode,
-      [super.cause]);
+  const NetworkConnectivityException(
+    super.message,
+    super.errorCode, [
+    super.cause,
+  ]);
 
   /// Creates a connectivity exception for no internet connection.
   const NetworkConnectivityException.noConnection()
@@ -96,8 +95,11 @@ class NetworkRetryException extends NetworkServiceException {
 
 /// Exception thrown when network monitoring operations fail.
 class NetworkMonitoringException extends NetworkServiceException {
-  const NetworkMonitoringException(super.message, super.errorCode,
-      [super.cause]);
+  const NetworkMonitoringException(
+    super.message,
+    super.errorCode, [
+    super.cause,
+  ]);
 
   /// Creates a monitoring exception for failed to start monitoring.
   const NetworkMonitoringException.startFailed()
@@ -123,8 +125,11 @@ class NetworkMonitoringException extends NetworkServiceException {
 
 /// Exception thrown when host reachability tests fail.
 class NetworkReachabilityException extends NetworkServiceException {
-  const NetworkReachabilityException(super.message, super.errorCode,
-      [super.cause]);
+  const NetworkReachabilityException(
+    super.message,
+    super.errorCode, [
+    super.cause,
+  ]);
 
   /// Creates a reachability exception for host unreachable.
   NetworkReachabilityException.hostUnreachable(String host, int port)
@@ -150,8 +155,11 @@ class NetworkReachabilityException extends NetworkServiceException {
 
 /// Exception thrown when network service initialization fails.
 class NetworkServiceInitializationException extends NetworkServiceException {
-  const NetworkServiceInitializationException(super.message, super.errorCode,
-      [super.cause]);
+  const NetworkServiceInitializationException(
+    super.message,
+    super.errorCode, [
+    super.cause,
+  ]);
 
   /// Creates an initialization exception for platform not supported.
   const NetworkServiceInitializationException.platformNotSupported()
