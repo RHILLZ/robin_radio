@@ -1,9 +1,9 @@
 import 'package:get/get.dart';
-import 'package:robin_radio/modules/app/app_view.dart';
-import 'package:robin_radio/modules/app/main_bindings.dart';
-import 'package:robin_radio/modules/home/albumsView.dart';
-import 'package:robin_radio/modules/home/mainView.dart';
-import 'package:robin_radio/modules/home/radioView.dart';
+import '../modules/app/app_view.dart';
+import '../modules/app/main_bindings.dart';
+import '../modules/home/albumsView.dart';
+import '../modules/home/mainView.dart';
+import '../modules/home/radioView.dart';
 
 part 'routes.dart';
 
@@ -26,6 +26,6 @@ class Views {
       page: MainView.new,
     ),
     GetPage<AppView>(
-        name: Routes.appViewRoute, page: AppView.new, binding: MainBindings())
+        name: Routes.appViewRoute, page: AppView.new, binding: MainBindings(),),
   ];
 }

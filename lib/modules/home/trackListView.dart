@@ -3,12 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
+
 import '../../data/models/album.dart';
 import '../../global/albumCover.dart';
 import '../../global/trackItem.dart';
 import '../../global/widgets/widgets.dart';
-import '../player/player_controller.dart';
 import '../app/app_controller.dart';
+import '../player/player_controller.dart';
 
 class TrackListView extends StatelessWidget {
   const TrackListView({

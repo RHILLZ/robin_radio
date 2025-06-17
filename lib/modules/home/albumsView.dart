@@ -2,11 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sizer/sizer.dart';
+
 import '../../data/models/album.dart';
+import '../../data/services/image_preload_service.dart';
 import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
-import '../../data/services/image_preload_service.dart';
-import 'package:sizer/sizer.dart';
 
 class AlbumsView extends StatefulWidget {
   const AlbumsView({super.key});

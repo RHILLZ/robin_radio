@@ -85,7 +85,7 @@ class FirebaseMusicRepository implements MusicRepository {
         final age = DateTime.now().difference(_cacheTime!);
         if (age < _cacheExpiry) {
           debugPrint(
-              'MusicRepository: Returning albums from memory cache (cache-only)');
+              'MusicRepository: Returning albums from memory cache (cache-only)',);
           return _albumsCache!;
         }
       }
@@ -96,7 +96,7 @@ class FirebaseMusicRepository implements MusicRepository {
         _albumsCache = cachedAlbums;
         _cacheTime = DateTime.now();
         debugPrint(
-            'MusicRepository: Returning albums from persistent cache (cache-only)');
+            'MusicRepository: Returning albums from persistent cache (cache-only)',);
         return cachedAlbums;
       }
 
@@ -244,12 +244,12 @@ class FirebaseMusicRepository implements MusicRepository {
         () async => storageRef.listAll().timeout(
               const Duration(seconds: 15),
               onTimeout: () => throw TimeoutException(
-                  'Firebase connection timeout', const Duration(seconds: 15)),
+                  'Firebase connection timeout', const Duration(seconds: 15),),
             ),
       );
 
       debugPrint(
-          'MusicRepository: Found ${artistResult.prefixes.length} artists');
+          'MusicRepository: Found ${artistResult.prefixes.length} artists',);
 
       for (var artistIndex = 0;
           artistIndex < artistResult.prefixes.length;
@@ -263,12 +263,12 @@ class FirebaseMusicRepository implements MusicRepository {
                   const Duration(seconds: 10),
                   onTimeout: () => throw TimeoutException(
                       'Artist listing timeout for $artistName',
-                      const Duration(seconds: 10)),
+                      const Duration(seconds: 10),),
                 ),
           );
 
           debugPrint(
-              'MusicRepository: Artist $artistName has ${albumsResult.prefixes.length} albums');
+              'MusicRepository: Artist $artistName has ${albumsResult.prefixes.length} albums',);
 
           for (var albumIndex = 0;
               albumIndex < albumsResult.prefixes.length;
@@ -285,7 +285,7 @@ class FirebaseMusicRepository implements MusicRepository {
                       const Duration(seconds: 8),
                       onTimeout: () => throw TimeoutException(
                           'Album listing timeout for $albumName',
-                          const Duration(seconds: 8)),
+                          const Duration(seconds: 8),),
                     ),
               );
 
@@ -299,13 +299,13 @@ class FirebaseMusicRepository implements MusicRepository {
                             const Duration(seconds: 5),
                             onTimeout: () => throw TimeoutException(
                                 'Album art URL timeout',
-                                const Duration(seconds: 5)),
+                                const Duration(seconds: 5),),
                           ),
                     );
                     break;
                   } catch (e) {
                     debugPrint(
-                        'MusicRepository: Failed to get album art for $albumName: $e');
+                        'MusicRepository: Failed to get album art for $albumName: $e',);
                     // Continue without album art
                   }
                 }
@@ -324,7 +324,7 @@ class FirebaseMusicRepository implements MusicRepository {
                           const Duration(seconds: 5),
                           onTimeout: () => throw TimeoutException(
                               'Song URL timeout for $songName',
-                              const Duration(seconds: 5)),
+                              const Duration(seconds: 5),),
                         ),
                   );
 
@@ -339,7 +339,7 @@ class FirebaseMusicRepository implements MusicRepository {
                   );
                 } catch (e) {
                   debugPrint(
-                      'MusicRepository: Failed to load song $songName: $e');
+                      'MusicRepository: Failed to load song $songName: $e',);
                   // Continue with other songs
                 }
               }
@@ -356,11 +356,11 @@ class FirebaseMusicRepository implements MusicRepository {
                   ),
                 );
                 debugPrint(
-                    'MusicRepository: Added album $albumName with ${tracks.length} tracks');
+                    'MusicRepository: Added album $albumName with ${tracks.length} tracks',);
               }
             } catch (e) {
               debugPrint(
-                  'MusicRepository: Failed to load album $albumName: $e');
+                  'MusicRepository: Failed to load album $albumName: $e',);
               // Continue with other albums
             }
           }
@@ -382,7 +382,7 @@ class FirebaseMusicRepository implements MusicRepository {
     } on TimeoutException catch (e) {
       debugPrint('MusicRepository: Timeout error: ${e.message}');
       throw NetworkRepositoryException(
-          'Connection timeout: ${e.message}', 'FIREBASE_TIMEOUT');
+          'Connection timeout: ${e.message}', 'FIREBASE_TIMEOUT',);
     } on FirebaseException catch (e) {
       debugPrint('MusicRepository: Firebase error: ${e.message}');
       throw FirebaseRepositoryException('Firebase error: ${e.message}', e.code);

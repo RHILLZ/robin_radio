@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -429,7 +428,7 @@ void main() {
     group('Network Failure Simulation', () {
       test('should simulate network failures when enabled', () async {
         mockNetwork.setSimulateNetworkFailures(true,
-            failureRate: 1); // Always fail
+            failureRate: 1,); // Always fail
 
         expect(
           () => networkService.checkConnectivity(),
@@ -462,7 +461,7 @@ void main() {
 
         expect(aggressiveConfig.maxAttempts, 5);
         expect(
-            aggressiveConfig.initialDelay, const Duration(milliseconds: 500));
+            aggressiveConfig.initialDelay, const Duration(milliseconds: 500),);
         expect(aggressiveConfig.backoffMultiplier, 1.5);
         expect(aggressiveConfig.maxDelay, const Duration(seconds: 15));
       });

@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
+
 import '../exceptions/network_service_exception.dart';
 
 /// Configuration for image preloading behavior

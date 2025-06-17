@@ -2,9 +2,9 @@ import 'package:firebase_performance/firebase_performance.dart';
 import 'package:flutter/foundation.dart';
 
 class PerformanceService {
-  static final PerformanceService _instance = PerformanceService._internal();
   factory PerformanceService() => _instance;
   PerformanceService._internal();
+  static final PerformanceService _instance = PerformanceService._internal();
 
   final FirebasePerformance _performance = FirebasePerformance.instance;
 
@@ -252,9 +252,7 @@ class PerformanceService {
   }
 
   /// Track network request performance
-  HttpMetric createHttpMetric(String url, HttpMethod method) {
-    return _performance.newHttpMetric(url, method);
-  }
+  HttpMetric createHttpMetric(String url, HttpMethod method) => _performance.newHttpMetric(url, method);
 
   /// Get performance collection status
   Future<bool> isPerformanceCollectionEnabled() async {

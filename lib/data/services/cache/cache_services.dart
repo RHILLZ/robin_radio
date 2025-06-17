@@ -8,7 +8,7 @@
 /// - Cache service exceptions
 library;
 
+export '../../exceptions/cache_service_exception.dart';
 export 'cache_service_interface.dart';
 export 'enhanced_cache_service.dart';
 export 'mock_cache_service.dart';
-export '../../exceptions/cache_service_exception.dart';

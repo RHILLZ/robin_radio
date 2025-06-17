@@ -2,10 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../player/player_controller.dart';
-import '../../global/widgets/widgets.dart';
 import 'package:sizer/sizer.dart';
-import '../../global/widgets/common/image_loader.dart';
+
+import '../../global/widgets/widgets.dart';
+import '../player/player_controller.dart';
 
 class RadioView extends GetView<PlayerController> {
   const RadioView({super.key});

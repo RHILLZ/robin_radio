@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:robin_radio/data/services/cache/cache_services.dart';
@@ -122,7 +121,7 @@ void main() {
 
         // Non-existent key should return null
         final result2 = await cacheService.get<String>('non_existent',
-            fromMemoryOnly: true);
+            fromMemoryOnly: true,);
         expect(result2, isNull);
       });
 
@@ -170,9 +169,9 @@ void main() {
 
       test('should clear expired items manually', () async {
         await cacheService.set('key1', 'value1',
-            expiry: const Duration(hours: 1));
+            expiry: const Duration(hours: 1),);
         await cacheService.set('key2', 'value2',
-            expiry: const Duration(hours: 1));
+            expiry: const Duration(hours: 1),);
 
         // Manually expire one item
         mockCache.expireItem('key1');
@@ -219,12 +218,12 @@ void main() {
         // Add data that might exceed the limit
         for (var i = 0; i < 100; i++) {
           await cacheService.set(
-              'item_$i', 'Data for item $i with some length');
+              'item_$i', 'Data for item $i with some length',);
         }
 
         final finalSize = await cacheService.getCacheSize();
         expect(
-            finalSize, lessThanOrEqualTo(maxSize * 1.1)); // Allow small buffer
+            finalSize, lessThanOrEqualTo(maxSize * 1.1),); // Allow small buffer
       });
 
       test('should throw error for invalid cache size', () async {
@@ -283,9 +282,9 @@ void main() {
         mockCache.reset();
 
         await cacheService.set('expire1', 'data1',
-            expiry: const Duration(hours: 1));
+            expiry: const Duration(hours: 1),);
         await cacheService.set('expire2', 'data2',
-            expiry: const Duration(hours: 1));
+            expiry: const Duration(hours: 1),);
 
         // Manually expire items
         mockCache.expireItem('expire1');
@@ -388,7 +387,7 @@ void main() {
         final subscription = cacheService.events.listen(events.add);
 
         await cacheService.set('cleanup1', 'data1',
-            expiry: const Duration(hours: 1));
+            expiry: const Duration(hours: 1),);
         mockCache.expireItem('cleanup1');
         await cacheService.clearExpired();
 

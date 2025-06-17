@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+
 import 'loading_indicator.dart';
 
 /// Configuration for pull-to-refresh behavior and appearance
@@ -308,7 +309,7 @@ class _PullToRefreshState extends State<PullToRefresh>
           CupertinoSliverRefreshControl(
             onRefresh: _handleRefresh,
             builder: (context, refreshState, pulledExtent,
-                    refreshTriggerPullDistance, refreshIndicatorExtent) =>
+                    refreshTriggerPullDistance, refreshIndicatorExtent,) =>
                 _buildCustomRefreshIndicator(),
           ),
           SliverToBoxAdapter(child: widget.child),

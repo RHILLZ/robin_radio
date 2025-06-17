@@ -1,14 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
-import 'dart:async';
+
+import '../../data/exceptions/repository_exception.dart';
 import '../../data/models/album.dart';
 import '../../data/models/song.dart';
-import '../../data/repositories/music_repository.dart';
 import '../../data/repositories/firebase_music_repository.dart';
-import '../../data/exceptions/repository_exception.dart';
-import '../../data/services/performance_service.dart';
+import '../../data/repositories/music_repository.dart';
 import '../../data/services/image_preload_service.dart';
+import '../../data/services/performance_service.dart';
 import '../home/trackListView.dart';
 
 class AppController extends GetxController {

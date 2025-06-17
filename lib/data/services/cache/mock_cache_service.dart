@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'cache_service_interface.dart';
 import '../../exceptions/cache_service_exception.dart';
+import 'cache_service_interface.dart';
 
 /// Mock implementation of cache service for testing purposes.
 ///
@@ -256,13 +256,13 @@ class MockCacheService implements ICacheService {
         throw const CacheReadException.diskAccessFailed('Simulated read error');
       case 'write':
         throw const CacheWriteException.diskAccessFailed(
-            'Simulated write error');
+            'Simulated write error',);
       case 'management':
         throw const CacheManagementException.clearFailed(
-            'Simulated management error');
+            'Simulated management error',);
       default:
         throw CacheManagementException.initializationFailed(
-            'Simulated error: $_errorType');
+            'Simulated error: $_errorType',);
     }
   }
 

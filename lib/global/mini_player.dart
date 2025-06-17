@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'widgets/widgets.dart';
-import '../modules/player/player_controller.dart';
 import 'package:sizer/sizer.dart';
-import 'widgets/common/image_loader.dart';
+
+import '../modules/player/player_controller.dart';
+import 'widgets/widgets.dart';
 
 class MiniPlayerWidget extends GetWidget<PlayerController> {
   const MiniPlayerWidget({super.key});

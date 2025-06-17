@@ -6,5 +6,5 @@
 /// - ServiceLocatorException for error handling
 library;
 
-export 'service_locator.dart';
 export '../environment/app_environment.dart';
+export 'service_locator.dart';

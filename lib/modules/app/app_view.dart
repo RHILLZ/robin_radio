@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
+import 'package:sizer/sizer.dart';
+
+import '../../data/services/image_preload_service.dart';
 import '../../global/mini_player.dart';
 import '../../global/widgets/performance_dashboard.dart';
-import 'app_controller.dart';
 import '../home/mainView.dart';
 import '../player/player_controller.dart';
-import '../../data/services/image_preload_service.dart';
 import '../player/player_view.dart';
-import 'package:sizer/sizer.dart';
+import 'app_controller.dart';
 
 class AppView extends GetView<AppController> {
   const AppView({super.key});

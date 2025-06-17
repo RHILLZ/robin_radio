@@ -342,8 +342,8 @@ class AudioPlayerService with WidgetsBindingObserver {
 
   /// Format duration as MM:SS
   String formatDuration(Duration duration) {
-    var minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    var seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
   }
 

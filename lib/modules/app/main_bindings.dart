@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
-import 'package:robin_radio/modules/app/app_controller.dart';
-import 'package:robin_radio/modules/player/player_controller.dart';
+
+import '../player/player_controller.dart';
+import 'app_controller.dart';
 
 class MainBindings implements Bindings {
   @override

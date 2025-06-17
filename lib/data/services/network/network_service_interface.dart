@@ -210,7 +210,7 @@ abstract class INetworkService {
   Future<T> executeWithRetry<T>(
     Future<T> Function() operation, {
     RetryConfig? config,
-    bool Function(dynamic exception)? shouldRetry,
+    bool Function(exception)? shouldRetry,
   });
 
   /// Start network quality monitoring.

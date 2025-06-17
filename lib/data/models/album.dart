@@ -27,7 +27,7 @@ class Album {
 
   // Get total duration of all tracks
   Duration get totalDuration => tracks.fold(
-      Duration.zero, (total, song) => total + (song.duration ?? Duration.zero));
+      Duration.zero, (total, song) => total + (song.duration ?? Duration.zero),);
 
   // Get number of tracks
   int get trackCount => tracks.length;

@@ -6,8 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../models/song.dart';
 import '../../exceptions/audio_service_exception.dart';
+import '../../models/song.dart';
 import '../performance_service.dart';
 import 'audio_service_interface.dart';
 

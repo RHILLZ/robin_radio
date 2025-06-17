@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
+import 'package:sizer/sizer.dart';
+
+import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
 import 'player_controller.dart';
-import '../../global/widgets/widgets.dart';
-import 'package:sizer/sizer.dart';
-import '../../global/widgets/common/image_loader.dart';
 
 class PlayerView extends GetView<PlayerController> {
   const PlayerView({super.key});
@@ -106,7 +106,7 @@ class PlayerView extends GetView<PlayerController> {
     final screenWidth = MediaQuery.of(context).size.width;
     
     // Reserve space for other UI elements (app bar, controls, etc.)
-    final reservedHeight = 300; // Approximate height of other elements
+    const reservedHeight = 300; // Approximate height of other elements
     final availableHeight = screenHeight - reservedHeight;
     
     // Use the smaller of 70% screen width or available height, with reasonable min/max

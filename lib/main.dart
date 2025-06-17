@@ -6,14 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:json_theme/json_theme.dart';
+import 'package:sizer/sizer.dart';
+
 import 'data/services/audio_player_service.dart';
 import 'data/services/performance_service.dart';
 import 'firebase_options.dart';
 import 'modules/app/app_view.dart';
-import 'routes/views.dart';
-import 'package:sizer/sizer.dart';
-
 import 'modules/app/main_bindings.dart';
+import 'routes/views.dart';
 
 void main() async {
   try {

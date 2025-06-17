@@ -2,12 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sizer/sizer.dart';
+
+import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
+import '../player/player_controller.dart';
 import 'albumsView.dart';
 import 'radioView.dart';
-import '../player/player_controller.dart';
-import '../../global/widgets/widgets.dart';
-import 'package:sizer/sizer.dart';
 
 class MainView extends StatelessWidget {
   const MainView({super.key});

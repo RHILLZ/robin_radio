@@ -745,7 +745,7 @@ class _WaveProgressPainter extends CustomPainter {
 
       path.moveTo(0, size.height / 2);
 
-      for (double x = 0; x <= progressWidth; x += waveLength / 4) {
+      for (var x = 0; x <= progressWidth; x += waveLength / 4) {
         final y = size.height / 2 +
             waveHeight * math.sin(x / waveLength * 2 * math.pi);
         path.lineTo(x, y);
