@@ -181,7 +181,7 @@ class MockCacheService implements ICacheService {
   Future<void> preload(List<String> keys) async {
     // Mock implementation - just check if keys exist
     for (final key in keys) {
-      await get(key);
+      await get<Object?>(key);
     }
   }
 
@@ -291,7 +291,9 @@ class MockCacheService implements ICacheService {
     }
   }
 
-  int _estimateSize(value) {
+  int _estimateSize(Object? value) {
+    if (value == null) return 0;
+    
     try {
       final serialized = value.toString();
       return serialized.length * 2; // Approximate UTF-16 size

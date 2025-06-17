@@ -446,7 +446,7 @@ class FirebaseMusicRepository implements MusicRepository {
           _radioStreamController != null && !_radioStreamController!.isClosed) {
         final albums = await getAlbums();
         if (albums.isEmpty) {
-          await Future.delayed(const Duration(seconds: 5));
+          await Future<void>.delayed(const Duration(seconds: 5));
           continue;
         }
 
@@ -462,7 +462,7 @@ class FirebaseMusicRepository implements MusicRepository {
         }
 
         // Wait before next song (simulating song duration)
-        await Future.delayed(const Duration(minutes: 3));
+        await Future<void>.delayed(const Duration(minutes: 3));
       }
     } catch (e) {
       if (!_radioStreamController!.isClosed) {
@@ -481,10 +481,10 @@ class FirebaseMusicRepository implements MusicRepository {
         if (attempt == _maxRetries) rethrow;
 
         debugPrint('MusicRepository: Attempt $attempt failed, retrying: $e');
-        await Future.delayed(_retryDelay * attempt);
+        await Future<void>.delayed(_retryDelay * attempt);
       }
     }
-    throw Exception('Maximum retries exceeded');
+    throw const NetworkRepositoryException.connectionFailed();
   }
 
   /// Checks if a file name represents an image.
@@ -497,7 +497,7 @@ class FirebaseMusicRepository implements MusicRepository {
   }
 
   /// Handles exceptions and converts them to appropriate repository exceptions.
-  RepositoryException _handleException(error, String context) {
+  RepositoryException _handleException(Object error, String context) {
     if (error is RepositoryException) {
       return error;
     }

@@ -23,7 +23,7 @@ class CacheReadException extends CacheServiceException {
         );
 
   /// Creates a read exception for serialization failures.
-  const CacheReadException.deserializationFailed(String key, cause)
+  const CacheReadException.deserializationFailed(String key, Object? cause)
       : super(
           'Failed to deserialize cached data for key: $key',
           'CACHE_READ_DESERIALIZATION_FAILED',
@@ -38,7 +38,7 @@ class CacheReadException extends CacheServiceException {
         );
 
   /// Creates a read exception for disk access failures.
-  const CacheReadException.diskAccessFailed([cause])
+  const CacheReadException.diskAccessFailed([Object? cause])
       : super(
           'Failed to access disk cache storage',
           'CACHE_READ_DISK_ACCESS_FAILED',
@@ -51,7 +51,7 @@ class CacheWriteException extends CacheServiceException {
   const CacheWriteException(super.message, super.errorCode, [super.cause]);
 
   /// Creates a write exception for when a cache key cannot be written.
-  const CacheWriteException.keyWriteFailed(String key, [cause])
+  const CacheWriteException.keyWriteFailed(String key, [Object? cause])
       : super(
           'Failed to write cache data for key: $key',
           'CACHE_WRITE_KEY_FAILED',
@@ -59,7 +59,7 @@ class CacheWriteException extends CacheServiceException {
         );
 
   /// Creates a write exception for serialization failures.
-  const CacheWriteException.serializationFailed(String key, cause)
+  const CacheWriteException.serializationFailed(String key, Object? cause)
       : super(
           'Failed to serialize data for cache key: $key',
           'CACHE_WRITE_SERIALIZATION_FAILED',
@@ -74,7 +74,7 @@ class CacheWriteException extends CacheServiceException {
         );
 
   /// Creates a write exception for disk access failures.
-  const CacheWriteException.diskAccessFailed([cause])
+  const CacheWriteException.diskAccessFailed([Object? cause])
       : super(
           'Failed to access disk cache storage for writing',
           'CACHE_WRITE_DISK_ACCESS_FAILED',
@@ -94,7 +94,7 @@ class CacheManagementException extends CacheServiceException {
   const CacheManagementException(super.message, super.errorCode, [super.cause]);
 
   /// Creates a management exception for clear operations.
-  const CacheManagementException.clearFailed([cause])
+  const CacheManagementException.clearFailed([Object? cause])
       : super(
           'Failed to clear cache',
           'CACHE_MANAGEMENT_CLEAR_FAILED',
@@ -102,7 +102,7 @@ class CacheManagementException extends CacheServiceException {
         );
 
   /// Creates a management exception for initialization failures.
-  const CacheManagementException.initializationFailed([cause])
+  const CacheManagementException.initializationFailed([Object? cause])
       : super(
           'Failed to initialize cache service',
           'CACHE_MANAGEMENT_INITIALIZATION_FAILED',
@@ -110,7 +110,7 @@ class CacheManagementException extends CacheServiceException {
         );
 
   /// Creates a management exception for cleanup operations.
-  const CacheManagementException.cleanupFailed([cause])
+  const CacheManagementException.cleanupFailed([Object? cause])
       : super(
           'Failed to cleanup expired cache entries',
           'CACHE_MANAGEMENT_CLEANUP_FAILED',
@@ -118,7 +118,7 @@ class CacheManagementException extends CacheServiceException {
         );
 
   /// Creates a management exception for statistics collection.
-  const CacheManagementException.statisticsFailed([cause])
+  const CacheManagementException.statisticsFailed([Object? cause])
       : super(
           'Failed to collect cache statistics',
           'CACHE_MANAGEMENT_STATISTICS_FAILED',
@@ -126,7 +126,7 @@ class CacheManagementException extends CacheServiceException {
         );
 
   /// Creates a management exception for cache size calculation.
-  const CacheManagementException.sizeFailed([cause])
+  const CacheManagementException.sizeFailed([Object? cause])
       : super(
           'Failed to calculate cache size',
           'CACHE_MANAGEMENT_SIZE_FAILED',
