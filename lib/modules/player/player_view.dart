@@ -30,36 +30,33 @@ class PlayerView extends GetView<PlayerController> {
                   // App bar with close button
                   _buildAppBar(context),
 
-                  // Album cover
-                  SizedBox(
-                    height: 80.w,
-                    width: 80.w,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: ImageLoader(
-                        imageUrl: controller.coverURL ?? '',
-                        width: 80.w,
-                        height: 80.w,
-                        context: ImageContext.detailView,
-                        progressiveMode: ProgressiveLoadingMode.twoPhase,
-                        transitionDuration: const Duration(milliseconds: 800),
-                        heroTag:
-                            'player_cover_${controller.currentSong?.songName}',
+                  // Flexible content area to prevent overflow
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          SizedBox(height: 2.h),
+                          
+                          // Album cover - responsive sizing
+                          _buildResponsiveAlbumCover(context),
+
+                          // Track info
+                          _buildTrackInfo(context, currentTrack),
+
+                          // Progress bar
+                          _buildProgressBar(context),
+
+                          // Player controls
+                          _buildPlayerControls(context),
+
+                          // Additional controls (shuffle, repeat)
+                          _buildAdditionalControls(context),
+                          
+                          SizedBox(height: 2.h),
+                        ],
                       ),
                     ),
                   ),
-
-                  // Track info
-                  _buildTrackInfo(context, currentTrack),
-
-                  // Progress bar
-                  _buildProgressBar(context),
-
-                  // Player controls
-                  _buildPlayerControls(context),
-
-                  // Additional controls (shuffle, repeat)
-                  _buildAdditionalControls(context),
                 ],
               ),
             ),
@@ -103,47 +100,47 @@ class PlayerView extends GetView<PlayerController> {
         ),
       );
 
-  Widget _buildAlbumCover(BuildContext context) => RepaintBoundary(
-        child: Container(
-          width: 80.w,
-          height: 80.w,
-          margin: EdgeInsets.symmetric(vertical: 2.h),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(51),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+  Widget _buildResponsiveAlbumCover(BuildContext context) {
+    // Calculate responsive size based on available screen space
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Reserve space for other UI elements (app bar, controls, etc.)
+    final reservedHeight = 300; // Approximate height of other elements
+    final availableHeight = screenHeight - reservedHeight;
+    
+    // Use the smaller of 70% screen width or available height, with reasonable min/max
+    final maxSize = screenWidth * 0.7;
+    final responsiveSize = (availableHeight * 0.6).clamp(200.0, maxSize);
+    
+    return Container(
+      width: responsiveSize,
+      height: responsiveSize,
+      margin: EdgeInsets.symmetric(vertical: 1.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(51),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: controller.coverURL != null
-                ? ImageLoader(
-                    imageUrl: controller.coverURL!,
-                    width: 80.w,
-                    height: 80.w,
-                    borderRadius: 12,
-                    context: ImageContext.detailView,
-                    errorWidget: (context, url, error) => _buildFallbackCover(),
-                  )
-                : _buildFallbackCover(),
-          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: ImageLoader(
+          imageUrl: controller.coverURL ?? '',
+          width: responsiveSize,
+          height: responsiveSize,
+          context: ImageContext.detailView,
+          progressiveMode: ProgressiveLoadingMode.twoPhase,
+          transitionDuration: const Duration(milliseconds: 800),
+          heroTag: 'player_cover_${controller.currentSong?.songName}',
         ),
-      );
-
-  Widget _buildFallbackCover() => ColoredBox(
-        color: Get.theme.colorScheme.primaryContainer,
-        child: Center(
-          child: Icon(
-            Icons.music_note,
-            size: 80,
-            color: Get.theme.colorScheme.primary,
-          ),
-        ),
-      );
+      ),
+    );
+  }
 
   Widget _buildTrackInfo(BuildContext context, song) {
     final songTitle = _formatSongTitle(song.songName as String);
