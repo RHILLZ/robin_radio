@@ -62,12 +62,14 @@ class AppController extends GetxController {
       // Step 1: Initialize services (10% progress)
       _loadingStatusMessage.value = 'Initializing services...';
       _loadingProgress.value = 0.1;
-      await Future.delayed(const Duration(milliseconds: 500)); // Allow UI to update
+      await Future.delayed(
+        const Duration(milliseconds: 500),
+      ); // Allow UI to update
 
       // Step 2: Check cache (20% progress)
       _loadingStatusMessage.value = 'Checking cached music...';
       _loadingProgress.value = 0.2;
-      
+
       // Add timeout wrapper for the main operation
       final albums = await _loadAlbumsWithProgress();
       _albums.value = albums;
@@ -98,26 +100,34 @@ class AppController extends GetxController {
     try {
       return await Future.any([
         _loadAlbumsWithProgressUpdates(),
-        Future.delayed(const Duration(seconds: 30)).then((_) => 
-          throw TimeoutException('Loading music timed out after 30 seconds', const Duration(seconds: 30))),
+        Future.delayed(const Duration(seconds: 30)).then(
+          (_) => throw TimeoutException(
+            'Loading music timed out after 30 seconds',
+            const Duration(seconds: 30),
+          ),
+        ),
       ]);
     } catch (e) {
-      if (e.toString().contains('timeout') || e.toString().contains('TimeoutException')) {
+      if (e.toString().contains('timeout') ||
+          e.toString().contains('TimeoutException')) {
         // If timeout occurs, try to load from cache only
         _loadingStatusMessage.value = 'Network timeout, checking cache...';
         _loadingProgress.value = 0.8;
-        
+
         try {
-          // Force load from cache
-          final cachedAlbums = await _musicRepository.getAlbums();
+          // Use cache-only method to avoid further network requests
+          final cachedAlbums = await _musicRepository.getAlbumsFromCacheOnly();
           if (cachedAlbums.isNotEmpty) {
             return cachedAlbums;
           }
         } catch (_) {
-          // Cache also failed
+          // Cache also failed (this should rarely happen with the cache-only method)
         }
-        
-        throw DataRepositoryException('Unable to load music. Please check your internet connection and try again.', 'NETWORK_TIMEOUT');
+
+        throw const DataRepositoryException(
+          'Unable to load music. Please check your internet connection and try again.',
+          'NETWORK_TIMEOUT',
+        );
       }
       rethrow;
     }
@@ -129,21 +139,21 @@ class AppController extends GetxController {
     _loadingStatusMessage.value = 'Connecting to music library...';
     _loadingProgress.value = 0.3;
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     _loadingStatusMessage.value = 'Loading artists...';
     _loadingProgress.value = 0.4;
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     _loadingStatusMessage.value = 'Loading albums...';
     _loadingProgress.value = 0.6;
-    
+
     // Load albums using repository
     final albums = await _musicRepository.getAlbums();
-    
+
     _loadingStatusMessage.value = 'Processing music data...';
     _loadingProgress.value = 0.9;
     await Future.delayed(const Duration(milliseconds: 300));
-    
+
     return albums;
   }
 
