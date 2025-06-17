@@ -1,5 +1,7 @@
+import '../exceptions/repository_exception.dart' show RepositoryException;
 import '../models/album.dart';
 import '../models/song.dart';
+import 'repositories.dart' show RepositoryException;
 
 /// Abstract repository interface for music data operations.
 /// This interface defines the contract for all music data access.
@@ -8,6 +10,12 @@ abstract class MusicRepository {
   ///
   /// Throws [RepositoryException] if the operation fails.
   Future<List<Album>> getAlbums();
+
+  /// Retrieves albums from cache only, without making network requests.
+  ///
+  /// Returns an empty list if no cached data is available or cache has expired.
+  /// This method never throws exceptions and never makes network requests.
+  Future<List<Album>> getAlbumsFromCacheOnly();
 
   /// Retrieves all tracks for a specific album.
   ///

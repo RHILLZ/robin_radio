@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
+import 'dart:async';
 import '../../data/models/album.dart';
 import '../../data/models/song.dart';
 import '../../data/repositories/music_repository.dart';
@@ -58,11 +59,19 @@ class AppController extends GetxController {
       final performanceService = PerformanceService();
       await performanceService.startMusicLoadTrace();
 
-      _loadingStatusMessage.value = 'Loading music...';
+      // Step 1: Initialize services (10% progress)
+      _loadingStatusMessage.value = 'Initializing services...';
+      _loadingProgress.value = 0.1;
+      await Future.delayed(
+        const Duration(milliseconds: 500),
+      ); // Allow UI to update
+
+      // Step 2: Check cache (20% progress)
+      _loadingStatusMessage.value = 'Checking cached music...';
       _loadingProgress.value = 0.2;
 
-      // Load albums using repository
-      final albums = await _musicRepository.getAlbums();
+      // Add timeout wrapper for the main operation
+      final albums = await _loadAlbumsWithProgress();
       _albums.value = albums;
 
       _loadingProgress.value = 1.0;
@@ -83,6 +92,69 @@ class AppController extends GetxController {
     } finally {
       _isLoading.value = false;
     }
+  }
+
+  /// Load albums with progressive updates and timeout handling
+  Future<List<Album>> _loadAlbumsWithProgress() async {
+    // Try to get albums with a 30-second timeout
+    try {
+      return await Future.any([
+        _loadAlbumsWithProgressUpdates(),
+        Future.delayed(const Duration(seconds: 30)).then(
+          (_) => throw TimeoutException(
+            'Loading music timed out after 30 seconds',
+            const Duration(seconds: 30),
+          ),
+        ),
+      ]);
+    } catch (e) {
+      if (e.toString().contains('timeout') ||
+          e.toString().contains('TimeoutException')) {
+        // If timeout occurs, try to load from cache only
+        _loadingStatusMessage.value = 'Network timeout, checking cache...';
+        _loadingProgress.value = 0.8;
+
+        try {
+          // Use cache-only method to avoid further network requests
+          final cachedAlbums = await _musicRepository.getAlbumsFromCacheOnly();
+          if (cachedAlbums.isNotEmpty) {
+            return cachedAlbums;
+          }
+        } catch (_) {
+          // Cache also failed (this should rarely happen with the cache-only method)
+        }
+
+        throw const DataRepositoryException(
+          'Unable to load music. Please check your internet connection and try again.',
+          'NETWORK_TIMEOUT',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Load albums with detailed progress updates
+  Future<List<Album>> _loadAlbumsWithProgressUpdates() async {
+    // Simulate progressive loading with status updates
+    _loadingStatusMessage.value = 'Connecting to music library...';
+    _loadingProgress.value = 0.3;
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    _loadingStatusMessage.value = 'Loading artists...';
+    _loadingProgress.value = 0.4;
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    _loadingStatusMessage.value = 'Loading albums...';
+    _loadingProgress.value = 0.6;
+
+    // Load albums using repository
+    final albums = await _musicRepository.getAlbums();
+
+    _loadingStatusMessage.value = 'Processing music data...';
+    _loadingProgress.value = 0.9;
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    return albums;
   }
 
   // This method is kept for compatibility but now loads all albums

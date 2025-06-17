@@ -88,6 +88,13 @@ class MockMusicRepository implements MusicRepository {
   }
 
   @override
+  Future<List<Album>> getAlbumsFromCacheOnly() async {
+    // Mock implementation: simulate fast cache access with no delay
+    // and never throw errors (cache-only should be safe)
+    return List.from(_sampleAlbums);
+  }
+
+  @override
   Future<List<Song>> getTracks(String albumId) async {
     await Future.delayed(delay);
 
