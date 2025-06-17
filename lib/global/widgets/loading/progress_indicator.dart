@@ -4,27 +4,52 @@ import 'loading_overlay.dart';
 
 /// Type of progress indicator
 enum ProgressIndicatorType {
+  /// Linear horizontal progress bar
   linear,
+
+  /// Circular progress indicator
   circular,
+
+  /// Ring-style progress with center text
   ring,
+
+  /// Wave animation progress
   wave,
+
+  /// Step-based progress indicator
   step,
 }
 
 /// Position of progress text
 enum ProgressTextPosition {
+  /// Text centered on indicator
   center,
+
+  /// Text below indicator
   bottom,
+
+  /// Text above indicator
   top,
+
+  /// Text to the right of indicator
   right,
+
+  /// Text to the left of indicator
   left,
+
+  /// No text shown
   none,
 }
 
 /// Style of progress indicator
 enum ProgressIndicatorStyle {
+  /// Material Design style
   material,
+
+  /// iOS Cupertino style
   cupertino,
+
+  /// Custom styling
   custom,
 }
 
@@ -162,6 +187,7 @@ class ProgressIndicatorConfig {
 
 /// Data class for progress information
 class ProgressData {
+  /// Creates progress data with current and total values
   const ProgressData({
     required this.current,
     required this.total,
@@ -192,7 +218,9 @@ class ProgressData {
 
   /// Estimated time remaining (requires startTime)
   Duration? get estimatedTimeRemaining {
-    if (startTime == null || percentage <= 0 || isComplete) return null;
+    if (startTime == null || percentage <= 0 || isComplete) {
+      return null;
+    }
 
     final elapsed = DateTime.now().difference(startTime!);
     final estimatedTotal = elapsed.inMilliseconds / percentage;
@@ -204,7 +232,9 @@ class ProgressData {
   /// Formatted time remaining string
   String? get timeRemainingText {
     final eta = estimatedTimeRemaining;
-    if (eta == null) return null;
+    if (eta == null) {
+      return null;
+    }
 
     if (eta.inHours > 0) {
       return '${eta.inHours}h ${eta.inMinutes.remainder(60)}m remaining';
@@ -743,11 +773,11 @@ class _WaveProgressPainter extends CustomPainter {
       final waveHeight = size.height * 0.1;
       final waveLength = size.width * 0.2;
 
-      path.moveTo(0, size.height / 2);
+      path.moveTo(0, size.height);
 
-      for (double x = 0; x <= progressWidth; x += waveLength / 4) {
+      for (var x = 0.0; x <= progressWidth; x += waveLength / 4) {
         final y = size.height / 2 +
-            waveHeight * math.sin(x / waveLength * 2 * math.pi);
+            waveHeight * math.sin((x / waveLength + progress) * 2 * math.pi);
         path.lineTo(x, y);
       }
 
@@ -768,6 +798,8 @@ class _WaveProgressPainter extends CustomPainter {
 class ProgressManager {
   ProgressManager._();
   static ProgressManager? _instance;
+
+  /// Singleton instance of ProgressManager
   static ProgressManager get instance => _instance ??= ProgressManager._();
 
   final Map<String, ProgressController> _controllers = {};

@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 
-import 'network_service_interface.dart';
 import '../../exceptions/network_service_exception.dart';
+import 'network_service_interface.dart';
 
 /// Mock implementation of network service for testing purposes.
 ///
@@ -127,11 +127,11 @@ class MockNetworkService implements INetworkService {
   Future<T> executeWithRetry<T>(
     Future<T> Function() operation, {
     RetryConfig? config,
-    bool Function(dynamic exception)? shouldRetry,
+    bool Function(Object)? shouldRetry,
   }) async {
     final retryConfig = config ?? RetryConfig.defaultConfig;
 
-    for (var attempt = 0; attempt <= retryConfig.maxAttempts; attempt++) {
+    for (var attempt = 0; attempt < retryConfig.maxAttempts; attempt++) {
       try {
         return await operation();
       } catch (exception) {

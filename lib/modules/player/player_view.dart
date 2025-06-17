@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
+import 'package:sizer/sizer.dart';
+
+import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
 import 'player_controller.dart';
-import '../../global/widgets/widgets.dart';
-import 'package:sizer/sizer.dart';
-import '../../global/widgets/common/image_loader.dart';
 
 class PlayerView extends GetView<PlayerController> {
   const PlayerView({super.key});
@@ -36,7 +36,7 @@ class PlayerView extends GetView<PlayerController> {
                       child: Column(
                         children: [
                           SizedBox(height: 2.h),
-                          
+
                           // Album cover - responsive sizing
                           _buildResponsiveAlbumCover(context),
 
@@ -51,7 +51,7 @@ class PlayerView extends GetView<PlayerController> {
 
                           // Additional controls (shuffle, repeat)
                           _buildAdditionalControls(context),
-                          
+
                           SizedBox(height: 2.h),
                         ],
                       ),
@@ -104,15 +104,15 @@ class PlayerView extends GetView<PlayerController> {
     // Calculate responsive size based on available screen space
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // Reserve space for other UI elements (app bar, controls, etc.)
-    final reservedHeight = 300; // Approximate height of other elements
+    const reservedHeight = 300; // Approximate height of other elements
     final availableHeight = screenHeight - reservedHeight;
-    
+
     // Use the smaller of 70% screen width or available height, with reasonable min/max
     final maxSize = screenWidth * 0.7;
     final responsiveSize = (availableHeight * 0.6).clamp(200.0, maxSize);
-    
+
     return Container(
       width: responsiveSize,
       height: responsiveSize,

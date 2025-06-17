@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'cache_service_interface.dart';
 import '../../exceptions/cache_service_exception.dart';
+import 'cache_service_interface.dart';
 
 /// Enhanced cache service implementation with memory and disk caching.
 ///
@@ -347,7 +347,7 @@ class EnhancedCacheService implements ICacheService {
 
     for (final key in keys) {
       if (!_memoryCache.containsKey(key)) {
-        await get(key); // This will load into memory if found on disk
+        await get<Object?>(key); // This will load into memory if found on disk
       }
     }
   }
@@ -644,10 +644,21 @@ class EnhancedCacheService implements ICacheService {
 
   void _startPeriodicCleanup() {
     _cleanupTimer = Timer.periodic(const Duration(hours: 1), (_) {
-      clearExpired().catchError((e) {
+      clearExpired().catchError((Object e) {
         debugPrint('CacheService: Periodic cleanup failed: $e');
       });
     });
+  }
+
+  int _estimateSize(Object? value) {
+    if (value == null) return 0;
+
+    try {
+      final serialized = value.toString();
+      return serialized.length * 2; // Approximate UTF-16 size
+    } catch (e) {
+      return 100; // Default estimate
+    }
   }
 }
 

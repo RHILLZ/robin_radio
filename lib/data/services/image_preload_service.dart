@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
+
 import '../exceptions/network_service_exception.dart';
 
 /// Configuration for image preloading behavior
@@ -298,7 +300,7 @@ class ImagePreloadService {
       }
 
       return compressedData;
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('❌ Compression failed: $e');
       throw NetworkServiceInitializationException(
         'Image compression failed: $e',
@@ -340,7 +342,7 @@ class ImagePreloadService {
       }
 
       return compressedData;
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('❌ Data compression failed: $e');
       throw NetworkServiceInitializationException(
         'Image data compression failed: $e',
@@ -401,7 +403,7 @@ class ImagePreloadService {
         default:
           return false;
       }
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('⚠️ Connection check failed: $e');
       return false;
     }
@@ -433,7 +435,7 @@ class ImagePreloadService {
       }
 
       debugPrint('✅ Asset preloaded: $assetPath');
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('❌ Asset preload failed: $assetPath - $e');
 
       if (_config.enableAnalytics) {
@@ -482,7 +484,7 @@ class ImagePreloadService {
       }
 
       debugPrint('✅ Network image preloaded: $url');
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('❌ Network preload failed: $url - $e');
 
       if (config.enableAnalytics) {
@@ -515,7 +517,7 @@ class ImagePreloadService {
         default:
           return 'unknown';
       }
-    } catch (e) {
+    } on Exception {
       return 'unknown';
     }
   }

@@ -181,7 +181,7 @@ class MockCacheService implements ICacheService {
   Future<void> preload(List<String> keys) async {
     // Mock implementation - just check if keys exist
     for (final key in keys) {
-      await get(key);
+      await get<Object?>(key);
     }
   }
 
@@ -256,13 +256,16 @@ class MockCacheService implements ICacheService {
         throw const CacheReadException.diskAccessFailed('Simulated read error');
       case 'write':
         throw const CacheWriteException.diskAccessFailed(
-            'Simulated write error');
+          'Simulated write error',
+        );
       case 'management':
         throw const CacheManagementException.clearFailed(
-            'Simulated management error');
+          'Simulated management error',
+        );
       default:
         throw CacheManagementException.initializationFailed(
-            'Simulated error: $_errorType');
+          'Simulated error: $_errorType',
+        );
     }
   }
 
@@ -291,7 +294,9 @@ class MockCacheService implements ICacheService {
     }
   }
 
-  int _estimateSize(value) {
+  int _estimateSize(Object? value) {
+    if (value == null) return 0;
+
     try {
       final serialized = value.toString();
       return serialized.length * 2; // Approximate UTF-16 size

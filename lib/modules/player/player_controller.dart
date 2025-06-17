@@ -1,13 +1,15 @@
+import 'dart:math';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../data/models/song.dart';
+
 import '../../data/models/album.dart';
+import '../../data/models/song.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../data/services/performance_service.dart';
 import '../app/app_controller.dart';
-import 'dart:math';
 
 enum PlayerMode { radio, album }
 

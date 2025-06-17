@@ -11,27 +11,66 @@ import '../../data/services/performance_service.dart';
 import '../../data/services/image_preload_service.dart';
 import '../home/trackListView.dart';
 
+/// Main application controller that manages global app state and music data.
+///
+/// Handles music library initialization, loading progress tracking, error handling,
+/// and navigation between different app views. Integrates with Firebase for data
+/// storage and includes performance monitoring for optimal user experience.
 class AppController extends GetxController {
+  /// Controller for the mini player widget that appears at the bottom of screens.
   final MiniplayerController miniPlayerController = MiniplayerController();
+
+  /// Repository for accessing music data from Firebase storage.
   final MusicRepository _musicRepository = FirebaseMusicRepository();
+
+  /// Observable list of albums loaded from the music repository.
   final RxList<Album> _albums = <Album>[].obs;
+
+  /// Observable flag indicating whether music data is currently being loaded.
   final RxBool _isLoading = true.obs;
+
+  /// Observable flag indicating whether an error occurred during loading.
   final RxBool _hasError = false.obs;
+
+  /// Observable error message describing any loading failures.
   final RxString _errorMessage = ''.obs;
 
   // Loading progress tracking
+  /// Observable progress value (0.0 to 1.0) for music loading operations.
   final RxDouble _loadingProgress = 0.0.obs;
+
+  /// Observable status message describing the current loading operation.
   final RxString _loadingStatusMessage = 'Initializing...'.obs;
 
   // Getters
+  /// Current list of albums loaded from the music repository.
   List<Album> get albums => _albums;
+
+  /// Whether music data is currently being loaded.
   bool get isLoading => _isLoading.value;
+
+  /// Whether an error occurred during the last loading operation.
   bool get hasError => _hasError.value;
+
+  /// Error message from the last failed operation, if any.
   String get errorMessage => _errorMessage.value;
+
+  /// Current loading progress as a value between 0.0 and 1.0.
   double get loadingProgress => _loadingProgress.value;
+
+  /// Human-readable status message for the current loading operation.
   String get loadingStatusMessage => _loadingStatusMessage.value;
-  // These properties are kept for compatibility but will be deprecated
+
+  /// Whether there are more albums available to load.
+  ///
+  /// Currently returns false as all albums are loaded at once.
+  /// This property is kept for compatibility but will be deprecated.
   bool get hasMoreAlbums => false;
+
+  /// Whether additional albums are currently being loaded.
+  ///
+  /// Currently returns false as pagination is not implemented.
+  /// This property is kept for compatibility but will be deprecated.
   bool get isLoadingMore => false;
 
   @override
@@ -41,6 +80,7 @@ class AppController extends GetxController {
     await _initializeMusic();
   }
 
+  /// Initializes required services before loading music data.
   Future<void> _initializeServices() async {
     // Initialize image preload service with conservative settings
     ImagePreloadService.instance.initialize(
@@ -48,6 +88,10 @@ class AppController extends GetxController {
     );
   }
 
+  /// Initializes the music library by loading albums from the repository.
+  ///
+  /// Handles loading progress updates, error states, and performance monitoring.
+  /// Includes timeout handling and cache fallback for improved reliability.
   Future<void> _initializeMusic() async {
     try {
       _isLoading.value = true;
@@ -157,12 +201,19 @@ class AppController extends GetxController {
     return albums;
   }
 
-  // This method is kept for compatibility but now loads all albums
+  /// Loads more albums from the music repository.
+  ///
+  /// This method is kept for compatibility but now triggers a full refresh
+  /// since all albums are loaded at once. Will be deprecated in future versions.
   Future<void> loadMoreAlbums() async {
     if (_isLoading.value) return;
     refreshMusic();
   }
 
+  /// Refreshes the music library by clearing cache and reloading from the repository.
+  ///
+  /// Updates loading progress and status messages during the refresh operation.
+  /// Handles errors gracefully and ensures loading state is properly managed.
   Future<void> refreshMusic() async {
     try {
       _isLoading.value = true;
@@ -185,6 +236,9 @@ class AppController extends GetxController {
     }
   }
 
+  /// Handles error states by updating reactive variables and logging the error.
+  ///
+  /// [message] The error message to display to the user and log for debugging.
   void _handleError(String message) {
     _hasError.value = true;
     _errorMessage.value = message;
@@ -193,6 +247,12 @@ class AppController extends GetxController {
     debugPrint(message);
   }
 
+  /// Opens the track list view as a bottom sheet for the specified album.
+  ///
+  /// Includes performance monitoring to track album loading metrics.
+  /// The track list is displayed in a modal bottom sheet with transparent background.
+  ///
+  /// [album] The album whose tracks should be displayed.
   Future<void> openTrackList(Album album) async {
     // Track album loading performance
     final performanceService = PerformanceService();
@@ -210,7 +270,10 @@ class AppController extends GetxController {
     );
   }
 
-  // Get a specific album by ID
+  /// Retrieves a specific album by its unique identifier.
+  ///
+  /// [id] The unique identifier of the album to retrieve.
+  /// Returns the album if found, or null if no album with the given ID exists.
   Album? getAlbumById(String id) {
     try {
       return _albums.firstWhere((album) => album.id == id);
@@ -219,7 +282,13 @@ class AppController extends GetxController {
     }
   }
 
-  // Search functionality
+  /// Searches for albums matching the given query string.
+  ///
+  /// Performs case-insensitive search across album names and artist names.
+  /// Returns all albums if the query is empty.
+  ///
+  /// [query] The search term to match against album and artist names.
+  /// Returns a list of albums that match the search criteria.
   List<Album> searchAlbums(String query) {
     if (query.isEmpty) return _albums;
 
@@ -233,6 +302,13 @@ class AppController extends GetxController {
         .toList();
   }
 
+  /// Searches for songs matching the given query string across all albums.
+  ///
+  /// Performs case-insensitive search across song names and artist names.
+  /// Returns an empty list if the query is empty.
+  ///
+  /// [query] The search term to match against song and artist names.
+  /// Returns a list of songs that match the search criteria.
   List<Song> searchSongs(String query) {
     if (query.isEmpty) return [];
 

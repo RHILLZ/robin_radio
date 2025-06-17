@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:robin_radio/data/services/performance_service.dart';
+import '../../data/services/performance_service.dart';
 
 /// Performance dashboard widget for monitoring app performance in debug mode
 class PerformanceDashboard extends StatefulWidget {
@@ -46,7 +46,7 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
       'Performance',
       'Memory usage tracked',
       duration: const Duration(seconds: 2),
-      backgroundColor: Colors.green.withValues(alpha: 0.8),
+      backgroundColor: Colors.green.withOpacity(0.8),
       colorText: Colors.white,
     );
   }
@@ -67,7 +67,7 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
       'Performance',
       'Custom event tracked',
       duration: const Duration(seconds: 2),
-      backgroundColor: Colors.blue.withValues(alpha: 0.8),
+      backgroundColor: Colors.blue.withOpacity(0.8),
       colorText: Colors.white,
     );
   }
@@ -88,7 +88,7 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
           // Toggle button
           FloatingActionButton.small(
             onPressed: _toggleVisibility,
-            backgroundColor: Colors.orange.withValues(alpha: 0.8),
+            backgroundColor: Colors.orange.withOpacity(0.8),
             child: Icon(
               _isVisible ? Icons.close : Icons.analytics,
               color: Colors.white,
@@ -102,24 +102,24 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
               width: 280,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.8),
+                color: Colors.black.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                border: Border.all(color: Colors.orange.withOpacity(0.5)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Header
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.analytics,
                         color: Colors.orange,
                         size: 20,
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
+                      SizedBox(width: 8),
+                      Text(
                         'Performance Monitor',
                         style: TextStyle(
                           color: Colors.white,
@@ -163,7 +163,7 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
                         child: ElevatedButton(
                           onPressed: _trackMemoryUsage,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.withValues(alpha: 0.7),
+                            backgroundColor: Colors.blue.withOpacity(0.7),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
@@ -178,8 +178,7 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
                         child: ElevatedButton(
                           onPressed: _trackCustomEvent,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Colors.green.withValues(alpha: 0.7),
+                            backgroundColor: Colors.green.withOpacity(0.7),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
@@ -197,10 +196,9 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
+                      color: Colors.blue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),
-                      border:
-                          Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
                     ),
                     child: const Text(
                       'Performance data appears in Firebase Console within 12 hours.',
@@ -219,34 +217,32 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
     );
   }
 
-  Widget _buildStatusRow(String label, String value, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: color.withValues(alpha: 0.5)),
-          ),
-          child: Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+  Widget _buildStatusRow(String label, String value, Color color) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
             ),
           ),
-        ),
-      ],
-    );
-  }
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: color.withOpacity(0.5)),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      );
 }

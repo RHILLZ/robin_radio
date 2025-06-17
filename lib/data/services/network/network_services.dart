@@ -8,7 +8,7 @@
 /// - Network service exceptions
 library;
 
-export 'network_service_interface.dart';
+export '../../exceptions/network_service_exception.dart';
 export 'enhanced_network_service.dart';
 export 'mock_network_service.dart';
-export '../../exceptions/network_service_exception.dart';
+export 'network_service_interface.dart';

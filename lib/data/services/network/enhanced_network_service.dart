@@ -78,7 +78,7 @@ class EnhancedNetworkService implements INetworkService {
       // Get initial connectivity state
       final initialConnectivity = await _connectivity.checkConnectivity();
       await _handleConnectivityChange(initialConnectivity);
-    } catch (e) {
+    } on Exception catch (e) {
       throw NetworkServiceInitializationException(
         'Failed to initialize network service: $e',
         'NETWORK_SERVICE_INIT_FAILED',
@@ -92,7 +92,7 @@ class EnhancedNetworkService implements INetworkService {
     try {
       final connectivity = await checkConnectivity();
       return connectivity != ConnectivityResult.none;
-    } catch (e) {
+    } on Exception {
       return false; // Assume disconnected on error
     }
   }
@@ -101,7 +101,7 @@ class EnhancedNetworkService implements INetworkService {
   Future<ConnectivityResult> checkConnectivity() async {
     try {
       return await _connectivity.checkConnectivity();
-    } catch (e) {
+    } on Exception catch (e) {
       throw NetworkConnectivityException(
         'Failed to check connectivity: $e',
         'NETWORK_CONNECTIVITY_CHECK_FAILED',
@@ -134,7 +134,7 @@ class EnhancedNetworkService implements INetworkService {
 
       _lastNetworkState = networkState;
       return networkState;
-    } catch (e) {
+    } on Exception catch (e) {
       throw NetworkConnectivityException(
         'Failed to get network state: $e',
         'NETWORK_STATE_RETRIEVAL_FAILED',
@@ -162,7 +162,7 @@ class EnhancedNetworkService implements INetworkService {
 
       // Determine quality based on latency and bandwidth
       return _determineQualityFromMetrics(latency, bandwidth);
-    } catch (e) {
+    } on Exception catch (e) {
       throw NetworkQualityException(
         'Failed to assess network quality: $e',
         'NETWORK_QUALITY_ASSESSMENT_FAILED',
@@ -183,7 +183,7 @@ class EnhancedNetworkService implements INetworkService {
         connectionType: connectivity,
         estimatedBandwidth: _lastEstimatedBandwidth,
       );
-    } catch (e) {
+    } on Exception catch (e) {
       throw NetworkUsageException(
         'Failed to get usage statistics: $e',
         'NETWORK_USAGE_STATS_FAILED',
@@ -204,14 +204,14 @@ class EnhancedNetworkService implements INetworkService {
   Future<T> executeWithRetry<T>(
     Future<T> Function() operation, {
     RetryConfig? config,
-    bool Function(dynamic exception)? shouldRetry,
+    bool Function(Exception)? shouldRetry,
   }) async {
     final retryConfig = config ?? RetryConfig.defaultConfig;
 
     for (var attempt = 0; attempt <= retryConfig.maxAttempts; attempt++) {
       try {
         return await operation();
-      } catch (exception) {
+      } on Exception catch (exception) {
         // Check if we should retry this exception
         if (shouldRetry != null && !shouldRetry(exception)) {
           rethrow;
@@ -261,20 +261,20 @@ class EnhancedNetworkService implements INetworkService {
           for (final listener in _networkStateListeners) {
             try {
               listener(networkState);
-            } catch (e) {
+            } on Exception catch (e) {
               // Ignore listener errors to prevent one bad listener from affecting others
               if (kDebugMode) {
                 print('Network state listener error: $e');
               }
             }
           }
-        } catch (e) {
+        } on Exception catch (e) {
           if (kDebugMode) {
             print('Quality monitoring error: $e');
           }
         }
       });
-    } catch (e) {
+    } on Exception catch (e) {
       _isMonitoringQuality = false;
       throw NetworkMonitoringException(
         'Failed to start quality monitoring: $e',
@@ -305,7 +305,7 @@ class EnhancedNetworkService implements INetworkService {
       );
       await socket.close();
       return true;
-    } catch (e) {
+    } on Exception {
       return false;
     }
   }
@@ -348,7 +348,7 @@ class EnhancedNetworkService implements INetworkService {
       }
 
       return null;
-    } catch (e) {
+    } on Exception {
       return null;
     }
   }
@@ -393,14 +393,14 @@ class EnhancedNetworkService implements INetworkService {
         for (final listener in _networkStateListeners) {
           try {
             listener(networkState);
-          } catch (e) {
+          } on Exception catch (e) {
             // Ignore listener errors
             if (kDebugMode) {
               print('Network state listener error: $e');
             }
           }
         }
-      } catch (e) {
+      } on Exception catch (e) {
         // Handle error silently in background connectivity monitoring
         if (kDebugMode) {
           print('Error updating network state: $e');
@@ -423,7 +423,7 @@ class EnhancedNetworkService implements INetworkService {
       await socket.close();
 
       return stopwatch.elapsedMilliseconds;
-    } catch (e) {
+    } on Exception {
       return null;
     }
   }

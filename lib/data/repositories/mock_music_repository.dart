@@ -3,6 +3,7 @@ import 'dart:math';
 
 import '../models/album.dart';
 import '../models/song.dart';
+import '../exceptions/repository_exception.dart';
 import 'music_repository.dart';
 
 /// Mock implementation of [MusicRepository] for testing purposes.
@@ -78,10 +79,10 @@ class MockMusicRepository implements MusicRepository {
 
   @override
   Future<List<Album>> getAlbums() async {
-    await Future.delayed(delay);
+    await Future<void>.delayed(delay);
 
     if (simulateErrors && Random().nextBool()) {
-      throw Exception('Mock error: Failed to get albums');
+      throw const NetworkRepositoryException.connectionFailed();
     }
 
     return List.from(_sampleAlbums);
@@ -96,15 +97,15 @@ class MockMusicRepository implements MusicRepository {
 
   @override
   Future<List<Song>> getTracks(String albumId) async {
-    await Future.delayed(delay);
+    await Future<void>.delayed(delay);
 
     if (simulateErrors && Random().nextBool()) {
-      throw Exception('Mock error: Failed to get tracks');
+      throw const NetworkRepositoryException.connectionFailed();
     }
 
     final album = _sampleAlbums.firstWhere(
       (album) => album.id == albumId,
-      orElse: () => throw Exception('Album not found: $albumId'),
+      orElse: () => throw const DataRepositoryException.notFound(),
     );
 
     return List.from(album.tracks);
@@ -112,10 +113,10 @@ class MockMusicRepository implements MusicRepository {
 
   @override
   Future<Stream<Song>> getRadioStream() async {
-    await Future.delayed(delay);
+    await Future<void>.delayed(delay);
 
     if (simulateErrors && Random().nextBool()) {
-      throw Exception('Mock error: Failed to create radio stream');
+      throw const NetworkRepositoryException.connectionFailed();
     }
 
     // Create a stream that emits random songs
@@ -135,10 +136,10 @@ class MockMusicRepository implements MusicRepository {
 
   @override
   Future<Song?> getTrackById(String id) async {
-    await Future.delayed(delay);
+    await Future<void>.delayed(delay);
 
     if (simulateErrors && Random().nextBool()) {
-      throw Exception('Mock error: Failed to get track by ID');
+      throw const NetworkRepositoryException.connectionFailed();
     }
 
     for (final album in _sampleAlbums) {
@@ -154,10 +155,10 @@ class MockMusicRepository implements MusicRepository {
 
   @override
   Future<List<Album>> searchAlbums(String query) async {
-    await Future.delayed(delay);
+    await Future<void>.delayed(delay);
 
     if (simulateErrors && Random().nextBool()) {
-      throw Exception('Mock error: Failed to search albums');
+      throw const NetworkRepositoryException.connectionFailed();
     }
 
     if (query.isEmpty) return [];
@@ -174,10 +175,10 @@ class MockMusicRepository implements MusicRepository {
 
   @override
   Future<List<Song>> searchTracks(String query) async {
-    await Future.delayed(delay);
+    await Future<void>.delayed(delay);
 
     if (simulateErrors && Random().nextBool()) {
-      throw Exception('Mock error: Failed to search tracks');
+      throw const NetworkRepositoryException.connectionFailed();
     }
 
     if (query.isEmpty) return [];
@@ -199,10 +200,10 @@ class MockMusicRepository implements MusicRepository {
 
   @override
   Future<void> refreshCache() async {
-    await Future.delayed(delay);
+    await Future<void>.delayed(delay);
 
     if (simulateErrors && Random().nextBool()) {
-      throw Exception('Mock error: Failed to refresh cache');
+      throw const CacheRepositoryException.readFailed();
     }
 
     // Mock implementation - nothing to refresh
@@ -210,10 +211,10 @@ class MockMusicRepository implements MusicRepository {
 
   @override
   Future<void> clearCache() async {
-    await Future.delayed(delay);
+    await Future<void>.delayed(delay);
 
     if (simulateErrors && Random().nextBool()) {
-      throw Exception('Mock error: Failed to clear cache');
+      throw const CacheRepositoryException.writeFailed();
     }
 
     // Mock implementation - nothing to clear

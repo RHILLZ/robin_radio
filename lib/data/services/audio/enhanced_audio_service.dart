@@ -6,8 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../models/song.dart';
 import '../../exceptions/audio_service_exception.dart';
+import '../../models/song.dart';
 import '../performance_service.dart';
 import 'audio_service_interface.dart';
 
@@ -168,7 +168,7 @@ class EnhancedAudioService implements IAudioService {
       if (kDebugMode) {
         print('EnhancedAudioService initialized successfully');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       throw const AudioInitializationException.initFailed();
     }
   }
@@ -207,9 +207,11 @@ class EnhancedAudioService implements IAudioService {
       if (kDebugMode) {
         print('Playing: ${track.songName} by ${track.artist}');
       }
-    } catch (e) {
+    } on AudioServiceException {
       _setState(PlaybackState.error);
-      if (e is AudioServiceException) rethrow;
+      rethrow;
+    } on Exception catch (e) {
+      _setState(PlaybackState.error);
       throw AudioPlaybackException.playbackFailed(e.toString());
     }
   }
@@ -227,7 +229,7 @@ class EnhancedAudioService implements IAudioService {
     try {
       await _ensureInitialized();
       await player.pause();
-    } catch (e) {
+    } on Exception catch (e) {
       throw AudioPlaybackException.playbackFailed('Pause failed: $e');
     }
   }
@@ -245,7 +247,7 @@ class EnhancedAudioService implements IAudioService {
     try {
       await _ensureInitialized();
       await player.resume();
-    } catch (e) {
+    } on Exception catch (e) {
       throw AudioPlaybackException.playbackFailed('Resume failed: $e');
     }
   }
@@ -264,7 +266,7 @@ class EnhancedAudioService implements IAudioService {
       _currentPosition = Duration.zero;
       _trackController.add(null);
       await _saveCurrentState();
-    } catch (e) {
+    } on Exception catch (e) {
       throw AudioPlaybackException.playbackFailed('Stop failed: $e');
     }
   }
@@ -285,7 +287,7 @@ class EnhancedAudioService implements IAudioService {
     try {
       await _ensureInitialized();
       await player.seek(position);
-    } catch (e) {
+    } on Exception catch (e) {
       throw AudioPlaybackException.playbackFailed('Seek failed: $e');
     }
   }
@@ -309,7 +311,7 @@ class EnhancedAudioService implements IAudioService {
       await player.setVolume(volume);
       _volumeController.add(volume);
       await _saveCurrentState();
-    } catch (e) {
+    } on Exception catch (e) {
       throw AudioPlaybackException.playbackFailed('Volume change failed: $e');
     }
   }
@@ -333,7 +335,7 @@ class EnhancedAudioService implements IAudioService {
       await player.setPlaybackRate(speed);
       _speedController.add(speed);
       await _saveCurrentState();
-    } catch (e) {
+    } on Exception catch (e) {
       throw AudioPlaybackException.playbackFailed('Speed change failed: $e');
     }
   }
@@ -606,7 +608,7 @@ class EnhancedAudioService implements IAudioService {
           prefs.getBool('background_playback') ?? false;
 
       // Note: Queue restoration could be implemented here by saving/loading track IDs
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error loading saved audio state: $e');
       }
@@ -623,7 +625,7 @@ class EnhancedAudioService implements IAudioService {
       await prefs.setBool('background_playback', _backgroundPlaybackEnabled);
 
       // Note: Queue persistence could be implemented here by saving track IDs
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error saving audio state: $e');
       }
@@ -633,7 +635,7 @@ class EnhancedAudioService implements IAudioService {
   void _disposePlayer() {
     try {
       _player?.dispose();
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error disposing player: $e');
       }

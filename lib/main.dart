@@ -15,6 +15,11 @@ import 'package:sizer/sizer.dart';
 
 import 'modules/app/main_bindings.dart';
 
+/// Application entry point that initializes all core services and dependencies.
+///
+/// Handles Firebase initialization, performance monitoring setup, audio configuration,
+/// theme loading, and dependency injection before launching the main application.
+/// Includes comprehensive error handling for initialization failures.
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
@@ -87,9 +92,18 @@ void main() async {
   }
 }
 
+/// Main application widget that configures the app theme, routing, and global settings.
+///
+/// Provides a GetMaterialApp with custom theming loaded from JSON configuration,
+/// responsive design support via Sizer, and centralized navigation management.
+/// Includes text scaling prevention and smooth page transitions.
 class MyApp extends StatelessWidget {
+  /// Creates the main application widget.
+  ///
+  /// [theme] The ThemeData loaded from the app's theme configuration file.
   const MyApp({required ThemeData theme, super.key}) : _theme = theme;
 
+  /// The application theme loaded from the JSON theme configuration.
   final ThemeData _theme;
 
   @override
