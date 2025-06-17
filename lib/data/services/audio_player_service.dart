@@ -79,7 +79,7 @@ class AudioPlayerService with WidgetsBindingObserver {
       if (kDebugMode) {
         print('AudioPlayerService initialized successfully');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       _errorController.add('Failed to initialize AudioPlayerService: $e');
       if (kDebugMode) {
         print('AudioPlayerService initialization error: $e');
@@ -150,7 +150,7 @@ class AudioPlayerService with WidgetsBindingObserver {
       if (kDebugMode) {
         print('Playing audio: $url');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       final errorMessage = 'Failed to play audio: $e';
       _errorController.add(errorMessage);
       if (kDebugMode) {
@@ -166,7 +166,7 @@ class AudioPlayerService with WidgetsBindingObserver {
     try {
       await _ensureInitialized();
       await player.resume();
-    } catch (e) {
+    } on Exception catch (e) {
       _errorController.add('Failed to resume: $e');
     }
   }
@@ -178,7 +178,7 @@ class AudioPlayerService with WidgetsBindingObserver {
     try {
       await _ensureInitialized();
       await player.pause();
-    } catch (e) {
+    } on Exception catch (e) {
       _errorController.add('Failed to pause: $e');
     }
   }
@@ -191,7 +191,7 @@ class AudioPlayerService with WidgetsBindingObserver {
       await _ensureInitialized();
       await player.stop();
       _currentUrl = null;
-    } catch (e) {
+    } on Exception catch (e) {
       _errorController.add('Failed to stop: $e');
     }
   }
@@ -203,7 +203,7 @@ class AudioPlayerService with WidgetsBindingObserver {
     try {
       await _ensureInitialized();
       await player.seek(position);
-    } catch (e) {
+    } on Exception catch (e) {
       _errorController.add('Failed to seek: $e');
     }
   }
@@ -216,7 +216,7 @@ class AudioPlayerService with WidgetsBindingObserver {
       await _ensureInitialized();
       _currentVolume = volume.clamp(0.0, 1.0);
       await player.setVolume(_currentVolume);
-    } catch (e) {
+    } on Exception catch (e) {
       _errorController.add('Failed to set volume: $e');
     }
   }
@@ -232,7 +232,7 @@ class AudioPlayerService with WidgetsBindingObserver {
       _currentState = PlayerState.stopped;
       _currentDuration = Duration.zero;
       _currentPosition = Duration.zero;
-    } catch (e) {
+    } on Exception catch (e) {
       _errorController.add('Failed to release: $e');
     }
   }
@@ -290,7 +290,7 @@ class AudioPlayerService with WidgetsBindingObserver {
   void _disposePlayer() {
     try {
       _player?.dispose();
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error disposing player: $e');
       }
@@ -327,7 +327,7 @@ class AudioPlayerService with WidgetsBindingObserver {
       if (kDebugMode) {
         print('AudioPlayerService disposed');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error during AudioPlayerService disposal: $e');
       }

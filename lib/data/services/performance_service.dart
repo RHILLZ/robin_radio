@@ -23,7 +23,7 @@ class PerformanceService {
       if (kDebugMode) {
         print('Performance monitoring initialized');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error initializing performance monitoring: $e');
       }
@@ -39,7 +39,7 @@ class PerformanceService {
       if (kDebugMode) {
         print('App start trace started');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error starting app start trace: $e');
       }
@@ -55,7 +55,7 @@ class PerformanceService {
       if (kDebugMode) {
         print('App start trace stopped');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error stopping app start trace: $e');
       }
@@ -71,7 +71,7 @@ class PerformanceService {
       if (kDebugMode) {
         print('Music load trace started');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error starting music load trace: $e');
       }
@@ -106,7 +106,7 @@ class PerformanceService {
           print('Music load trace stopped with metrics');
         }
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error stopping music load trace: $e');
       }
@@ -123,7 +123,7 @@ class PerformanceService {
       if (kDebugMode) {
         print('Album load trace started for: $albumId');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error starting album load trace: $e');
       }
@@ -145,7 +145,7 @@ class PerformanceService {
           print('Album load trace stopped');
         }
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error stopping album load trace: $e');
       }
@@ -161,7 +161,7 @@ class PerformanceService {
       if (kDebugMode) {
         print('Player init trace started');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error starting player init trace: $e');
       }
@@ -183,7 +183,7 @@ class PerformanceService {
           print('Player init trace stopped');
         }
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error stopping player init trace: $e');
       }
@@ -226,7 +226,7 @@ class PerformanceService {
       if (kDebugMode) {
         print('Custom event tracked: $eventName');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error tracking custom event: $e');
       }
@@ -244,7 +244,7 @@ class PerformanceService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error tracking memory usage: $e');
       }
@@ -260,7 +260,7 @@ class PerformanceService {
   Future<bool> isPerformanceCollectionEnabled() async {
     try {
       return await _performance.isPerformanceCollectionEnabled();
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error checking performance collection status: $e');
       }

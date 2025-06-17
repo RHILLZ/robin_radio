@@ -123,7 +123,7 @@ class ServiceLocator {
 
     try {
       return Get.find<T>();
-    } catch (e) {
+    } on Exception catch (e) {
       throw ServiceLocatorException(
         "Service of type $T not found. Make sure it's registered in ServiceLocator.",
         'SERVICE_NOT_FOUND',
@@ -145,7 +145,7 @@ class ServiceLocator {
 
     try {
       return Get.find<T>();
-    } catch (e) {
+    } on Exception catch (e) {
       throw ServiceLocatorException(
         "Service of type $T not found. Make sure it's registered in ServiceLocator.",
         'SERVICE_NOT_FOUND_ASYNC',
@@ -220,7 +220,7 @@ class ServiceLocator {
       if (Get.isRegistered<MusicRepository>()) {
         Get.delete<MusicRepository>();
       }
-    } catch (e) {
+    } on Exception catch (e) {
       // Log disposal errors but don't throw
       print('Error during ServiceLocator disposal: $e');
     } finally {

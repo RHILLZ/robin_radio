@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 
 import 'network_service_interface.dart';
 import '../../exceptions/network_service_exception.dart';
@@ -24,6 +25,7 @@ class MockNetworkService implements INetworkService {
   int? _latencyMs = 100;
   bool _isMonitoringQuality = false;
   bool _isDisposed = false;
+  Timer? _qualityMonitoringTimer;
 
   // Mock usage statistics
   int _bytesSent = 0;
@@ -171,33 +173,41 @@ class MockNetworkService implements INetworkService {
       throw const NetworkMonitoringException.alreadyActive();
     }
 
-    _isMonitoringQuality = true;
+    try {
+      _isMonitoringQuality = true;
+      _qualityMonitoringTimer = Timer.periodic(interval, (_) async {
+        try {
+          final networkState = await getNetworkState();
+          _networkStateController.add(networkState);
 
-    // Simulate periodic quality monitoring
-    Timer.periodic(interval, (_) async {
-      if (!_isMonitoringQuality || _isDisposed) return;
-
-      try {
-        final networkState = await getNetworkState();
-        _networkStateController.add(networkState);
-
-        // Notify listeners
-        for (final listener in _networkStateListeners) {
-          try {
-            listener(networkState);
-          } catch (e) {
-            // Ignore listener errors
+          // Notify all listeners
+          for (final listener in _networkStateListeners) {
+            try {
+              listener(networkState);
+            } on Exception catch (e) {
+              // Ignore listener errors to prevent one bad listener from affecting others
+              debugPrint('Network state listener error: $e');
+            }
           }
+        } on Exception catch (e) {
+          debugPrint('Quality monitoring error: $e');
         }
-      } catch (e) {
-        // Ignore monitoring errors in mock
-      }
-    });
+      });
+    } on Exception catch (e) {
+      _isMonitoringQuality = false;
+      throw NetworkMonitoringException(
+        'Failed to start quality monitoring: $e',
+        'NETWORK_MONITORING_START_FAILED',
+        e,
+      );
+    }
   }
 
   @override
   Future<void> stopQualityMonitoring() async {
     _isMonitoringQuality = false;
+    _qualityMonitoringTimer?.cancel();
+    _qualityMonitoringTimer = null;
   }
 
   @override

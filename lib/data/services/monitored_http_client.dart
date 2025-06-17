@@ -57,7 +57,7 @@ class MonitoredHttpClient extends BaseClient {
       if (cacheControl != null) {
         metric.putAttribute('cache_control', cacheControl);
       }
-    } catch (e) {
+    } on Exception catch (e) {
       // Track errors
       metric.putAttribute('error', e.toString());
       metric.putAttribute('response_success', 'false');

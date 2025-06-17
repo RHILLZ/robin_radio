@@ -67,7 +67,7 @@ class PaginationController<T> extends GetxController {
       }
 
       _currentPage.value = 1;
-    } catch (e) {
+    } on Exception catch (e) {
       _handleError(e.toString());
     } finally {
       _isLoading.value = false;
@@ -92,7 +92,7 @@ class PaginationController<T> extends GetxController {
       }
 
       _currentPage.value++;
-    } catch (e) {
+    } on Exception catch (e) {
       _handleError(e.toString());
     } finally {
       _isLoadingMore.value = false;

@@ -103,7 +103,7 @@ class FirebaseMusicRepository implements MusicRepository {
       // Never attempt Firebase - return empty list if no cache available
       debugPrint('MusicRepository: No cache available (cache-only)');
       return [];
-    } catch (e) {
+    } on Exception catch (e) {
       // Never throw exceptions in cache-only mode
       debugPrint('MusicRepository: Cache-only load failed silently: $e');
       return [];
@@ -119,7 +119,9 @@ class FirebaseMusicRepository implements MusicRepository {
         orElse: () => throw const DataRepositoryException.notFound(),
       );
       return album.tracks;
-    } catch (e) {
+    } on RepositoryException {
+      rethrow;
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to get tracks for album: $albumId');
     }
   }
@@ -134,7 +136,7 @@ class FirebaseMusicRepository implements MusicRepository {
       _generateRadioStream();
 
       return _radioStreamController!.stream;
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to create radio stream');
     }
   }
@@ -151,7 +153,7 @@ class FirebaseMusicRepository implements MusicRepository {
         }
       }
       return null;
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to get track by ID: $id');
     }
   }
@@ -171,7 +173,7 @@ class FirebaseMusicRepository implements MusicRepository {
                 (album.artist?.toLowerCase().contains(lowercaseQuery) ?? false),
           )
           .toList();
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to search albums');
     }
   }
@@ -195,7 +197,7 @@ class FirebaseMusicRepository implements MusicRepository {
       }
 
       return results;
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to search tracks');
     }
   }
@@ -212,7 +214,7 @@ class FirebaseMusicRepository implements MusicRepository {
 
       // Force reload from Firebase
       await getAlbums();
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to refresh cache');
     }
   }
@@ -228,7 +230,7 @@ class FirebaseMusicRepository implements MusicRepository {
       _cacheTime = null;
 
       debugPrint('MusicRepository: Cache cleared');
-    } catch (e) {
+    } on Exception catch (e) {
       throw const CacheRepositoryException.writeFailed();
     }
   }
@@ -303,7 +305,7 @@ class FirebaseMusicRepository implements MusicRepository {
                           ),
                     );
                     break;
-                  } catch (e) {
+                  } on Exception catch (e) {
                     debugPrint(
                         'MusicRepository: Failed to get album art for $albumName: $e');
                     // Continue without album art
@@ -337,7 +339,7 @@ class FirebaseMusicRepository implements MusicRepository {
                       albumName: albumName,
                     ),
                   );
-                } catch (e) {
+                } on Exception catch (e) {
                   debugPrint(
                       'MusicRepository: Failed to load song $songName: $e');
                   // Continue with other songs
@@ -416,7 +418,7 @@ class FirebaseMusicRepository implements MusicRepository {
         }
       }
       return null;
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('MusicRepository: Cache loading error: $e');
       return null;
     }
@@ -464,7 +466,7 @@ class FirebaseMusicRepository implements MusicRepository {
         // Wait before next song (simulating song duration)
         await Future.delayed(const Duration(minutes: 3));
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (!_radioStreamController!.isClosed) {
         _radioStreamController!
             .addError(_handleException(e, 'Radio stream error'));
@@ -477,7 +479,7 @@ class FirebaseMusicRepository implements MusicRepository {
     for (var attempt = 1; attempt <= _maxRetries; attempt++) {
       try {
         return await operation();
-      } catch (e) {
+      } on Exception catch (e) {
         if (attempt == _maxRetries) rethrow;
 
         debugPrint('MusicRepository: Attempt $attempt failed, retrying: $e');
@@ -522,8 +524,8 @@ class FirebaseMusicRepository implements MusicRepository {
   }
 
   /// Disposes of resources.
-  void dispose() {
-    _radioStreamController?.close();
+  Future<void> dispose() async {
+    await _radioStreamController?.close();
     _radioStreamController = null;
   }
 }
