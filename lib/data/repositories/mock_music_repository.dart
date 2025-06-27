@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 
+import '../exceptions/repository_exception.dart';
 import '../models/album.dart';
 import '../models/song.dart';
-import '../exceptions/repository_exception.dart';
 import 'music_repository.dart';
 
 /// Mock implementation of [MusicRepository] for testing purposes.

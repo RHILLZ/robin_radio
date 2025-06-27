@@ -6,14 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:json_theme/json_theme.dart';
-import 'data/services/audio_player_service.dart';
+import 'package:sizer/sizer.dart';
+
+import 'core/di/service_locator.dart';
 import 'data/services/performance_service.dart';
 import 'firebase_options.dart';
 import 'modules/app/app_view.dart';
-import 'routes/views.dart';
-import 'package:sizer/sizer.dart';
-
 import 'modules/app/main_bindings.dart';
+import 'routes/views.dart';
 
 /// Application entry point that initializes all core services and dependencies.
 ///
@@ -39,16 +39,15 @@ void main() async {
       return Firebase.app();
     });
 
+    // Initialize service locator with all services
+    await ServiceLocator.initialize();
+    
     // Start app startup performance trace
     final performanceService = PerformanceService();
     await performanceService.startAppStartTrace();
 
     // Initialize Performance Monitoring
     await performanceService.initialize();
-
-    // Initialize centralized AudioPlayerService
-    final audioPlayerService = AudioPlayerService();
-    await audioPlayerService.initialize();
 
     // Configure audio context
     final audioContext = AudioContext(
@@ -75,6 +74,11 @@ void main() async {
 
     // Stop app startup trace before running the app
     await performanceService.stopAppStartTrace();
+    
+    // Complete the service initialization
+    if (!ServiceLocator.isInitialized) {
+      debugPrint('Warning: ServiceLocator not fully initialized');
+    }
 
     runApp(MyApp(theme: theme));
   } catch (e, stackTrace) {

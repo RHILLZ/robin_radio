@@ -11,6 +11,7 @@ import '../exceptions/network_service_exception.dart';
 
 /// Configuration for image preloading behavior
 class ImagePreloadConfig {
+  /// Creates a new image preload configuration.
   const ImagePreloadConfig({
     this.preloadOnWifi = true,
     this.preloadOnMobile = false,
@@ -68,6 +69,7 @@ class ImagePreloadConfig {
 
 /// Analytics data for preload operations
 class PreloadAnalytics {
+  /// Creates a new preload analytics instance.
   PreloadAnalytics({
     required this.url,
     required this.startTime,
@@ -78,16 +80,25 @@ class PreloadAnalytics {
     this.connectionType,
   });
 
+  /// The URL of the image being preloaded.
   final String url;
+  /// Timestamp when preloading started.
   final DateTime startTime;
+  /// Timestamp when preloading completed (null if still in progress).
   DateTime? endTime;
+  /// Whether the preload operation was successful.
   bool success;
+  /// Size of the downloaded file in bytes.
   int? fileSize;
+  /// Error message if the operation failed.
   String? error;
+  /// Type of network connection used (wifi, mobile, etc.).
   String? connectionType;
 
+  /// Duration of the preload operation, null if not yet completed.
   Duration? get duration => endTime?.difference(startTime);
 
+  /// Converts analytics data to JSON format for logging and storage.
   Map<String, dynamic> toJson() => {
         'url': url,
         'startTime': startTime.toIso8601String(),

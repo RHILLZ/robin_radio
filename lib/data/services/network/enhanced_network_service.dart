@@ -5,8 +5,8 @@ import 'dart:math';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
-import 'network_service_interface.dart';
 import '../../exceptions/network_service_exception.dart';
+import 'network_service_interface.dart';
 
 /// Enhanced network service implementation with comprehensive connectivity management.
 ///

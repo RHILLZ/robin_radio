@@ -1,14 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
-import 'dart:async';
+
+import '../../data/exceptions/repository_exception.dart';
 import '../../data/models/album.dart';
 import '../../data/models/song.dart';
+import '../../core/di/service_locator.dart';
 import '../../data/repositories/music_repository.dart';
-import '../../data/repositories/firebase_music_repository.dart';
-import '../../data/exceptions/repository_exception.dart';
-import '../../data/services/performance_service.dart';
 import '../../data/services/image_preload_service.dart';
+import '../../data/services/performance_service.dart';
 import '../home/trackListView.dart';
 
 /// Main application controller that manages global app state and music data.
@@ -21,7 +23,7 @@ class AppController extends GetxController {
   final MiniplayerController miniPlayerController = MiniplayerController();
 
   /// Repository for accessing music data from Firebase storage.
-  final MusicRepository _musicRepository = FirebaseMusicRepository();
+  late final MusicRepository _musicRepository;
 
   /// Observable list of albums loaded from the music repository.
   final RxList<Album> _albums = <Album>[].obs;
@@ -76,6 +78,8 @@ class AppController extends GetxController {
   @override
   Future<void> onInit() async {
     super.onInit();
+    // Initialize repository from ServiceLocator
+    _musicRepository = ServiceLocator.get<MusicRepository>();
     await _initializeServices();
     await _initializeMusic();
   }

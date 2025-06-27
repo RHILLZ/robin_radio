@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
-import 'app_controller.dart';
+
 import '../player/player_controller.dart';
+import 'app_controller.dart';
 
 /// Main dependency injection bindings for the application.
 ///
@@ -31,7 +32,10 @@ class MainBindings implements Bindings {
 
   /// Registers additional services with GetX dependency injection.
   ///
-  /// Currently empty but reserved for future service registration
-  /// such as API clients, storage services, or utility classes.
-  void _injectServices() {}
+  /// Services are already initialized by ServiceLocator in main.dart,
+  /// this method ensures they are properly accessible via GetX.
+  void _injectServices() {
+    // Services are managed by ServiceLocator - no manual registration needed
+    // GetX will resolve services through ServiceLocator when requested
+  }
 }

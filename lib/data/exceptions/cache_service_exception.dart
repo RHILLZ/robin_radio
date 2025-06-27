@@ -52,7 +52,7 @@ class CacheReadException extends CacheServiceException {
   ///
   /// [key] The cache key that failed deserialization.
   /// [cause] The underlying deserialization error.
-  const CacheReadException.deserializationFailed(String key, cause)
+  const CacheReadException.deserializationFailed(String key, Object? cause)
       : super(
           'Failed to deserialize cached data for key: $key',
           'CACHE_READ_DESERIALIZATION_FAILED',
@@ -77,7 +77,7 @@ class CacheReadException extends CacheServiceException {
   /// file system errors, permission issues, or hardware problems.
   ///
   /// [cause] Optional underlying disk access error.
-  const CacheReadException.diskAccessFailed([cause])
+  const CacheReadException.diskAccessFailed([Object? cause])
       : super(
           'Failed to access disk cache storage',
           'CACHE_READ_DISK_ACCESS_FAILED',
@@ -105,7 +105,7 @@ class CacheWriteException extends CacheServiceException {
   ///
   /// [key] The cache key that could not be written.
   /// [cause] Optional underlying write error.
-  const CacheWriteException.keyWriteFailed(String key, [cause])
+  const CacheWriteException.keyWriteFailed(String key, [Object? cause])
       : super(
           'Failed to write cache data for key: $key',
           'CACHE_WRITE_KEY_FAILED',
@@ -119,7 +119,7 @@ class CacheWriteException extends CacheServiceException {
   ///
   /// [key] The cache key that failed serialization.
   /// [cause] The underlying serialization error.
-  const CacheWriteException.serializationFailed(String key, cause)
+  const CacheWriteException.serializationFailed(String key, Object? cause)
       : super(
           'Failed to serialize data for cache key: $key',
           'CACHE_WRITE_SERIALIZATION_FAILED',
@@ -142,7 +142,7 @@ class CacheWriteException extends CacheServiceException {
   /// due to file system errors, permission issues, or hardware problems.
   ///
   /// [cause] Optional underlying disk access error.
-  const CacheWriteException.diskAccessFailed([cause])
+  const CacheWriteException.diskAccessFailed([Object? cause])
       : super(
           'Failed to access disk cache storage for writing',
           'CACHE_WRITE_DISK_ACCESS_FAILED',
@@ -182,7 +182,7 @@ class CacheManagementException extends CacheServiceException {
   /// potentially leaving the cache in an inconsistent state.
   ///
   /// [cause] Optional underlying clear operation error.
-  const CacheManagementException.clearFailed([cause])
+  const CacheManagementException.clearFailed([Object? cause])
       : super(
           'Failed to clear cache',
           'CACHE_MANAGEMENT_CLEAR_FAILED',
@@ -195,7 +195,7 @@ class CacheManagementException extends CacheServiceException {
   /// preventing any cache operations from functioning correctly.
   ///
   /// [cause] Optional underlying initialization error.
-  const CacheManagementException.initializationFailed([cause])
+  const CacheManagementException.initializationFailed([Object? cause])
       : super(
           'Failed to initialize cache service',
           'CACHE_MANAGEMENT_INITIALIZATION_FAILED',
@@ -208,7 +208,7 @@ class CacheManagementException extends CacheServiceException {
   /// expired entries, potentially causing storage or performance issues.
   ///
   /// [cause] Optional underlying cleanup operation error.
-  const CacheManagementException.cleanupFailed([cause])
+  const CacheManagementException.cleanupFailed([Object? cause])
       : super(
           'Failed to cleanup expired cache entries',
           'CACHE_MANAGEMENT_CLEANUP_FAILED',
@@ -221,7 +221,7 @@ class CacheManagementException extends CacheServiceException {
   /// affecting monitoring and performance analysis capabilities.
   ///
   /// [cause] Optional underlying statistics collection error.
-  const CacheManagementException.statisticsFailed([cause])
+  const CacheManagementException.statisticsFailed([Object? cause])
       : super(
           'Failed to collect cache statistics',
           'CACHE_MANAGEMENT_STATISTICS_FAILED',
@@ -234,7 +234,7 @@ class CacheManagementException extends CacheServiceException {
   /// affecting cache management and eviction policies.
   ///
   /// [cause] Optional underlying size calculation error.
-  const CacheManagementException.sizeFailed([cause])
+  const CacheManagementException.sizeFailed([Object? cause])
       : super(
           'Failed to calculate cache size',
           'CACHE_MANAGEMENT_SIZE_FAILED',

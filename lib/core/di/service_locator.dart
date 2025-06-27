@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../data/repositories/repositories.dart';
@@ -492,6 +493,9 @@ class ServiceLocator {
   static bool get isProduction =>
       _currentEnvironment == AppEnvironment.production;
 
+  /// Check if the service locator has been initialized.
+  static bool get isInitialized => _isInitialized;
+
   /// Reset and dispose all services.
   ///
   /// This should be called when the app is shutting down or between tests.
@@ -506,30 +510,33 @@ class ServiceLocator {
       if (Get.isRegistered<IAudioService>()) {
         final audioService = Get.find<IAudioService>();
         await audioService.dispose();
-        Get.delete<IAudioService>();
+        await Get.delete<IAudioService>();
       }
 
       // Clear cache service
       if (Get.isRegistered<ICacheService>()) {
         final cacheService = Get.find<ICacheService>();
         await cacheService.clear();
-        Get.delete<ICacheService>();
+        await Get.delete<ICacheService>();
       }
 
       // Dispose network service
       if (Get.isRegistered<INetworkService>()) {
         final networkService = Get.find<INetworkService>();
         await networkService.dispose();
-        Get.delete<INetworkService>();
+        await Get.delete<INetworkService>();
       }
 
       // Dispose repositories
       if (Get.isRegistered<MusicRepository>()) {
-        Get.delete<MusicRepository>();
+        await Get.delete<MusicRepository>();
       }
     } on Exception catch (e) {
-      // Log disposal errors but don't throw
-      print('Error during ServiceLocator disposal: $e');
+      // Log disposal errors but don't throw - using debugPrint for development
+      // TODO: Replace with proper logging service when available
+      if (kDebugMode) {
+        debugPrint('Error during ServiceLocator disposal: $e');
+      }
     } finally {
       _isInitialized = false;
     }

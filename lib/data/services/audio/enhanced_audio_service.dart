@@ -16,6 +16,7 @@ import 'audio_service_interface.dart';
 /// Provides full-featured audio playback with queue management, background
 /// playback, advanced controls, and proper error handling.
 class EnhancedAudioService implements IAudioService {
+  /// Returns the singleton instance of the enhanced audio service.
   factory EnhancedAudioService() => _instance;
   EnhancedAudioService._internal();
   static final EnhancedAudioService _instance =
@@ -23,6 +24,7 @@ class EnhancedAudioService implements IAudioService {
 
   // Core audio player
   AudioPlayer? _player;
+  /// Gets the current audio player instance, creating one if needed.
   AudioPlayer get player => _player ??= _createPlayer();
 
   // State management
@@ -168,7 +170,7 @@ class EnhancedAudioService implements IAudioService {
       if (kDebugMode) {
         print('EnhancedAudioService initialized successfully');
       }
-    } on Exception catch (e) {
+    } on Exception {
       throw const AudioInitializationException.initFailed();
     }
   }

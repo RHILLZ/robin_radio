@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'cache_service_interface.dart';
 import '../../exceptions/cache_service_exception.dart';
+import 'cache_service_interface.dart';
 
 /// Mock implementation of cache service for testing purposes.
 ///
@@ -238,11 +238,15 @@ class MockCacheService implements ICacheService {
   bool _shouldSimulateError = false;
   String _errorType = '';
 
+  /// Simulates cache errors for testing purposes.
+  ///
+  /// [errorType] The type of error to simulate (e.g., 'read_failure', 'write_failure').
   void simulateError(String errorType) {
     _shouldSimulateError = true;
     _errorType = errorType;
   }
 
+  /// Stops simulating cache errors and returns to normal operation.
   void stopSimulatingErrors() {
     _shouldSimulateError = false;
     _errorType = '';
