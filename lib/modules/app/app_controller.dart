@@ -44,6 +44,9 @@ class AppController extends GetxController {
   /// Observable status message describing the current loading operation.
   final RxString _loadingStatusMessage = 'Initializing...'.obs;
 
+  /// Set of album IDs that are currently being reloaded
+  final RxSet<String> _albumsBeingReloaded = <String>{}.obs;
+
   // Getters
   /// Current list of albums loaded from the music repository.
   List<Album> get albums => _albums;
@@ -74,6 +77,12 @@ class AppController extends GetxController {
   /// Currently returns false as pagination is not implemented.
   /// This property is kept for compatibility but will be deprecated.
   bool get isLoadingMore => false;
+
+  /// Checks if a specific album is currently being reloaded
+  bool isAlbumLoading(String? albumId) {
+    if (albumId == null) return false;
+    return _albumsBeingReloaded.contains(albumId);
+  }
 
   @override
   Future<void> onInit() async {
@@ -253,24 +262,88 @@ class AppController extends GetxController {
 
   /// Opens the track list view as a bottom sheet for the specified album.
   ///
-  /// Includes performance monitoring to track album loading metrics.
-  /// The track list is displayed in a modal bottom sheet with transparent background.
+  /// Includes performance monitoring and targeted track loading for albums with missing tracks.
+  /// Shows loading indicators for individual albums and only reloads that specific album's data.
   ///
   /// [album] The album whose tracks should be displayed.
   Future<void> openTrackList(Album album) async {
+    var albumToShow = album;
+
+    // Defensive check: if album has no tracks, try to reload just this album
+    if (album.tracks.isEmpty && album.id != null) {
+      final albumId = album.id!;
+
+      // Check if this album is already being reloaded
+      if (_albumsBeingReloaded.contains(albumId)) {
+        debugPrint(
+          'Album "${album.albumName}" is already being reloaded, skipping...',
+        );
+        return;
+      }
+
+      debugPrint(
+        'Album "${album.albumName}" has no tracks, attempting targeted reload...',
+      );
+
+      // Add to loading set to show loading indicator
+      _albumsBeingReloaded.add(albumId);
+
+      try {
+        // First, try to find the album in our current albums list
+        final foundAlbum = getAlbumById(albumId);
+        if (foundAlbum != null && foundAlbum.tracks.isNotEmpty) {
+          debugPrint(
+            'Found album with ${foundAlbum.tracks.length} tracks in current list',
+          );
+          albumToShow = foundAlbum;
+        } else {
+          // Use targeted loading - get tracks for just this album
+          debugPrint('Loading tracks for album ID: $albumId');
+          final tracks = await _musicRepository.getTracks(albumId);
+
+          if (tracks.isNotEmpty) {
+            debugPrint('Successfully loaded ${tracks.length} tracks for album');
+
+            // Create updated album with the loaded tracks
+            albumToShow = album.copyWith(tracks: tracks);
+
+            // Update just this album in our albums list
+            final albumIndex = _albums.indexWhere((a) => a.id == albumId);
+            if (albumIndex >= 0) {
+              final updatedAlbums = List<Album>.from(_albums);
+              updatedAlbums[albumIndex] = albumToShow;
+              _albums.value = updatedAlbums;
+              debugPrint('Updated album in albums list');
+            }
+          } else {
+            debugPrint(
+              'Warning: No tracks found for album after targeted reload',
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('Failed to reload album tracks: $e');
+        // Continue with original album even if it has no tracks
+      } finally {
+        // Remove from loading set
+        _albumsBeingReloaded.remove(albumId);
+      }
+    }
+
     // Track album loading performance
     final performanceService = PerformanceService();
-    await performanceService.startAlbumLoadTrace(album.id ?? 'unknown_album');
+    await performanceService
+        .startAlbumLoadTrace(albumToShow.id ?? 'unknown_album');
 
     Get.bottomSheet<void>(
-      Scaffold(body: TrackListView(album: album)),
+      Scaffold(body: TrackListView(album: albumToShow)),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
     );
 
     // Stop album loading trace
     await performanceService.stopAlbumLoadTrace(
-      trackCount: album.tracks.length,
+      trackCount: albumToShow.tracks.length,
     );
   }
 

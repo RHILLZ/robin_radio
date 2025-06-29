@@ -331,7 +331,29 @@ class PlayerView extends GetView<PlayerController> {
                 title: const Text('View Album'),
                 onTap: () {
                   Navigator.pop(context);
-                  // Navigate to album view
+                  // Navigate to album view with fallback logic
+                  final currentAlbum = controller.currentAlbum;
+                  if (currentAlbum != null) {
+                    Get.find<AppController>().openTrackList(currentAlbum);
+                  } else {
+                    // Fallback: try to find album by current song
+                    final currentSong = controller.currentSong;
+                    if (currentSong?.albumName != null) {
+                      final appController = Get.find<AppController>();
+                      final albums = appController.albums;
+                      try {
+                        final foundAlbum = albums.firstWhere(
+                          (album) => album.albumName == currentSong!.albumName,
+                        );
+                        appController.openTrackList(foundAlbum);
+                      } catch (e) {
+                        // Album not found, do nothing
+                        debugPrint(
+                          'Could not find album "${currentSong!.albumName}" for navigation',
+                        );
+                      }
+                    }
+                  }
                 },
               ),
           ],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../data/models/album.dart';
+import '../../../modules/app/app_controller.dart';
 import '../../albumCover.dart';
 
 /// Interactive card widget for displaying album information in grid and list layouts.
@@ -199,72 +201,110 @@ class AlbumCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => RepaintBoundary(
-        child: GestureDetector(
-          onTap: onTap,
-          child: Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Album cover
-                Expanded(
-                  child: Hero(
-                    tag: 'album-${album.id}',
-                    child: ClipRRect(
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(12)),
-                      child: RepaintBoundary(
-                        child: AlbumCover(
-                          imageUrl: album.albumCover,
-                          albumName: album.albumName,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+        child: GetBuilder<AppController>(
+          builder: (appController) {
+            final isLoading = appController.isAlbumLoading(album.id);
 
-                // Album info
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        album.albumName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        album.artist ?? 'Unknown Artist',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${album.trackCount} tracks',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                        ),
-                      ),
-                    ],
-                  ),
+            return GestureDetector(
+              onTap: isLoading ? null : onTap, // Disable tap during loading
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
-          ),
+                child: Stack(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Album cover
+                        Expanded(
+                          child: Hero(
+                            tag: 'album-${album.id}',
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                              child: RepaintBoundary(
+                                child: AlbumCover(
+                                  imageUrl: album.albumCover,
+                                  albumName: album.albumName,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Album info
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                album.albumName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                album.artist ?? 'Unknown Artist',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.color,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                isLoading
+                                    ? 'Loading tracks...'
+                                    : '${album.trackCount} tracks',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isLoading
+                                      ? Theme.of(context).primaryColor
+                                      : Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Loading overlay
+                    if (isLoading)
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       );
 

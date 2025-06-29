@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:json_theme/json_theme.dart';
 import 'package:sizer/sizer.dart';
 
@@ -39,6 +40,9 @@ void main() async {
       return Firebase.app();
     });
 
+    // Initialize Hive
+    await Hive.initFlutter();
+    
     // Initialize service locator with all services
     await ServiceLocator.initialize();
     

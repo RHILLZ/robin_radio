@@ -336,7 +336,7 @@ class ServiceLocator {
       );
     } else {
       Get.put<IAudioService>(
-        EnhancedAudioService(),
+        BackgroundAudioService(),
         permanent: true,
       );
     }
