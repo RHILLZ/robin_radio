@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:miniplayer/miniplayer.dart';
 
 import '../../data/models/album.dart';
 import '../../data/models/song.dart';
@@ -468,13 +469,41 @@ class PlayerController extends GetxController {
   /// Releases audio resources and resets all player state to default values.
   /// Should be called when the player is no longer needed.
   Future<void> closePlayer() async {
-    await _audioService.stop();
+    try {
+      // Stop audio service with timeout to prevent hanging
+      await _audioService.stop().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          if (kDebugMode) {
+            print('Audio service stop timed out, continuing with cleanup');
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error stopping audio service: $e');
+      }
+    }
+
+    // Clear all player state
     _tracks.clear();
     _trackIndex.value = 0;
     _currentSong.value = null;
     _currentRadioSong.value = null;
     _currentAlbum.value = null;
     _coverURL.value = null;
+
+    // Dismiss the mini player UI
+    try {
+      final appController = Get.find<AppController>();
+      appController.miniPlayerController.animateToHeight(
+        state: PanelState.dismiss,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error dismissing mini player: $e');
+      }
+    }
   }
 
   /// Toggles between play and pause states.
