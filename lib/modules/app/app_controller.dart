@@ -105,7 +105,11 @@ class AppController extends GetxController {
   ///
   /// Handles loading progress updates, error states, and performance monitoring.
   /// Includes timeout handling and cache fallback for improved reliability.
+  /// Ensures minimum loading duration for proper UI feedback.
   Future<void> _initializeMusic() async {
+    final startTime = DateTime.now();
+    const minLoadingDuration = Duration(seconds: 2); // Minimum loading time
+
     try {
       _isLoading.value = true;
       _hasError.value = false;
@@ -119,7 +123,7 @@ class AppController extends GetxController {
       // Step 1: Initialize services (10% progress)
       _loadingStatusMessage.value = 'Initializing services...';
       _loadingProgress.value = 0.1;
-      await Future.delayed(
+      await Future<void>.delayed(
         const Duration(milliseconds: 500),
       ); // Allow UI to update
 
@@ -142,10 +146,26 @@ class AppController extends GetxController {
         songCount: totalSongs,
         fromCache: false, // Repository handles caching internally
       );
+
+      // Ensure minimum loading duration for proper UI feedback
+      final elapsed = DateTime.now().difference(startTime);
+      if (elapsed < minLoadingDuration) {
+        await Future<void>.delayed(minLoadingDuration - elapsed);
+      }
     } on RepositoryException catch (e) {
       _handleError(e.message);
+      // Still enforce minimum duration even on error
+      final elapsed = DateTime.now().difference(startTime);
+      if (elapsed < minLoadingDuration) {
+        await Future<void>.delayed(minLoadingDuration - elapsed);
+      }
     } catch (e) {
       _handleError('Failed to initialize music: $e');
+      // Still enforce minimum duration even on error
+      final elapsed = DateTime.now().difference(startTime);
+      if (elapsed < minLoadingDuration) {
+        await Future<void>.delayed(minLoadingDuration - elapsed);
+      }
     } finally {
       _isLoading.value = false;
     }
@@ -195,11 +215,11 @@ class AppController extends GetxController {
     // Simulate progressive loading with status updates
     _loadingStatusMessage.value = 'Connecting to music library...';
     _loadingProgress.value = 0.3;
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
 
     _loadingStatusMessage.value = 'Loading artists...';
     _loadingProgress.value = 0.4;
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
 
     _loadingStatusMessage.value = 'Loading albums...';
     _loadingProgress.value = 0.6;
@@ -209,7 +229,7 @@ class AppController extends GetxController {
 
     _loadingStatusMessage.value = 'Processing music data...';
     _loadingProgress.value = 0.9;
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future<void>.delayed(const Duration(milliseconds: 300));
 
     return albums;
   }
@@ -227,23 +247,53 @@ class AppController extends GetxController {
   ///
   /// Updates loading progress and status messages during the refresh operation.
   /// Handles errors gracefully and ensures loading state is properly managed.
+  /// Ensures minimum loading duration for proper UI feedback.
   Future<void> refreshMusic() async {
+    final startTime = DateTime.now();
+    const minLoadingDuration = Duration(seconds: 2); // Minimum loading time
+
     try {
       _isLoading.value = true;
       _loadingProgress.value = 0.0;
       _loadingStatusMessage.value = 'Refreshing music...';
 
-      // Clear cache and reload from repository
+      // Progressive updates for better UX
+      _loadingProgress.value = 0.2;
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      _loadingStatusMessage.value = 'Clearing cache...';
+      _loadingProgress.value = 0.4;
       await _musicRepository.refreshCache();
+
+      _loadingStatusMessage.value = 'Reloading music library...';
+      _loadingProgress.value = 0.6;
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
       final albums = await _musicRepository.getAlbums();
       _albums.value = albums;
 
       _loadingProgress.value = 1.0;
       _loadingStatusMessage.value = 'Music refreshed successfully';
+
+      // Ensure minimum loading duration for proper UI feedback
+      final elapsed = DateTime.now().difference(startTime);
+      if (elapsed < minLoadingDuration) {
+        await Future<void>.delayed(minLoadingDuration - elapsed);
+      }
     } on RepositoryException catch (e) {
       _handleError(e.message);
+      // Still enforce minimum duration even on error
+      final elapsed = DateTime.now().difference(startTime);
+      if (elapsed < minLoadingDuration) {
+        await Future<void>.delayed(minLoadingDuration - elapsed);
+      }
     } catch (e) {
       _handleError('Failed to refresh music: $e');
+      // Still enforce minimum duration even on error
+      final elapsed = DateTime.now().difference(startTime);
+      if (elapsed < minLoadingDuration) {
+        await Future<void>.delayed(minLoadingDuration - elapsed);
+      }
     } finally {
       _isLoading.value = false;
     }
@@ -269,20 +319,31 @@ class AppController extends GetxController {
   Future<void> openTrackList(Album album) async {
     var albumToShow = album;
 
+    // Always try to get the most up-to-date album from our albums list first
+    if (album.id != null) {
+      final currentAlbum = getAlbumById(album.id!);
+      if (currentAlbum != null) {
+        albumToShow = currentAlbum;
+        debugPrint(
+          'Using current album from albums list with ${currentAlbum.tracks.length} tracks',
+        );
+      }
+    }
+
     // Defensive check: if album has no tracks, try to reload just this album
-    if (album.tracks.isEmpty && album.id != null) {
-      final albumId = album.id!;
+    if (albumToShow.tracks.isEmpty && albumToShow.id != null) {
+      final albumId = albumToShow.id!;
 
       // Check if this album is already being reloaded
       if (_albumsBeingReloaded.contains(albumId)) {
         debugPrint(
-          'Album "${album.albumName}" is already being reloaded, skipping...',
+          'Album "${albumToShow.albumName}" is already being reloaded, skipping...',
         );
         return;
       }
 
       debugPrint(
-        'Album "${album.albumName}" has no tracks, attempting targeted reload...',
+        'Album "${albumToShow.albumName}" has no tracks, attempting targeted reload...',
       );
 
       // Add to loading set to show loading indicator
@@ -305,7 +366,7 @@ class AppController extends GetxController {
             debugPrint('Successfully loaded ${tracks.length} tracks for album');
 
             // Create updated album with the loaded tracks
-            albumToShow = album.copyWith(tracks: tracks);
+            albumToShow = albumToShow.copyWith(tracks: tracks);
 
             // Update just this album in our albums list
             final albumIndex = _albums.indexWhere((a) => a.id == albumId);

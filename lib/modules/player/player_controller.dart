@@ -7,7 +7,8 @@ import 'package:get/get.dart';
 
 import '../../data/models/album.dart';
 import '../../data/models/song.dart';
-import '../../data/services/audio_player_service.dart';
+import '../../core/di/service_locator.dart';
+import '../../data/services/audio/audio_service_interface.dart';
 import '../../data/services/performance_service.dart';
 import '../app/app_controller.dart';
 
@@ -62,8 +63,8 @@ enum PlayerShuffleMode {
 /// controller.togglePlayPause();
 /// ```
 class PlayerController extends GetxController {
-  // Core player components - now using centralized service
-  final AudioPlayerService _audioService = AudioPlayerService();
+  // Core player components - using centralized background audio service
+  late final IAudioService _audioService;
   /// Reference to the main app controller for global state management.
   final appController = Get.find<AppController>();
 
@@ -181,6 +182,8 @@ class PlayerController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Get the audio service from service locator
+    _audioService = ServiceLocator.get<IAudioService>();
     // Hide player by default when app starts
     _hidePlayerInRadioView.value = true;
     _initializePlayer();
@@ -191,23 +194,24 @@ class PlayerController extends GetxController {
     final performanceService = PerformanceService();
     await performanceService.startPlayerInitTrace();
 
-    // Set up player event listeners
-    _audioService.onDurationChanged.listen(_onDurationChanged);
-    _audioService.onPositionChanged.listen(_onPositionChanged);
-    _audioService.onPlayerStateChanged.listen(_onPlayerStateChanged);
-    _audioService.onPlayerComplete.listen(_onPlayerComplete);
+    // Initialize the audio service
+    await _audioService.initialize();
 
-    // Set up error handling
-    _audioService.onError.listen((message) {
-      debugPrint('AudioPlayer error: $message');
-      _playbackError.value = message;
+    // Set up player event listeners using the IAudioService streams
+    _audioService.duration.listen(_onDurationChanged);
+    _audioService.position.listen(_onPositionChanged);
+    _audioService.playbackState.listen(_onPlaybackStateChanged);
+    _audioService.currentTrack.listen((song) {
+      if (song == null) {
+        _onPlayerComplete(null);
+      }
     });
 
     // Set initial volume
-    _audioService.setVolume(_volume.value);
+    await _audioService.setVolume(_volume.value);
 
     // Stop player initialization trace
-    await performanceService.stopPlayerInitTrace(playerMode: 'audio_player');
+    await performanceService.stopPlayerInitTrace(playerMode: 'background_audio_service');
   }
 
   void _onDurationChanged(Duration duration) {
@@ -218,10 +222,28 @@ class PlayerController extends GetxController {
     _playerPosition.value = position;
   }
 
-  void _onPlayerStateChanged(PlayerState state) {
-    _playerState.value = state;
-    _isBuffering.value = state == PlayerState.playing &&
-        _playerPosition.value.inMilliseconds == 0;
+  void _onPlaybackStateChanged(PlaybackState state) {
+    // Map PlaybackState to PlayerState
+    final playerState = _mapPlaybackStateToPlayerState(state);
+    _playerState.value = playerState;
+    _isBuffering.value = state == PlaybackState.buffering;
+  }
+
+  PlayerState _mapPlaybackStateToPlayerState(PlaybackState state) {
+    switch (state) {
+      case PlaybackState.playing:
+        return PlayerState.playing;
+      case PlaybackState.paused:
+        return PlayerState.paused;
+      case PlaybackState.stopped:
+        return PlayerState.stopped;
+      case PlaybackState.completed:
+        return PlayerState.completed;
+      case PlaybackState.buffering:
+        return PlayerState.playing; // Treat buffering as playing for UI
+      case PlaybackState.error:
+        return PlayerState.stopped;
+    }
   }
 
   Future<void> _onPlayerComplete(void _) async {
@@ -314,7 +336,7 @@ class PlayerController extends GetxController {
       _coverURL.value = randomAlbum.albumCover;
 
       // Play the track
-      await _audioService.play(randomTrack.songUrl);
+      await _audioService.play(randomTrack);
     } catch (e) {
       _playbackError.value = 'Error playing radio: $e';
       debugPrint('Radio playback error: $e');
@@ -344,7 +366,7 @@ class PlayerController extends GetxController {
       final currentTrack = _tracks[_trackIndex.value];
       _currentSong.value = currentTrack;
 
-      await _audioService.play(currentTrack.songUrl);
+      await _audioService.play(currentTrack);
 
       if (kDebugMode) {
         print('TRACK INDEX: ${_trackIndex.value}');
@@ -446,7 +468,7 @@ class PlayerController extends GetxController {
   /// Releases audio resources and resets all player state to default values.
   /// Should be called when the player is no longer needed.
   Future<void> closePlayer() async {
-    await _audioService.release();
+    await _audioService.stop();
     _tracks.clear();
     _trackIndex.value = 0;
     _currentSong.value = null;
@@ -583,7 +605,7 @@ class PlayerController extends GetxController {
 
   @override
   void onClose() {
-    _audioService.dispose();
+    // Don't dispose the audio service since it's managed by ServiceLocator
     super.onClose();
   }
 }

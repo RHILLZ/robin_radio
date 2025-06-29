@@ -1,5 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.robin_radio">
+   
+   <!-- Permissions for background audio playback -->
+   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+   <uses-permission android:name="android.permission.WAKE_LOCK" />
+   <uses-permission android:name="android.permission.INTERNET" />
+   
    <application
         android:label="Robins Radio"
         android:name="${applicationName}"
@@ -30,5 +37,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+            
+        <!-- Audio service for background playback -->
+        <service android:name="com.ryanheise.audioservice.AudioService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="false" />
     </application>
 </manifest>

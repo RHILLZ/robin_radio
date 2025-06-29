@@ -23,7 +23,7 @@ class AlbumCover extends StatelessWidget {
     final useExplicitSize = size != null && size!.isFinite && size! > 0;
     final coverSize = useExplicitSize ? size : null;
 
-    // If no image URL, show fallback immediately
+    // If no image URL, show logo fallback immediately
     if (imageUrl == null || imageUrl!.isEmpty) {
       return Container(
         width: coverSize,
@@ -32,11 +32,18 @@ class AlbumCover extends StatelessWidget {
           borderRadius: BorderRadius.circular(borderRadius),
           color: Colors.grey.shade200,
         ),
-        child: const Center(
-          child: Icon(
-            Icons.music_note,
-            size: 32,
-            color: Colors.grey,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Image.asset(
+              'assets/logo/rr-logo.webp',
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.music_note,
+                size: 32,
+                color: Colors.grey,
+              ),
+            ),
           ),
         ),
       );
@@ -63,11 +70,18 @@ class AlbumCover extends StatelessWidget {
           width: coverSize,
           height: coverSize,
           color: Colors.grey.shade100,
-          child: const Center(
-            child: Icon(
-              Icons.broken_image,
-              size: 32,
-              color: Colors.redAccent,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Image.asset(
+                'assets/logo/rr-logo.webp',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.broken_image,
+                  size: 32,
+                  color: Colors.redAccent,
+                ),
+              ),
             ),
           ),
         ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -42,10 +43,10 @@ void main() async {
 
     // Initialize Hive
     await Hive.initFlutter();
-    
+
     // Initialize service locator with all services
     await ServiceLocator.initialize();
-    
+
     // Start app startup performance trace
     final performanceService = PerformanceService();
     await performanceService.startAppStartTrace();
@@ -71,14 +72,14 @@ void main() async {
         audioFocus: AndroidAudioFocus.none,
       ),
     );
-    AudioPlayer.global.setAudioContext(audioContext);
+    await AudioPlayer.global.setAudioContext(audioContext);
 
     // Initialize dependencies
     MainBindings().dependencies();
 
     // Stop app startup trace before running the app
     await performanceService.stopAppStartTrace();
-    
+
     // Complete the service initialization
     if (!ServiceLocator.isInitialized) {
       debugPrint('Warning: ServiceLocator not fully initialized');

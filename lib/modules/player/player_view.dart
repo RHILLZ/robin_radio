@@ -4,6 +4,7 @@ import 'package:miniplayer/miniplayer.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../global/widgets/widgets.dart';
+import '../../global/albumCover.dart';
 import '../app/app_controller.dart';
 import 'player_controller.dart';
 
@@ -127,17 +128,11 @@ class PlayerView extends GetView<PlayerController> {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: ImageLoader(
-          imageUrl: controller.coverURL ?? '',
-          width: responsiveSize,
-          height: responsiveSize,
-          context: ImageContext.detailView,
-          progressiveMode: ProgressiveLoadingMode.twoPhase,
-          transitionDuration: const Duration(milliseconds: 800),
-          heroTag: 'player_cover_${controller.currentSong?.songName}',
-        ),
+      child: AlbumCover(
+        imageUrl: controller.coverURL,
+        albumName: controller.currentSong?.albumName,
+        size: responsiveSize,
+        borderRadius: 12,
       ),
     );
   }
