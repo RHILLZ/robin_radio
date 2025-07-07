@@ -103,7 +103,7 @@ class _DownloadsViewState extends State<DownloadsView>
 
         return ResponsiveGrid(
           padding: EdgeInsets.all(context.responsivePadding),
-          spacing: 12.0,
+          spacing: 12,
           mobileColumns: 1,
           tabletColumns: 1,
           desktopColumns: 2,
@@ -114,10 +114,12 @@ class _DownloadsViewState extends State<DownloadsView>
   /// Builds the download history tab.
   Widget _buildDownloadHistoryTab() => Obx(() {
         final allDownloads = _downloadManager.allDownloads
-            .where((item) => 
-                item.status == DownloadStatus.completed ||
-                item.status == DownloadStatus.failed ||
-                item.status == DownloadStatus.cancelled)
+            .where(
+              (item) =>
+                  item.status == DownloadStatus.completed ||
+                  item.status == DownloadStatus.failed ||
+                  item.status == DownloadStatus.cancelled,
+            )
             .toList();
 
         if (allDownloads.isEmpty) {
@@ -134,7 +136,7 @@ class _DownloadsViewState extends State<DownloadsView>
 
         return ResponsiveGrid(
           padding: EdgeInsets.all(context.responsivePadding),
-          spacing: 12.0,
+          spacing: 12,
           mobileColumns: 1,
           tabletColumns: 1,
           desktopColumns: 2,
@@ -160,7 +162,7 @@ class _DownloadsViewState extends State<DownloadsView>
 
     return ResponsiveGrid(
       padding: EdgeInsets.all(context.responsivePadding),
-      spacing: 12.0,
+      spacing: 12,
       mobileColumns: 1,
       tabletColumns: 1,
       desktopColumns: 2,
@@ -217,7 +219,8 @@ class _DownloadsViewState extends State<DownloadsView>
           ),
           trailing: PopupMenuButton<String>(
             icon: const AdaptiveIcon(Icons.more_vert),
-            onSelected: (action) => _handleOfflineSongAction(action, offlineSong),
+            onSelected: (action) =>
+                _handleOfflineSongAction(action, offlineSong),
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'delete',
@@ -381,7 +384,7 @@ class _DownloadsViewState extends State<DownloadsView>
   }
 
   /// Shows storage information dialog.
-  void _showStorageInfo() async {
+  Future<void> _showStorageInfo() async {
     final totalSize = await _storageService.getTotalStorageUsed();
     final formattedSize = _formatBytes(totalSize);
     final songCount = _storageService.getAllOfflineSongs().length;
@@ -400,7 +403,7 @@ class _DownloadsViewState extends State<DownloadsView>
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: Get.back,
             child: const AdaptiveText('OK'),
           ),
         ],
@@ -418,7 +421,7 @@ class _DownloadsViewState extends State<DownloadsView>
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: Get.back,
             child: const AdaptiveText('Cancel'),
           ),
           TextButton(
@@ -446,7 +449,7 @@ class _DownloadsViewState extends State<DownloadsView>
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: Get.back,
             child: const AdaptiveText('Cancel'),
           ),
           TextButton(
@@ -465,15 +468,15 @@ class _DownloadsViewState extends State<DownloadsView>
   }
 
   /// Formats a DateTime to a readable string.
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 
   /// Formats bytes into human-readable format.
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }

@@ -19,6 +19,11 @@ import 'audio_service_interface.dart';
 /// - Media notifications with album art
 class BackgroundAudioHandler extends audio_service.BaseAudioHandler
     with audio_service.QueueHandler, audio_service.SeekHandler {
+  /// Creates a new background audio handler
+  BackgroundAudioHandler() {
+    _init();
+  }
+
   /// The audio player instance for actual playback
   final AudioPlayer _player = AudioPlayer();
 
@@ -43,11 +48,6 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
   /// Stream subscription for sequence state changes
   StreamSubscription<SequenceState?>? _sequenceStateSubscription;
 
-  /// Creates a new background audio handler
-  BackgroundAudioHandler() {
-    _init();
-  }
-
   /// Initialize the background audio handler
   void _init() {
     // Listen to player state changes
@@ -57,9 +57,11 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
 
     // Listen to position changes
     _positionSubscription = _player.positionStream.listen((position) {
-      playbackState.add(playbackState.value.copyWith(
-        updatePosition: position,
-      ));
+      playbackState.add(
+        playbackState.value.copyWith(
+          updatePosition: position,
+        ),
+      );
     });
 
     // Listen to duration changes
@@ -84,22 +86,22 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
     });
 
     // Set initial state
-    playbackState.add(audio_service.PlaybackState(
-      controls: [
-        audio_service.MediaControl.skipToPrevious,
-        audio_service.MediaControl.play,
-        audio_service.MediaControl.skipToNext,
-        audio_service.MediaControl.stop,
-      ],
-      systemActions: const {
-        audio_service.MediaAction.seek,
-        audio_service.MediaAction.seekForward,
-        audio_service.MediaAction.seekBackward,
-      },
-      androidCompactActionIndices: const [0, 1, 2],
-      processingState: audio_service.AudioProcessingState.idle,
-      playing: false,
-    ));
+    playbackState.add(
+      audio_service.PlaybackState(
+        controls: [
+          audio_service.MediaControl.skipToPrevious,
+          audio_service.MediaControl.play,
+          audio_service.MediaControl.skipToNext,
+          audio_service.MediaControl.stop,
+        ],
+        systemActions: const {
+          audio_service.MediaAction.seek,
+          audio_service.MediaAction.seekForward,
+          audio_service.MediaAction.seekBackward,
+        },
+        androidCompactActionIndices: const [0, 1, 2],
+      ),
+    );
   }
 
   @override
@@ -198,7 +200,8 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
       );
 
       if (_player.sequence?.isEmpty ?? true) {
-        await _player.setAudioSource(ConcatenatingAudioSource(children: [audioSource]));
+        await _player
+            .setAudioSource(ConcatenatingAudioSource(children: [audioSource]));
       } else {
         final playlist = _player.sequence! as ConcatenatingAudioSource;
         await playlist.add(audioSource);
@@ -261,7 +264,7 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
   /// Set the playback mode
   Future<void> setPlaybackMode(PlaybackMode mode) async {
     _playbackMode = mode;
-    
+
     // Update shuffle mode if applicable
     if (mode == PlaybackMode.shuffle) {
       await _player.setShuffleModeEnabled(true);
@@ -287,13 +290,17 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
   Future<void> playSong(Song song, {List<Song>? playlist}) async {
     try {
       List<AudioSource> sources;
-      
+
       if (playlist != null && playlist.isNotEmpty) {
-        sources = playlist.map((s) => AudioSource.uri(
-          Uri.parse(s.songUrl),
-          tag: s,
-        )).toList();
-        
+        sources = playlist
+            .map(
+              (s) => AudioSource.uri(
+                Uri.parse(s.songUrl),
+                tag: s,
+              ),
+            )
+            .toList();
+
         // Find the index of the current song
         _currentIndex = playlist.indexWhere((s) => s.id == song.id);
         if (_currentIndex == -1) _currentIndex = 0;
@@ -302,14 +309,22 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
         _currentIndex = 0;
       }
 
-      final concatenatingAudioSource = ConcatenatingAudioSource(children: sources);
-      await _player.setAudioSource(concatenatingAudioSource, initialIndex: _currentIndex);
-      
+      final concatenatingAudioSource =
+          ConcatenatingAudioSource(children: sources);
+      await _player.setAudioSource(
+        concatenatingAudioSource,
+        initialIndex: _currentIndex,
+      );
+
       // Update queue
       if (playlist != null) {
-        queue.add(playlist.map(_songToMediaItem).toList(),);
+        queue.add(
+          playlist.map(_songToMediaItem).toList(),
+        );
       } else {
-        queue.add([_songToMediaItem(song)],);
+        queue.add(
+          [_songToMediaItem(song)],
+        );
       }
 
       await _player.play();
@@ -323,47 +338,46 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
 
   /// Update the current media item
   void _updateMediaItem(Song song) {
-    mediaItem.add(audio_service.MediaItem(
-      id: song.id ?? '',
-      album: song.albumName ?? '',
-      title: song.songName,
-      artist: song.artist,
-      duration: song.duration,
-      extras: {
-        'songUrl': song.songUrl,
-        'albumName': song.albumName,
-        'duration': song.duration?.inSeconds,
-      },
-    ),);
+    mediaItem.add(
+      audio_service.MediaItem(
+        id: song.id ?? '',
+        album: song.albumName ?? '',
+        title: song.songName,
+        artist: song.artist,
+        duration: song.duration,
+        extras: {
+          'songUrl': song.songUrl,
+          'albumName': song.albumName,
+          'duration': song.duration?.inSeconds,
+        },
+      ),
+    );
   }
 
   /// Convert Song to MediaItem
-  audio_service.MediaItem _songToMediaItem(Song song) {
-    return audio_service.MediaItem(
-      id: song.id ?? '',
-      album: song.albumName ?? '',
-      title: song.songName,
-      artist: song.artist,
-      duration: song.duration,
-      extras: {
-        'songUrl': song.songUrl,
-        'albumName': song.albumName,
-        'duration': song.duration?.inSeconds,
-      },
-    );
-  }
+  audio_service.MediaItem _songToMediaItem(Song song) =>
+      audio_service.MediaItem(
+        id: song.id ?? '',
+        album: song.albumName ?? '',
+        title: song.songName,
+        artist: song.artist,
+        duration: song.duration,
+        extras: {
+          'songUrl': song.songUrl,
+          'albumName': song.albumName,
+          'duration': song.duration?.inSeconds,
+        },
+      );
 
   /// Convert MediaItem to Song
-  Song _mediaItemToSong(audio_service.MediaItem mediaItem) {
-    return Song(
-      id: mediaItem.id,
-      songName: mediaItem.title,
-      artist: mediaItem.artist ?? '',
-      albumName: mediaItem.album,
-      songUrl: mediaItem.extras?['songUrl'] as String? ?? '',
-      duration: Duration(seconds: mediaItem.extras?['duration'] as int? ?? 0),
-    );
-  }
+  Song _mediaItemToSong(audio_service.MediaItem mediaItem) => Song(
+        id: mediaItem.id,
+        songName: mediaItem.title,
+        artist: mediaItem.artist ?? '',
+        albumName: mediaItem.album,
+        songUrl: mediaItem.extras?['songUrl'] as String? ?? '',
+        duration: Duration(seconds: mediaItem.extras?['duration'] as int? ?? 0),
+      );
 
   /// Broadcast the current playback state
   void _broadcastState() {
@@ -372,42 +386,50 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
     final playing = playerState.playing;
 
     final controls = <audio_service.MediaControl>[];
-    
+
     if (playing) {
-      controls.addAll([
-        audio_service.MediaControl.skipToPrevious,
-        audio_service.MediaControl.pause,
-        audio_service.MediaControl.skipToNext,
-        audio_service.MediaControl.stop,
-      ],);
+      controls.addAll(
+        [
+          audio_service.MediaControl.skipToPrevious,
+          audio_service.MediaControl.pause,
+          audio_service.MediaControl.skipToNext,
+          audio_service.MediaControl.stop,
+        ],
+      );
     } else {
-      controls.addAll([
-        audio_service.MediaControl.skipToPrevious,
-        audio_service.MediaControl.play,
-        audio_service.MediaControl.skipToNext,
-        audio_service.MediaControl.stop,
-      ],);
+      controls.addAll(
+        [
+          audio_service.MediaControl.skipToPrevious,
+          audio_service.MediaControl.play,
+          audio_service.MediaControl.skipToNext,
+          audio_service.MediaControl.stop,
+        ],
+      );
     }
 
-    playbackState.add(audio_service.PlaybackState(
-      controls: controls,
-      systemActions: const {
-        audio_service.MediaAction.seek,
-        audio_service.MediaAction.seekForward,
-        audio_service.MediaAction.seekBackward,
-      },
-      androidCompactActionIndices: const [0, 1, 2],
-      processingState: processingState,
-      playing: playing,
-      updatePosition: _player.position,
-      bufferedPosition: _player.bufferedPosition,
-      speed: _player.speed,
-      queueIndex: _currentIndex,
-    ),);
+    playbackState.add(
+      audio_service.PlaybackState(
+        controls: controls,
+        systemActions: const {
+          audio_service.MediaAction.seek,
+          audio_service.MediaAction.seekForward,
+          audio_service.MediaAction.seekBackward,
+        },
+        androidCompactActionIndices: const [0, 1, 2],
+        processingState: processingState,
+        playing: playing,
+        updatePosition: _player.position,
+        bufferedPosition: _player.bufferedPosition,
+        speed: _player.speed,
+        queueIndex: _currentIndex,
+      ),
+    );
   }
 
   /// Map just_audio processing state to audio_service processing state
-  audio_service.AudioProcessingState _mapProcessingState(ProcessingState state) {
+  audio_service.AudioProcessingState _mapProcessingState(
+    ProcessingState state,
+  ) {
     switch (state) {
       case ProcessingState.idle:
         return audio_service.AudioProcessingState.idle;
@@ -429,13 +451,9 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
 
     switch (_playbackMode) {
       case PlaybackMode.normal:
-        return _currentIndex + 1 < queueLength 
-            ? _currentIndex + 1 
-            : -1;
+        return _currentIndex + 1 < queueLength ? _currentIndex + 1 : -1;
       case PlaybackMode.repeatAll:
-        return _currentIndex + 1 < queueLength 
-            ? _currentIndex + 1 
-            : 0;
+        return _currentIndex + 1 < queueLength ? _currentIndex + 1 : 0;
       case PlaybackMode.repeatOne:
         return _currentIndex;
       case PlaybackMode.shuffle:
@@ -450,13 +468,9 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
 
     switch (_playbackMode) {
       case PlaybackMode.normal:
-        return _currentIndex > 0 
-            ? _currentIndex - 1 
-            : -1;
+        return _currentIndex > 0 ? _currentIndex - 1 : -1;
       case PlaybackMode.repeatAll:
-        return _currentIndex > 0 
-            ? _currentIndex - 1 
-            : queueLength - 1;
+        return _currentIndex > 0 ? _currentIndex - 1 : queueLength - 1;
       case PlaybackMode.repeatOne:
         return _currentIndex;
       case PlaybackMode.shuffle:
@@ -468,12 +482,12 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
   int _getRandomIndex() {
     final queueLength = queue.value.length;
     if (queueLength <= 1) return _currentIndex;
-    
+
     int randomIndex;
     do {
       randomIndex = _random.nextInt(queueLength);
     } while (randomIndex == _currentIndex);
-    
+
     return randomIndex;
   }
 
@@ -484,7 +498,7 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
     await _positionSubscription?.cancel();
     await _durationSubscription?.cancel();
     await _sequenceStateSubscription?.cancel();
-    
+
     // Dispose player
     await _player.dispose();
   }

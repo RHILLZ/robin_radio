@@ -24,64 +24,62 @@ class AdaptiveSafeArea extends StatelessWidget {
 
   /// The child widget to wrap with safe area.
   final Widget child;
-  
+
   /// Whether to apply safe area on the left edge.
   final bool left;
-  
+
   /// Whether to apply safe area on the top edge.
   final bool top;
-  
+
   /// Whether to apply safe area on the right edge.
   final bool right;
-  
+
   /// Whether to apply safe area on the bottom edge.
   final bool bottom;
-  
+
   /// Whether to maintain bottom view padding.
   final bool maintainBottomViewPadding;
-  
+
   /// Minimum padding to apply (fallback for all device types).
   final EdgeInsets minimum;
-  
+
   /// Minimum padding for mobile devices.
   final EdgeInsets? mobileMinimum;
-  
+
   /// Minimum padding for tablet devices.
   final EdgeInsets? tabletMinimum;
-  
+
   /// Minimum padding for desktop devices.
   final EdgeInsets? desktopMinimum;
 
   @override
-  Widget build(BuildContext context) {
-    return ResponsiveBuilder(
-      builder: (context, constraints, deviceType, screenSize) {
-        EdgeInsets deviceMinimum;
-        
-        switch (deviceType) {
-          case DeviceType.mobile:
-            deviceMinimum = mobileMinimum ?? minimum;
-            break;
-          case DeviceType.tablet:
-            deviceMinimum = tabletMinimum ?? minimum;
-            break;
-          case DeviceType.desktop:
-            deviceMinimum = desktopMinimum ?? minimum;
-            break;
-        }
-        
-        return SafeArea(
-          left: left,
-          top: top,
-          right: right,
-          bottom: bottom,
-          maintainBottomViewPadding: maintainBottomViewPadding,
-          minimum: deviceMinimum,
-          child: child,
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => ResponsiveBuilder(
+        builder: (context, constraints, deviceType, screenSize) {
+          EdgeInsets deviceMinimum;
+
+          switch (deviceType) {
+            case DeviceType.mobile:
+              deviceMinimum = mobileMinimum ?? minimum;
+              break;
+            case DeviceType.tablet:
+              deviceMinimum = tabletMinimum ?? minimum;
+              break;
+            case DeviceType.desktop:
+              deviceMinimum = desktopMinimum ?? minimum;
+              break;
+          }
+
+          return SafeArea(
+            left: left,
+            top: top,
+            right: right,
+            bottom: bottom,
+            maintainBottomViewPadding: maintainBottomViewPadding,
+            minimum: deviceMinimum,
+            child: child,
+          );
+        },
+      );
 }
 
 /// A responsive scaffold that handles safe areas and provides adaptive app bars.
@@ -111,103 +109,106 @@ class ResponsiveScaffold extends StatelessWidget {
 
   /// The app bar to display.
   final PreferredSizeWidget? appBar;
-  
+
   /// The primary content of the scaffold.
   final Widget? body;
-  
+
   /// Floating action button.
   final Widget? floatingActionButton;
-  
+
   /// Location of the floating action button.
   final FloatingActionButtonLocation? floatingActionButtonLocation;
-  
+
   /// Drawer widget.
   final Widget? drawer;
-  
+
   /// End drawer widget.
   final Widget? endDrawer;
-  
+
   /// Bottom navigation bar.
   final Widget? bottomNavigationBar;
-  
+
   /// Background color of the scaffold.
   final Color? backgroundColor;
-  
+
   /// Whether to resize the body when the keyboard appears.
   final bool? resizeToAvoidBottomInset;
-  
+
   /// Whether this is a primary scaffold.
   final bool primary;
-  
+
   /// Whether to extend the body behind the app bar.
   final bool extendBody;
-  
+
   /// Whether to extend the body behind the app bar.
   final bool extendBodyBehindAppBar;
-  
+
   /// Whether to automatically imply leading widget.
   final bool automaticallyImplyLeading;
-  
+
   /// Whether to apply adaptive behavior to the app bar.
   final bool adaptiveAppBar;
-  
+
   /// Whether to apply adaptive padding to the body.
   final bool adaptivePadding;
 
   @override
-  Widget build(BuildContext context) {
-    return ResponsiveBuilder(
-      builder: (context, constraints, deviceType, screenSize) {
-        Widget? wrappedBody = body;
-        
-        // Apply adaptive padding to body if enabled
-        if (adaptivePadding && wrappedBody != null) {
-          EdgeInsets padding;
-          
-          switch (deviceType) {
-            case DeviceType.mobile:
-              padding = const EdgeInsets.symmetric(horizontal: 16.0);
-              break;
-            case DeviceType.tablet:
-              padding = const EdgeInsets.symmetric(horizontal: 24.0);
-              break;
-            case DeviceType.desktop:
-              padding = const EdgeInsets.symmetric(horizontal: 32.0);
-              break;
+  Widget build(BuildContext context) => ResponsiveBuilder(
+        builder: (context, constraints, deviceType, screenSize) {
+          var wrappedBody = body;
+
+          // Apply adaptive padding to body if enabled
+          if (adaptivePadding && wrappedBody != null) {
+            EdgeInsets padding;
+
+            switch (deviceType) {
+              case DeviceType.mobile:
+                padding = const EdgeInsets.symmetric(horizontal: 16);
+                break;
+              case DeviceType.tablet:
+                padding = const EdgeInsets.symmetric(horizontal: 24);
+                break;
+              case DeviceType.desktop:
+                padding = const EdgeInsets.symmetric(horizontal: 32);
+                break;
+            }
+
+            wrappedBody = Padding(
+              padding: padding,
+              child: wrappedBody,
+            );
           }
-          
-          wrappedBody = Padding(
-            padding: padding,
-            child: wrappedBody,
+
+          return Scaffold(
+            appBar: adaptiveAppBar
+                ? _buildAdaptiveAppBar(context, deviceType)
+                : appBar,
+            body: wrappedBody,
+            floatingActionButton: floatingActionButton,
+            floatingActionButtonLocation: floatingActionButtonLocation,
+            drawer: drawer,
+            endDrawer: endDrawer,
+            bottomNavigationBar: bottomNavigationBar,
+            backgroundColor: backgroundColor,
+            resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+            primary: primary,
+            extendBody: extendBody,
+            extendBodyBehindAppBar: extendBodyBehindAppBar,
           );
-        }
-        
-        return Scaffold(
-          appBar: adaptiveAppBar ? _buildAdaptiveAppBar(context, deviceType) : appBar,
-          body: wrappedBody,
-          floatingActionButton: floatingActionButton,
-          floatingActionButtonLocation: floatingActionButtonLocation,
-          drawer: drawer,
-          endDrawer: endDrawer,
-          bottomNavigationBar: bottomNavigationBar,
-          backgroundColor: backgroundColor,
-          resizeToAvoidBottomInset: resizeToAvoidBottomInset,
-          primary: primary,
-          extendBody: extendBody,
-          extendBodyBehindAppBar: extendBodyBehindAppBar,
-        );
-      },
-    );
-  }
-  
+        },
+      );
+
   /// Builds an adaptive app bar with device-specific styling.
-  PreferredSizeWidget? _buildAdaptiveAppBar(BuildContext context, DeviceType deviceType) {
+  PreferredSizeWidget? _buildAdaptiveAppBar(
+    BuildContext context,
+    DeviceType deviceType,
+  ) {
     if (appBar == null) return null;
-    
+
     // If it's already an AppBar, enhance it with adaptive properties
     if (appBar is AppBar) {
-      final originalAppBar = appBar as AppBar;
-      
+      final originalAppBar = appBar! as AppBar;
+
       // Adjust app bar height based on device type
       double height;
       switch (deviceType) {
@@ -221,7 +222,7 @@ class ResponsiveScaffold extends StatelessWidget {
           height = kToolbarHeight + 16.0;
           break;
       }
-      
+
       return PreferredSize(
         preferredSize: Size.fromHeight(height),
         child: AppBar(
@@ -241,7 +242,7 @@ class ResponsiveScaffold extends StatelessWidget {
         ),
       );
     }
-    
+
     return appBar;
   }
 }
@@ -250,29 +251,29 @@ class ResponsiveScaffold extends StatelessWidget {
 extension SafeAreaContext on BuildContext {
   /// Returns the safe area padding for the current device.
   EdgeInsets get safeAreaPadding => MediaQuery.of(this).padding;
-  
+
   /// Returns the view insets (usually keyboard) for the current device.
   EdgeInsets get viewInsets => MediaQuery.of(this).viewInsets;
-  
+
   /// Returns the view padding for the current device.
   EdgeInsets get viewPadding => MediaQuery.of(this).viewPadding;
-  
+
   /// Returns true if the device has a top notch or status bar.
   bool get hasTopNotch => safeAreaPadding.top > 24;
-  
+
   /// Returns true if the device has a bottom home indicator.
   bool get hasBottomSafeArea => safeAreaPadding.bottom > 0;
-  
+
   /// Returns true if the keyboard is currently visible.
   bool get isKeyboardVisible => viewInsets.bottom > 0;
-  
+
   /// Returns the height available for content (excluding safe areas).
   double get availableHeight {
     final size = MediaQuery.of(this).size;
     final padding = safeAreaPadding;
     return size.height - padding.top - padding.bottom;
   }
-  
+
   /// Returns the width available for content (excluding safe areas).
   double get availableWidth {
     final size = MediaQuery.of(this).size;

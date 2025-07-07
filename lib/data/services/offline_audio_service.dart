@@ -12,13 +12,12 @@ import 'offline_storage_service.dart';
 /// Extends the enhanced audio service to support offline song playback
 /// by managing local file paths and integration with online/offline states.
 class OfflineAudioService extends GetxController {
+  OfflineAudioService(this._audioService, this._storageService);
   final EnhancedAudioService _audioService;
   final OfflineStorageService _storageService;
 
   /// Current offline playback mode.
   final RxBool _isOfflineMode = false.obs;
-
-  OfflineAudioService(this._audioService, this._storageService);
 
   /// Whether the service is currently in offline mode.
   bool get isOfflineMode => _isOfflineMode.value;
@@ -38,7 +37,7 @@ class OfflineAudioService extends GetxController {
   Future<void> playSong(Song song, {bool forceOffline = false}) async {
     // Check if song is available offline
     final offlineSong = _storageService.getOfflineSong(song.id ?? '');
-    
+
     if (offlineSong != null && await _isOfflineFileValid(offlineSong)) {
       // Play offline version
       await _playOfflineSong(offlineSong);
@@ -59,8 +58,8 @@ class OfflineAudioService extends GetxController {
       artist: offlineSong.artist,
       albumName: offlineSong.albumName,
       songUrl: 'file://${offlineSong.localPath}',
-      duration: offlineSong.duration != null 
-          ? Duration(milliseconds: offlineSong.duration!) 
+      duration: offlineSong.duration != null
+          ? Duration(milliseconds: offlineSong.duration!)
           : null,
     );
 
@@ -70,13 +69,15 @@ class OfflineAudioService extends GetxController {
   /// Sets the offline mode for the service.
   Future<void> setOfflineMode(bool enabled) async {
     _isOfflineMode.value = enabled;
-    
+
     if (enabled) {
       // Switch current playing song to offline if available
       final currentSong = _audioService.currentSong;
       if (currentSong != null) {
-        final offlineVersion = _storageService.getOfflineSong(currentSong.id ?? '');
-        if (offlineVersion != null && await _isOfflineFileValid(offlineVersion)) {
+        final offlineVersion =
+            _storageService.getOfflineSong(currentSong.id ?? '');
+        if (offlineVersion != null &&
+            await _isOfflineFileValid(offlineVersion)) {
           await _playOfflineSong(offlineVersion);
         } else {
           // Stop playback if no offline version available
@@ -96,18 +97,21 @@ class OfflineAudioService extends GetxController {
   }
 
   /// Gets offline songs as regular Song objects for playback.
-  List<Song> getOfflineSongsAsSongs() {
-    return _storageService.getAllOfflineSongs().map((offlineSong) => Song(
-      id: offlineSong.id,
-      songName: offlineSong.songName,
-      artist: offlineSong.artist,
-      albumName: offlineSong.albumName,
-      songUrl: 'file://${offlineSong.localPath}',
-      duration: offlineSong.duration != null 
-          ? Duration(milliseconds: offlineSong.duration!) 
-          : null,
-    )).toList();
-  }
+  List<Song> getOfflineSongsAsSongs() => _storageService
+      .getAllOfflineSongs()
+      .map(
+        (offlineSong) => Song(
+          id: offlineSong.id,
+          songName: offlineSong.songName,
+          artist: offlineSong.artist,
+          albumName: offlineSong.albumName,
+          songUrl: 'file://${offlineSong.localPath}',
+          duration: offlineSong.duration != null
+              ? Duration(milliseconds: offlineSong.duration!)
+              : null,
+        ),
+      )
+      .toList();
 
   /// Plays offline songs in a queue.
   Future<void> playOfflineQueue(List<OfflineSong> songs) async {
@@ -125,8 +129,8 @@ class OfflineAudioService extends GetxController {
           artist: offlineSong.artist,
           albumName: offlineSong.albumName,
           songUrl: 'file://${offlineSong.localPath}',
-          duration: offlineSong.duration != null 
-              ? Duration(milliseconds: offlineSong.duration!) 
+          duration: offlineSong.duration != null
+              ? Duration(milliseconds: offlineSong.duration!)
               : null,
         );
         await _audioService.addToQueue(song);
@@ -149,7 +153,7 @@ class OfflineAudioService extends GetxController {
 
     // Remove from queue if present
     final queue = _audioService.queue;
-    for (int i = 0; i < queue.length; i++) {
+    for (var i = 0; i < queue.length; i++) {
       if (queue[i].id == songId) {
         await _audioService.removeFromQueue(i);
         break;
@@ -180,7 +184,9 @@ class OfflineAudioService extends GetxController {
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
@@ -192,7 +198,7 @@ class OfflineAudioService extends GetxController {
     // Implementation would depend on the online music service API
     // This is a placeholder for the sync functionality
     final offlineSongs = _storageService.getAllOfflineSongs();
-    
+
     for (final song in offlineSongs) {
       // Validate that the file still exists
       if (!await _isOfflineFileValid(song)) {

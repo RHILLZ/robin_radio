@@ -8,16 +8,19 @@ import 'package:permission_handler/permission_handler.dart';
 /// downloading and storing music files locally.
 class PermissionService extends GetxController {
   /// Current storage permission status.
-  final Rx<PermissionStatus> _storagePermissionStatus = PermissionStatus.denied.obs;
+  final Rx<PermissionStatus> _storagePermissionStatus =
+      PermissionStatus.denied.obs;
 
   /// Gets the current storage permission status.
-  PermissionStatus get storagePermissionStatus => _storagePermissionStatus.value;
+  PermissionStatus get storagePermissionStatus =>
+      _storagePermissionStatus.value;
 
   /// Stream of storage permission status changes.
-  Stream<PermissionStatus> get storagePermissionStream => _storagePermissionStatus.stream;
+  Stream<PermissionStatus> get storagePermissionStream =>
+      _storagePermissionStatus.stream;
 
   /// Checks if storage permission is granted.
-  bool get hasStoragePermission => 
+  bool get hasStoragePermission =>
       _storagePermissionStatus.value == PermissionStatus.granted;
 
   /// Initializes the permission service and checks current permissions.
@@ -29,12 +32,12 @@ class PermissionService extends GetxController {
   Future<PermissionStatus> requestStoragePermission() async {
     try {
       PermissionStatus status;
-      
+
       // Check platform and request appropriate permission
       if (GetPlatform.isAndroid) {
         // For Android, we need storage permission
         status = await Permission.storage.request();
-        
+
         // On Android 10+, also check manage external storage if needed
         if (status.isDenied || status.isPermanentlyDenied) {
           status = await Permission.manageExternalStorage.request();
@@ -59,15 +62,13 @@ class PermissionService extends GetxController {
   /// Checks if the user should be shown permission rationale.
   Future<bool> shouldShowStoragePermissionRationale() async {
     if (GetPlatform.isAndroid) {
-      return await Permission.storage.shouldShowRequestRationale;
+      return Permission.storage.shouldShowRequestRationale;
     }
     return false;
   }
 
   /// Opens app settings for the user to manually grant permissions.
-  Future<bool> openAppSettings() async {
-    return await openAppSettings();
-  }
+  Future<bool> openAppSettings() async => openAppSettings();
 
   /// Requests notification permission (for download completion notifications).
   Future<PermissionStatus> requestNotificationPermission() async {
@@ -89,10 +90,10 @@ class PermissionService extends GetxController {
   Future<void> _checkCurrentPermissions() async {
     try {
       PermissionStatus storageStatus;
-      
+
       if (GetPlatform.isAndroid) {
         storageStatus = await Permission.storage.status;
-        
+
         // Check manage external storage for newer Android versions
         if (storageStatus.isDenied) {
           final manageStatus = await Permission.manageExternalStorage.status;
@@ -120,13 +121,13 @@ class PermissionService extends GetxController {
   /// Requests all required permissions for offline functionality.
   Future<Map<String, PermissionStatus>> requestAllPermissions() async {
     final results = <String, PermissionStatus>{};
-    
+
     // Request storage permission
     results['storage'] = await requestStoragePermission();
-    
+
     // Request notification permission (optional)
     results['notification'] = await requestNotificationPermission();
-    
+
     return results;
   }
 
@@ -183,7 +184,7 @@ class PermissionService extends GetxController {
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: Get.back,
             child: const Text('Cancel'),
           ),
           TextButton(

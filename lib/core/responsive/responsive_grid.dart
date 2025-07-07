@@ -26,57 +26,55 @@ class ResponsiveGrid extends StatelessWidget {
 
   /// The widgets to display in the grid.
   final List<Widget> children;
-  
+
   /// Number of columns on mobile devices (default: auto-calculated).
   final int? mobileColumns;
-  
+
   /// Number of columns on tablet devices (default: auto-calculated).
   final int? tabletColumns;
-  
+
   /// Number of columns on desktop devices (default: auto-calculated).
   final int? desktopColumns;
-  
+
   /// Spacing between grid items horizontally.
   final double spacing;
-  
+
   /// Spacing between grid rows vertically (defaults to [spacing] value).
   final double? runSpacing;
-  
+
   /// How the children within a run should be placed in the cross axis.
   final WrapCrossAlignment crossAxisAlignment;
-  
+
   /// How the runs themselves should be placed in the main axis.
   final WrapAlignment mainAxisAlignment;
-  
+
   /// Padding around the entire grid.
   final EdgeInsetsGeometry? padding;
 
   @override
-  Widget build(BuildContext context) {
-    return ResponsiveBuilder(
-      builder: (context, constraints, deviceType, screenSize) {
-        final columns = _getColumns(deviceType);
-        final itemWidth = _calculateItemWidth(constraints.maxWidth, columns);
-        
-        final paddedChildren = children
-            .map((child) => SizedBox(width: itemWidth, child: child))
-            .toList();
-        
-        final grid = Wrap(
-          spacing: spacing,
-          runSpacing: runSpacing ?? spacing,
-          crossAxisAlignment: crossAxisAlignment,
-          alignment: mainAxisAlignment,
-          children: paddedChildren,
-        );
-        
-        return padding != null 
-            ? Padding(padding: padding!, child: grid)
-            : grid;
-      },
-    );
-  }
-  
+  Widget build(BuildContext context) => ResponsiveBuilder(
+        builder: (context, constraints, deviceType, screenSize) {
+          final columns = _getColumns(deviceType);
+          final itemWidth = _calculateItemWidth(constraints.maxWidth, columns);
+
+          final paddedChildren = children
+              .map((child) => SizedBox(width: itemWidth, child: child))
+              .toList();
+
+          final grid = Wrap(
+            spacing: spacing,
+            runSpacing: runSpacing ?? spacing,
+            crossAxisAlignment: crossAxisAlignment,
+            alignment: mainAxisAlignment,
+            children: paddedChildren,
+          );
+
+          return padding != null
+              ? Padding(padding: padding!, child: grid)
+              : grid;
+        },
+      );
+
   /// Determines the number of columns based on device type and custom settings.
   int _getColumns(DeviceType deviceType) {
     switch (deviceType) {
@@ -88,7 +86,7 @@ class ResponsiveGrid extends StatelessWidget {
         return desktopColumns ?? 4;
     }
   }
-  
+
   /// Calculates the width for each grid item based on available space and columns.
   double _calculateItemWidth(double totalWidth, int columns) {
     final totalSpacing = spacing * (columns - 1);
@@ -107,7 +105,7 @@ class ResponsiveStaggeredGrid extends StatelessWidget {
   const ResponsiveStaggeredGrid({
     required this.children,
     this.mobileColumns,
-    this.tabletColumns, 
+    this.tabletColumns,
     this.desktopColumns,
     this.spacing = 16.0,
     this.runSpacing,
@@ -117,78 +115,81 @@ class ResponsiveStaggeredGrid extends StatelessWidget {
 
   /// The widgets to display in the staggered grid.
   final List<Widget> children;
-  
+
   /// Number of columns on mobile devices (default: 2).
   final int? mobileColumns;
-  
+
   /// Number of columns on tablet devices (default: 3).
   final int? tabletColumns;
-  
+
   /// Number of columns on desktop devices (default: 4).
   final int? desktopColumns;
-  
+
   /// Spacing between grid items.
   final double spacing;
-  
+
   /// Spacing between grid rows (defaults to [spacing] value).
   final double? runSpacing;
-  
+
   /// Padding around the entire grid.
   final EdgeInsetsGeometry? padding;
 
   @override
-  Widget build(BuildContext context) {
-    return ResponsiveBuilder(
-      builder: (context, constraints, deviceType, screenSize) {
-        final columns = _getColumns(deviceType);
-        final itemWidth = _calculateItemWidth(constraints.maxWidth, columns);
-        
-        // Create column lists to distribute items
-        final columnLists = List.generate(columns, (_) => <Widget>[]);
-        
-        // Distribute children across columns
-        for (int i = 0; i < children.length; i++) {
-          final columnIndex = i % columns;
-          columnLists[columnIndex].add(
-            SizedBox(
-              width: itemWidth,
-              child: children[i],
-            ),
-          );
-        }
-        
-        // Create columns with spacing
-        final gridColumns = columnLists
-            .map((columnChildren) => Column(
+  Widget build(BuildContext context) => ResponsiveBuilder(
+        builder: (context, constraints, deviceType, screenSize) {
+          final columns = _getColumns(deviceType);
+          final itemWidth = _calculateItemWidth(constraints.maxWidth, columns);
+
+          // Create column lists to distribute items
+          final columnLists = List.generate(columns, (_) => <Widget>[]);
+
+          // Distribute children across columns
+          for (var i = 0; i < children.length; i++) {
+            final columnIndex = i % columns;
+            columnLists[columnIndex].add(
+              SizedBox(
+                width: itemWidth,
+                child: children[i],
+              ),
+            );
+          }
+
+          // Create columns with spacing
+          final gridColumns = columnLists
+              .map(
+                (columnChildren) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: columnChildren
-                      .expand((child) => [
-                            child,
-                            if (child != columnChildren.last)
-                              SizedBox(height: runSpacing ?? spacing),
-                          ])
+                      .expand(
+                        (child) => [
+                          child,
+                          if (child != columnChildren.last)
+                            SizedBox(height: runSpacing ?? spacing),
+                        ],
+                      )
                       .toList(),
-                ))
-            .toList();
-        
-        final grid = Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: gridColumns
-              .expand((column) => [
+                ),
+              )
+              .toList();
+
+          final grid = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: gridColumns
+                .expand(
+                  (column) => [
                     Expanded(child: column),
-                    if (column != gridColumns.last)
-                      SizedBox(width: spacing),
-                  ])
-              .toList(),
-        );
-        
-        return padding != null 
-            ? Padding(padding: padding!, child: grid)
-            : grid;
-      },
-    );
-  }
-  
+                    if (column != gridColumns.last) SizedBox(width: spacing),
+                  ],
+                )
+                .toList(),
+          );
+
+          return padding != null
+              ? Padding(padding: padding!, child: grid)
+              : grid;
+        },
+      );
+
   /// Determines the number of columns based on device type and custom settings.
   int _getColumns(DeviceType deviceType) {
     switch (deviceType) {
@@ -200,7 +201,7 @@ class ResponsiveStaggeredGrid extends StatelessWidget {
         return desktopColumns ?? 4;
     }
   }
-  
+
   /// Calculates the width for each grid item based on available space and columns.
   double _calculateItemWidth(double totalWidth, int columns) {
     final totalSpacing = spacing * (columns - 1);
@@ -228,54 +229,53 @@ class ResponsiveListGrid extends StatelessWidget {
 
   /// The widgets to display.
   final List<Widget> children;
-  
+
   /// Force grid layout regardless of screen size.
   final bool forceGrid;
-  
+
   /// Force list layout regardless of screen size.
   final bool forceList;
-  
+
   /// Number of columns when in grid mode (auto-calculated if null).
   final int? gridColumns;
-  
+
   /// Spacing between items.
   final double spacing;
-  
+
   /// Padding around the layout.
   final EdgeInsetsGeometry? padding;
 
   @override
-  Widget build(BuildContext context) {
-    return ResponsiveBuilder(
-      builder: (context, constraints, deviceType, screenSize) {
-        final useGrid = forceGrid || 
-                       (!forceList && deviceType != DeviceType.mobile);
-        
-        if (useGrid) {
-          return ResponsiveGrid(
-            spacing: spacing,
-            padding: padding,
-            desktopColumns: gridColumns,
-            tabletColumns: gridColumns,
-            mobileColumns: gridColumns,
-            children: children,
-          );
-        } else {
-          final list = Column(
-            children: children
-                .expand((child) => [
+  Widget build(BuildContext context) => ResponsiveBuilder(
+        builder: (context, constraints, deviceType, screenSize) {
+          final useGrid =
+              forceGrid || (!forceList && deviceType != DeviceType.mobile);
+
+          if (useGrid) {
+            return ResponsiveGrid(
+              spacing: spacing,
+              padding: padding,
+              desktopColumns: gridColumns,
+              tabletColumns: gridColumns,
+              mobileColumns: gridColumns,
+              children: children,
+            );
+          } else {
+            final list = Column(
+              children: children
+                  .expand(
+                    (child) => [
                       child,
-                      if (child != children.last)
-                        SizedBox(height: spacing),
-                    ])
-                .toList(),
-          );
-          
-          return padding != null 
-              ? Padding(padding: padding!, child: list)
-              : list;
-        }
-      },
-    );
-  }
+                      if (child != children.last) SizedBox(height: spacing),
+                    ],
+                  )
+                  .toList(),
+            );
+
+            return padding != null
+                ? Padding(padding: padding!, child: list)
+                : list;
+          }
+        },
+      );
 }

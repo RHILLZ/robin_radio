@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'breakpoints.dart';
 
 /// Builder function type for responsive layouts.
-/// 
+///
 /// Provides context, screen constraints, device type, and screen size
 /// to build appropriate layouts for different screen sizes.
 typedef ResponsiveWidgetBuilder = Widget Function(
@@ -45,17 +45,15 @@ class ResponsiveBuilder extends StatelessWidget {
   final ResponsiveWidgetBuilder builder;
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final deviceType = ResponsiveUtils.getDeviceType(width);
-        final screenSize = ResponsiveUtils.getScreenSize(width);
-        
-        return builder(context, constraints, deviceType, screenSize);
-      },
-    );
-  }
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final deviceType = ResponsiveUtils.getDeviceType(width);
+          final screenSize = ResponsiveUtils.getScreenSize(width);
+
+          return builder(context, constraints, deviceType, screenSize);
+        },
+      );
 }
 
 /// A simplified responsive builder that provides separate builders for each device type.
@@ -82,40 +80,38 @@ class ResponsiveLayout extends StatelessWidget {
     this.desktop,
     super.key,
   }) : assert(
-         mobile != null || tablet != null || desktop != null,
-         'At least one layout builder must be provided',
-       );
+          mobile != null || tablet != null || desktop != null,
+          'At least one layout builder must be provided',
+        );
 
   /// Builder for mobile layouts (< 600px width).
   final Widget Function(BuildContext context)? mobile;
-  
+
   /// Builder for tablet layouts (600px - 1200px width).
   final Widget Function(BuildContext context)? tablet;
-  
+
   /// Builder for desktop layouts (> 1200px width).
   final Widget Function(BuildContext context)? desktop;
 
   @override
-  Widget build(BuildContext context) {
-    return ResponsiveBuilder(
-      builder: (context, constraints, deviceType, screenSize) {
-        switch (deviceType) {
-          case DeviceType.mobile:
-            return mobile?.call(context) ??
-                   tablet?.call(context) ??
-                   desktop!.call(context);
-          case DeviceType.tablet:
-            return tablet?.call(context) ??
-                   desktop?.call(context) ??
-                   mobile!.call(context);
-          case DeviceType.desktop:
-            return desktop?.call(context) ??
-                   tablet?.call(context) ??
-                   mobile!.call(context);
-        }
-      },
-    );
-  }
+  Widget build(BuildContext context) => ResponsiveBuilder(
+        builder: (context, constraints, deviceType, screenSize) {
+          switch (deviceType) {
+            case DeviceType.mobile:
+              return mobile?.call(context) ??
+                  tablet?.call(context) ??
+                  desktop!.call(context);
+            case DeviceType.tablet:
+              return tablet?.call(context) ??
+                  desktop?.call(context) ??
+                  mobile!.call(context);
+            case DeviceType.desktop:
+              return desktop?.call(context) ??
+                  tablet?.call(context) ??
+                  mobile!.call(context);
+          }
+        },
+      );
 }
 
 /// Responsive value provider that returns different values based on screen size.
@@ -138,16 +134,16 @@ class ResponsiveValue<T> {
     this.tablet,
     this.desktop,
   }) : assert(
-         mobile != null || tablet != null || desktop != null,
-         'At least one value must be provided',
-       );
+          mobile != null || tablet != null || desktop != null,
+          'At least one value must be provided',
+        );
 
   /// Value for mobile devices.
   final T? mobile;
-  
+
   /// Value for tablet devices.
   final T? tablet;
-  
+
   /// Value for desktop devices.
   final T? desktop;
 
@@ -155,7 +151,7 @@ class ResponsiveValue<T> {
   T value(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final deviceType = ResponsiveUtils.getDeviceType(width);
-    
+
     switch (deviceType) {
       case DeviceType.mobile:
         return mobile ?? tablet ?? desktop!;
@@ -174,31 +170,32 @@ extension ResponsiveContext on BuildContext {
     final width = MediaQuery.of(this).size.width;
     return ResponsiveUtils.getDeviceType(width);
   }
-  
+
   /// Returns the current screen size category.
   ScreenSize get screenSize {
     final width = MediaQuery.of(this).size.width;
     return ResponsiveUtils.getScreenSize(width);
   }
-  
+
   /// Returns true if the current device is mobile-sized.
   bool get isMobile => ResponsiveUtils.isMobile(MediaQuery.of(this).size.width);
-  
+
   /// Returns true if the current device is tablet-sized.
   bool get isTablet => ResponsiveUtils.isTablet(MediaQuery.of(this).size.width);
-  
+
   /// Returns true if the current device is desktop-sized.
-  bool get isDesktop => ResponsiveUtils.isDesktop(MediaQuery.of(this).size.width);
-  
+  bool get isDesktop =>
+      ResponsiveUtils.isDesktop(MediaQuery.of(this).size.width);
+
   /// Returns responsive padding for the current screen size.
-  double get responsivePadding => 
+  double get responsivePadding =>
       ResponsiveUtils.getResponsivePadding(MediaQuery.of(this).size.width);
-  
+
   /// Returns responsive font scale for the current screen size.
-  double get responsiveFontScale => 
+  double get responsiveFontScale =>
       ResponsiveUtils.getFontScale(MediaQuery.of(this).size.width);
-  
+
   /// Returns the recommended grid columns for the current screen size.
-  int get gridColumns => 
+  int get gridColumns =>
       ResponsiveUtils.getGridColumns(MediaQuery.of(this).size.width);
 }

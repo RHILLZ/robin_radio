@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
 
+import '../../core/di/service_locator.dart';
 import '../../data/exceptions/repository_exception.dart';
 import '../../data/models/album.dart';
 import '../../data/models/song.dart';
-import '../../core/di/service_locator.dart';
 import '../../data/repositories/music_repository.dart';
 import '../../data/services/image_preload_service.dart';
 import '../../data/services/performance_service.dart';

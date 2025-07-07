@@ -15,28 +15,27 @@ import 'offline_storage_service.dart';
 /// Handles download queue management, progress tracking, and file storage.
 /// Supports concurrent downloads and retry mechanisms.
 class DownloadManager extends GetxController {
+  DownloadManager(this._storageService);
   final OfflineStorageService _storageService;
-  
+
   static const int maxConcurrentDownloads = 3;
   static const int maxRetryAttempts = 3;
 
   /// Currently active downloads.
   final RxList<DownloadItem> _activeDownloads = <DownloadItem>[].obs;
-  
+
   /// Download queue (pending downloads).
   final RxList<DownloadItem> _downloadQueue = <DownloadItem>[].obs;
-  
+
   /// All download items (active + queue + completed/failed).
   final RxList<DownloadItem> _allDownloads = <DownloadItem>[].obs;
 
-  DownloadManager(this._storageService);
-
   /// Currently active downloads.
   List<DownloadItem> get activeDownloads => _activeDownloads;
-  
+
   /// Download queue.
   List<DownloadItem> get downloadQueue => _downloadQueue;
-  
+
   /// All download items.
   List<DownloadItem> get allDownloads => _allDownloads;
 
@@ -63,7 +62,7 @@ class DownloadManager extends GetxController {
       albumName: song.albumName,
       url: song.songUrl,
       status: DownloadStatus.pending,
-      progress: 0.0,
+      progress: 0,
       createdAt: DateTime.now(),
     );
 
@@ -104,7 +103,7 @@ class DownloadManager extends GetxController {
       await _updateDownloadStatus(item, DownloadStatus.cancelled);
       _activeDownloads.removeWhere((d) => d.id == downloadId);
       _downloadQueue.removeWhere((d) => d.id == downloadId);
-      
+
       // Delete partial file if exists
       if (item.status == DownloadStatus.downloading) {
         await _deletePartialFile(item);
@@ -118,10 +117,9 @@ class DownloadManager extends GetxController {
     if (item != null && item.status == DownloadStatus.failed) {
       final retryItem = item.copyWith(
         status: DownloadStatus.pending,
-        progress: 0.0,
-        errorMessage: null,
+        progress: 0,
       );
-      
+
       await _storageService.saveDownloadItem(retryItem);
       _updateDownloadItemInList(retryItem);
       _downloadQueue.add(retryItem);
@@ -138,10 +136,14 @@ class DownloadManager extends GetxController {
 
   /// Clears all completed and failed downloads.
   Future<void> clearDownloadHistory() async {
-    final toRemove = _allDownloads.where((item) =>
-        item.status == DownloadStatus.completed ||
-        item.status == DownloadStatus.failed ||
-        item.status == DownloadStatus.cancelled).toList();
+    final toRemove = _allDownloads
+        .where(
+          (item) =>
+              item.status == DownloadStatus.completed ||
+              item.status == DownloadStatus.failed ||
+              item.status == DownloadStatus.cancelled,
+        )
+        .toList();
 
     for (final item in toRemove) {
       await _storageService.deleteDownloadItem(item.id);
@@ -152,7 +154,7 @@ class DownloadManager extends GetxController {
   /// Processes the download queue.
   void _processDownloadQueue() {
     while (_activeDownloads.length < maxConcurrentDownloads &&
-           _downloadQueue.isNotEmpty) {
+        _downloadQueue.isNotEmpty) {
       final nextDownload = _downloadQueue.removeAt(0);
       _activeDownloads.add(nextDownload);
       _startDownload(nextDownload);
@@ -171,7 +173,7 @@ class DownloadManager extends GetxController {
 
       // Download file
       final response = await http.get(Uri.parse(item.url));
-      
+
       if (response.statusCode == 200) {
         // Save file
         final file = File(localPath);
@@ -194,17 +196,23 @@ class DownloadManager extends GetxController {
 
         // Update download status
         await _updateDownloadStatus(item, DownloadStatus.completed);
-        await _updateDownloadProgress(item, 1.0, 
-            totalBytes: response.bodyBytes.length,
-            downloadedBytes: response.bodyBytes.length);
-
+        await _updateDownloadProgress(
+          item,
+          1,
+          totalBytes: response.bodyBytes.length,
+          downloadedBytes: response.bodyBytes.length,
+        );
       } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.reasonPhrase}');
+        throw Exception(
+          'HTTP ${response.statusCode}: ${response.reasonPhrase}',
+        );
       }
-
     } catch (e) {
-      await _updateDownloadStatus(item, DownloadStatus.failed, 
-          errorMessage: e.toString());
+      await _updateDownloadStatus(
+        item,
+        DownloadStatus.failed,
+        errorMessage: e.toString(),
+      );
     } finally {
       _activeDownloads.removeWhere((d) => d.id == item.id);
       _processDownloadQueue();
@@ -219,9 +227,13 @@ class DownloadManager extends GetxController {
 
   /// Resumes pending downloads on startup.
   Future<void> _resumePendingDownloads() async {
-    final pendingItems = _allDownloads.where((item) =>
-        item.status == DownloadStatus.pending ||
-        item.status == DownloadStatus.downloading).toList();
+    final pendingItems = _allDownloads
+        .where(
+          (item) =>
+              item.status == DownloadStatus.pending ||
+              item.status == DownloadStatus.downloading,
+        )
+        .toList();
 
     for (final item in pendingItems) {
       // Reset downloading items to pending
@@ -235,26 +247,33 @@ class DownloadManager extends GetxController {
   }
 
   /// Updates download status and saves to storage.
-  Future<void> _updateDownloadStatus(DownloadItem item, DownloadStatus status, 
-      {String? errorMessage}) async {
+  Future<void> _updateDownloadStatus(
+    DownloadItem item,
+    DownloadStatus status, {
+    String? errorMessage,
+  }) async {
     final updatedItem = item.copyWith(
       status: status,
       errorMessage: errorMessage,
     );
-    
+
     await _storageService.saveDownloadItem(updatedItem);
     _updateDownloadItemInList(updatedItem);
   }
 
   /// Updates download progress and saves to storage.
-  Future<void> _updateDownloadProgress(DownloadItem item, double progress,
-      {int? totalBytes, int? downloadedBytes}) async {
+  Future<void> _updateDownloadProgress(
+    DownloadItem item,
+    double progress, {
+    int? totalBytes,
+    int? downloadedBytes,
+  }) async {
     final updatedItem = item.copyWith(
       progress: progress,
       totalBytes: totalBytes,
       downloadedBytes: downloadedBytes,
     );
-    
+
     await _storageService.saveDownloadItem(updatedItem);
     _updateDownloadItemInList(updatedItem);
   }
@@ -266,12 +285,14 @@ class DownloadManager extends GetxController {
       _allDownloads[index] = updatedItem;
     }
 
-    final activeIndex = _activeDownloads.indexWhere((item) => item.id == updatedItem.id);
+    final activeIndex =
+        _activeDownloads.indexWhere((item) => item.id == updatedItem.id);
     if (activeIndex != -1) {
       _activeDownloads[activeIndex] = updatedItem;
     }
 
-    final queueIndex = _downloadQueue.indexWhere((item) => item.id == updatedItem.id);
+    final queueIndex =
+        _downloadQueue.indexWhere((item) => item.id == updatedItem.id);
     if (queueIndex != -1) {
       _downloadQueue[queueIndex] = updatedItem;
     }
@@ -287,17 +308,14 @@ class DownloadManager extends GetxController {
   }
 
   /// Generates a unique download ID.
-  String _generateDownloadId() {
-    return 'download_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(9999)}';
-  }
+  String _generateDownloadId() =>
+      'download_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(9999)}';
 
   /// Sanitizes filename for storage.
-  String _sanitizeFileName(String fileName) {
-    return fileName
-        .replaceAll(RegExp(r'[^\w\s-]'), '')
-        .replaceAll(RegExp(r'\s+'), '_')
-        .toLowerCase();
-  }
+  String _sanitizeFileName(String fileName) => fileName
+      .replaceAll(RegExp(r'[^\w\s-]'), '')
+      .replaceAll(RegExp(r'\s+'), '_')
+      .toLowerCase();
 
   /// Deletes partial download file.
   Future<void> _deletePartialFile(DownloadItem item) async {
@@ -306,7 +324,7 @@ class DownloadManager extends GetxController {
       final fileName = _sanitizeFileName('${item.songName}_${item.artist}');
       final localPath = path.join(directory.path, '$fileName.mp3');
       final file = File(localPath);
-      
+
       if (await file.exists()) {
         await file.delete();
       }

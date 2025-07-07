@@ -10,7 +10,7 @@ import 'background_audio_handler.dart';
 
 /// Enhanced audio service with background playback and media notifications
 ///
-/// This service integrates the existing audio functionality with the 
+/// This service integrates the existing audio functionality with the
 /// audio_service package to provide:
 /// - Background playback capabilities
 /// - Media notifications with controls
@@ -21,7 +21,8 @@ class BackgroundAudioService implements IAudioService {
   /// Creates a new background audio service instance
   factory BackgroundAudioService() => _instance;
   BackgroundAudioService._internal();
-  static final BackgroundAudioService _instance = BackgroundAudioService._internal();
+  static final BackgroundAudioService _instance =
+      BackgroundAudioService._internal();
 
   /// Background audio handler for system integration
   BackgroundAudioHandler? _handler;
@@ -57,17 +58,26 @@ class BackgroundAudioService implements IAudioService {
   final List<Song> _queue = <Song>[];
 
   /// Stream controllers for reactive state management
-  final StreamController<PlaybackState> _stateController = StreamController<PlaybackState>.broadcast();
-  final StreamController<Song?> _trackController = StreamController<Song?>.broadcast();
-  final StreamController<Duration> _positionController = StreamController<Duration>.broadcast();
-  final StreamController<Duration> _durationController = StreamController<Duration>.broadcast();
-  final StreamController<double> _volumeController = StreamController<double>.broadcast();
-  final StreamController<double> _speedController = StreamController<double>.broadcast();
-  final StreamController<PlaybackMode> _modeController = StreamController<PlaybackMode>.broadcast();
-  final StreamController<List<Song>> _queueController = StreamController<List<Song>>.broadcast();
-  final StreamController<double> _bufferingController = StreamController<double>.broadcast();
+  final StreamController<PlaybackState> _stateController =
+      StreamController<PlaybackState>.broadcast();
+  final StreamController<Song?> _trackController =
+      StreamController<Song?>.broadcast();
+  final StreamController<Duration> _positionController =
+      StreamController<Duration>.broadcast();
+  final StreamController<Duration> _durationController =
+      StreamController<Duration>.broadcast();
+  final StreamController<double> _volumeController =
+      StreamController<double>.broadcast();
+  final StreamController<double> _speedController =
+      StreamController<double>.broadcast();
+  final StreamController<PlaybackMode> _modeController =
+      StreamController<PlaybackMode>.broadcast();
+  final StreamController<List<Song>> _queueController =
+      StreamController<List<Song>>.broadcast();
+  final StreamController<double> _bufferingController =
+      StreamController<double>.broadcast();
 
-  /// Audio service subscriptions  
+  /// Audio service subscriptions
   StreamSubscription<audio_service.PlaybackState>? _playbackStateSubscription;
   StreamSubscription<audio_service.MediaItem?>? _mediaItemSubscription;
 
@@ -145,12 +155,10 @@ class BackgroundAudioService implements IAudioService {
   }
 
   @override
-  String get formattedPosition => 
-      formatDuration(_currentPosition);
+  String get formattedPosition => formatDuration(_currentPosition);
 
   @override
-  String get formattedDuration => 
-      formatDuration(_trackDuration);
+  String get formattedDuration => formatDuration(_trackDuration);
 
   @override
   Future<void> initialize() async {
@@ -159,7 +167,7 @@ class BackgroundAudioService implements IAudioService {
     try {
       // Initialize audio service
       _handler = await audio_service.AudioService.init(
-        builder: () => BackgroundAudioHandler(),
+        builder: BackgroundAudioHandler.new,
         config: const audio_service.AudioServiceConfig(
           androidNotificationChannelId: 'com.example.robin_radio.channel.audio',
           androidNotificationChannelName: 'Robin Radio Audio',
@@ -185,12 +193,11 @@ class BackgroundAudioService implements IAudioService {
   /// Set up stream subscriptions for audio service events
   void _setupStreamSubscriptions() {
     // Listen to playback state changes
-    _playbackStateSubscription = _handler!.playbackState.listen((state) {
-      _updatePlaybackState(state);
-    });
+    _playbackStateSubscription =
+        _handler!.playbackState.listen(_updatePlaybackState);
 
     // Listen to media item changes
-    _mediaItemSubscription = _handler!.mediaItem.listen((audio_service.MediaItem? mediaItem) {
+    _mediaItemSubscription = _handler!.mediaItem.listen((mediaItem) {
       if (mediaItem != null) {
         _updateCurrentSong(mediaItem);
       }
@@ -200,7 +207,8 @@ class BackgroundAudioService implements IAudioService {
   /// Update internal playback state from audio service state
   void _updatePlaybackState(audio_service.PlaybackState state) {
     // Map audio service state to internal state
-    final newState = _mapAudioServiceState(state.processingState, state.playing);
+    final newState =
+        _mapAudioServiceState(state.processingState, state.playing);
     _setState(newState);
 
     // Update position
@@ -235,7 +243,10 @@ class BackgroundAudioService implements IAudioService {
   }
 
   /// Map audio service processing state to internal state
-  PlaybackState _mapAudioServiceState(audio_service.AudioProcessingState processingState, bool playing) {
+  PlaybackState _mapAudioServiceState(
+    audio_service.AudioProcessingState processingState,
+    bool playing,
+  ) {
     if (playing) {
       return PlaybackState.playing;
     }
@@ -375,7 +386,7 @@ class BackgroundAudioService implements IAudioService {
 
     _currentVolume = volume;
     _volumeController.add(volume);
-    
+
     // Note: Volume control through audio_service would require custom implementation
     // For now, we just track the value
   }
@@ -397,7 +408,7 @@ class BackgroundAudioService implements IAudioService {
       await _ensureInitialized();
       _currentSpeed = speed;
       _speedController.add(speed);
-      
+
       // Note: Speed control through audio_service would require custom implementation
       // The handler should handle this internally
     } on Exception catch (e) {
@@ -409,7 +420,7 @@ class BackgroundAudioService implements IAudioService {
   Future<void> setPlaybackMode(PlaybackMode mode) async {
     _currentMode = mode;
     _modeController.add(mode);
-    
+
     // Update handler's playback mode
     if (_handler != null) {
       await _handler!.setPlaybackMode(mode);
@@ -440,7 +451,9 @@ class BackgroundAudioService implements IAudioService {
       await _ensureInitialized();
       await _handler!.skipToPrevious();
     } on Exception catch (e) {
-      throw AudioPlaybackException.playbackFailed('Skip to previous failed: $e');
+      throw AudioPlaybackException.playbackFailed(
+        'Skip to previous failed: $e',
+      );
     }
   }
 
@@ -514,20 +527,19 @@ class BackgroundAudioService implements IAudioService {
   }
 
   /// Convert Song to MediaItem for audio service
-  audio_service.MediaItem _songToMediaItem(Song song) {
-    return audio_service.MediaItem(
-      id: song.id ?? '',
-      album: song.albumName ?? '',
-      title: song.songName,
-      artist: song.artist,
-      duration: song.duration,
-      extras: {
-        'songUrl': song.songUrl,
-        'albumName': song.albumName,
-        'duration': song.duration?.inSeconds,
-      },
-    );
-  }
+  audio_service.MediaItem _songToMediaItem(Song song) =>
+      audio_service.MediaItem(
+        id: song.id ?? '',
+        album: song.albumName ?? '',
+        title: song.songName,
+        artist: song.artist,
+        duration: song.duration,
+        extras: {
+          'songUrl': song.songUrl,
+          'albumName': song.albumName,
+          'duration': song.duration?.inSeconds,
+        },
+      );
 
   /// Set internal state and notify listeners
   void _setState(PlaybackState state) {

@@ -43,19 +43,15 @@ class OfflineStorageService {
   }
 
   /// Retrieves an offline song by ID.
-  OfflineSong? getOfflineSong(String id) {
-    return _offlineSongsBox?.get(id);
-  }
+  OfflineSong? getOfflineSong(String id) => _offlineSongsBox?.get(id);
 
   /// Retrieves all offline songs.
-  List<OfflineSong> getAllOfflineSongs() {
-    return _offlineSongsBox?.values.toList() ?? [];
-  }
+  List<OfflineSong> getAllOfflineSongs() =>
+      _offlineSongsBox?.values.toList() ?? [];
 
   /// Checks if a song is available offline.
-  bool isSongOffline(String songId) {
-    return _offlineSongsBox?.containsKey(songId) ?? false;
-  }
+  bool isSongOffline(String songId) =>
+      _offlineSongsBox?.containsKey(songId) ?? false;
 
   /// Deletes an offline song and its local file.
   Future<void> deleteOfflineSong(String songId) async {
@@ -78,26 +74,26 @@ class OfflineStorageService {
   }
 
   /// Retrieves a download item by ID.
-  DownloadItem? getDownloadItem(String id) {
-    return _downloadItemsBox?.get(id);
-  }
+  DownloadItem? getDownloadItem(String id) => _downloadItemsBox?.get(id);
 
   /// Retrieves all download items.
-  List<DownloadItem> getAllDownloadItems() {
-    return _downloadItemsBox?.values.toList() ?? [];
-  }
+  List<DownloadItem> getAllDownloadItems() =>
+      _downloadItemsBox?.values.toList() ?? [];
 
   /// Retrieves download items by status.
-  List<DownloadItem> getDownloadItemsByStatus(DownloadStatus status) {
-    return _downloadItemsBox?.values
-            .where((item) => item.status == status)
-            .toList() ??
-        [];
-  }
+  List<DownloadItem> getDownloadItemsByStatus(DownloadStatus status) =>
+      _downloadItemsBox?.values
+          .where((item) => item.status == status)
+          .toList() ??
+      [];
 
   /// Updates download item progress.
-  Future<void> updateDownloadProgress(String id, double progress,
-      {int? downloadedBytes, int? totalBytes}) async {
+  Future<void> updateDownloadProgress(
+    String id,
+    double progress, {
+    int? downloadedBytes,
+    int? totalBytes,
+  }) async {
     final item = getDownloadItem(id);
     if (item != null) {
       final updatedItem = item.copyWith(
@@ -110,8 +106,11 @@ class OfflineStorageService {
   }
 
   /// Updates download item status.
-  Future<void> updateDownloadStatus(String id, DownloadStatus status,
-      {String? errorMessage}) async {
+  Future<void> updateDownloadStatus(
+    String id,
+    DownloadStatus status, {
+    String? errorMessage,
+  }) async {
     final item = getDownloadItem(id);
     if (item != null) {
       final updatedItem = item.copyWith(
@@ -131,19 +130,19 @@ class OfflineStorageService {
   Future<Directory> getOfflineStorageDirectory() async {
     final appDir = await getApplicationDocumentsDirectory();
     final offlineDir = Directory('${appDir.path}/offline_music');
-    
+
     if (!await offlineDir.exists()) {
       await offlineDir.create(recursive: true);
     }
-    
+
     return offlineDir;
   }
 
   /// Calculates total offline storage used in bytes.
   Future<int> getTotalStorageUsed() async {
-    int totalSize = 0;
+    var totalSize = 0;
     final songs = getAllOfflineSongs();
-    
+
     for (final song in songs) {
       if (song.fileSize != null) {
         totalSize += song.fileSize!;
@@ -153,14 +152,14 @@ class OfflineStorageService {
         if (await file.exists()) {
           final size = await file.length();
           totalSize += size;
-          
+
           // Update the song with file size
           final updatedSong = song.copyWith(fileSize: size);
           await saveOfflineSong(updatedSong);
         }
       }
     }
-    
+
     return totalSize;
   }
 

@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
 import 'package:sizer/sizer.dart';
 
-import '../../global/widgets/widgets.dart';
 import '../../global/albumCover.dart';
+import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
 import 'player_controller.dart';
 

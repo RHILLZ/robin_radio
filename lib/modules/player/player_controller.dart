@@ -10,39 +10,44 @@ import '../../data/models/album.dart';
 import '../../data/models/song.dart';
 import '../../core/di/service_locator.dart';
 import '../../data/services/audio/audio_service_interface.dart';
+import '../../data/services/audio_player_service.dart' show AudioPlayerService;
 import '../../data/services/performance_service.dart';
 import '../app/app_controller.dart';
 
 /// Defines the current playback mode of the audio player.
 ///
 /// Determines how tracks are selected and managed in the player queue.
-enum PlayerMode { 
+enum PlayerMode {
   /// Radio mode: Continuous playback of radio-style stream
-  radio, 
+  radio,
+
   /// Album mode: Playback from a specific album with track navigation
-  album 
+  album
 }
 
 /// Defines the repeat behavior for track playback.
 ///
 /// Controls how the player handles track repetition when reaching the end of the queue.
-enum PlayerRepeatMode { 
+enum PlayerRepeatMode {
   /// No repeat: Stop playback when queue ends
-  none, 
+  none,
+
   /// Repeat all: Loop through all tracks in the queue
-  all, 
+  all,
+
   /// Repeat one: Loop the current track indefinitely
-  one 
+  one
 }
 
 /// Defines the shuffle behavior for track playback.
 ///
 /// Controls whether tracks are played in order or randomly shuffled.
-enum PlayerShuffleMode { 
+enum PlayerShuffleMode {
   /// Sequential playback: Play tracks in original order
-  off, 
+  off,
+
   /// Shuffled playback: Play tracks in randomized order
-  on 
+  on
 }
 
 /// Controller for managing audio playback, queue management, and player state.
@@ -66,6 +71,7 @@ enum PlayerShuffleMode {
 class PlayerController extends GetxController {
   // Core player components - using centralized background audio service
   late final IAudioService _audioService;
+
   /// Reference to the main app controller for global state management.
   final appController = Get.find<AppController>();
 
@@ -96,64 +102,92 @@ class PlayerController extends GetxController {
   // Getters - Current playback content
   /// The currently playing or selected song, null if none.
   Song? get currentSong => _currentSong.value;
+
   /// The current album being played, null if in radio mode or none selected.
   Album? get currentAlbum => _currentAlbum.value;
+
   /// List of all tracks in the current playback queue.
   List<Song> get tracks => _tracks;
+
   /// Zero-based index of the current track in the queue.
   int get trackIndex => _trackIndex.value;
+
   /// URL of the current song's cover art image, null if none available.
   String? get coverURL => _coverURL.value;
+
   /// Current state of the audio player (playing, paused, stopped).
   PlayerState get playerState => _playerState.value;
+
   /// String representation of the current player state for debugging.
   String get playerStateString => _playerState.value.toString();
+
   /// Formatted duration string (e.g., "3:45") of the current track.
   String get playerDurationFormatted => formatDuration(_playerDuration.value);
+
   /// Formatted position string (e.g., "1:23") of current playback position.
   String get playerPositionFormatted => formatDuration(_playerPosition.value);
+
   /// Total duration of the current track.
   Duration get playerDuration => _playerDuration.value;
+
   /// Current playback position within the track.
   Duration get playerPosition => _playerPosition.value;
+
   /// Total duration in seconds as a double for slider widgets.
   double get durationAsDouble => _playerDuration.value.inSeconds.toDouble();
+
   /// Current position in seconds as a double for slider widgets.
   double get positionAsDouble => _playerPosition.value.inSeconds.toDouble();
+
   /// Whether the player is currently playing audio.
   bool get isPlaying => _playerState.value == PlayerState.playing;
+
   /// Whether the player is currently paused.
   bool get isPaused => _playerState.value == PlayerState.paused;
+
   /// Whether the player is stopped (no track loaded).
   bool get isStopped => _playerState.value == PlayerState.stopped;
+
   /// Whether the player is currently buffering content.
   bool get isBuffering => _isBuffering.value;
+
   /// Current volume level (0.0 to 1.0).
   double get volume => _volume.value;
+
   /// Current playback mode (radio or album).
   PlayerMode get playerMode => _playerMode.value;
+
   /// Current song in radio mode, may differ from album tracks.
   Song? get currentRadioSong => _currentRadioSong.value;
+
   /// Last playback error message, null if no error.
   String? get playbackError => _playbackError.value;
+
   /// Current repeat mode setting (none, all, one).
   PlayerRepeatMode get repeatMode => _repeatMode.value;
+
   /// Current shuffle mode setting (off, on).
   PlayerShuffleMode get shuffleMode => _shuffleMode.value;
+
   /// Whether shuffle mode is currently enabled.
   bool get isShuffleOn => _shuffleMode.value == PlayerShuffleMode.on;
+
   /// Whether repeat one track mode is enabled.
   bool get isRepeatOne => _repeatMode.value == PlayerRepeatMode.one;
+
   /// Whether repeat all tracks mode is enabled.
   bool get isRepeatAll => _repeatMode.value == PlayerRepeatMode.all;
+
   /// Whether to hide the mini player in radio view.
   bool get hidePlayerInRadioView => _hidePlayerInRadioView.value;
 
   // Setters - Playback content updates
   /// Sets the currently playing song.
   set currentSong(Song? value) => _currentSong.value = value;
+
   /// Sets the current album being played.
   set currentAlbum(Album? value) => _currentAlbum.value = value;
+
   /// Sets the track queue and updates shuffle if enabled.
   ///
   /// Automatically preserves the original order and applies shuffle if active.
@@ -167,8 +201,10 @@ class PlayerController extends GetxController {
 
   /// Sets the current track index in the queue.
   set trackIndex(int value) => _trackIndex.value = value;
+
   /// Sets the cover art URL for the current track.
   set coverURL(String? value) => _coverURL.value = value;
+
   /// Sets the playback volume (0.0 to 1.0) and applies it to the audio service.
   set volume(double value) {
     _volume.value = value;
@@ -177,6 +213,7 @@ class PlayerController extends GetxController {
 
   /// Sets the playback mode (radio or album).
   set playerMode(PlayerMode value) => _playerMode.value = value;
+
   /// Sets whether to hide the mini player in radio view.
   set hidePlayerInRadioView(bool value) => _hidePlayerInRadioView.value = value;
 
@@ -212,7 +249,9 @@ class PlayerController extends GetxController {
     await _audioService.setVolume(_volume.value);
 
     // Stop player initialization trace
-    await performanceService.stopPlayerInitTrace(playerMode: 'background_audio_service');
+    await performanceService.stopPlayerInitTrace(
+      playerMode: 'background_audio_service',
+    );
   }
 
   void _onDurationChanged(Duration duration) {
