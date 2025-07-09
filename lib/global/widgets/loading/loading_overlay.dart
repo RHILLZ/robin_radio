@@ -237,11 +237,11 @@ class _LoadingOverlayState extends State<LoadingOverlay>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -281,7 +281,7 @@ class _LoadingOverlayState extends State<LoadingOverlay>
                     onTap: _config.barrierDismissible ? _handleDismiss : null,
                     child: ColoredBox(
                       color: (_config.backgroundColor ?? Colors.black)
-                          .withOpacity(_config.opacity * _fadeAnimation.value),
+                          .withValues(alpha: _config.opacity * _fadeAnimation.value),
                       child: Align(
                         alignment: _getAlignment(),
                         child: Opacity(
@@ -410,7 +410,7 @@ class _ModalLoadingOverlayState extends State<_ModalLoadingOverlay>
             onTap: widget.config.barrierDismissible ? widget.onDismiss : null,
             child: ColoredBox(
               color: (widget.config.backgroundColor ?? Colors.black)
-                  .withOpacity(widget.config.opacity * _fadeAnimation.value),
+                  .withValues(alpha: widget.config.opacity * _fadeAnimation.value),
               child: Align(
                 alignment: _getAlignment(),
                 child: Opacity(
@@ -467,11 +467,11 @@ class _ModalLoadingOverlayState extends State<_ModalLoadingOverlay>
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

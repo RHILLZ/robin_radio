@@ -53,7 +53,7 @@ class PermissionService extends GetxController {
 
       _storagePermissionStatus.value = status;
       return status;
-    } catch (e) {
+    } on Exception catch (e) {
       _storagePermissionStatus.value = PermissionStatus.denied;
       return PermissionStatus.denied;
     }
@@ -75,7 +75,7 @@ class PermissionService extends GetxController {
     try {
       final status = await Permission.notification.request();
       return status;
-    } catch (e) {
+    } on Exception catch (e) {
       return PermissionStatus.denied;
     }
   }
@@ -107,7 +107,7 @@ class PermissionService extends GetxController {
       }
 
       _storagePermissionStatus.value = storageStatus;
-    } catch (e) {
+    } on Exception catch (e) {
       _storagePermissionStatus.value = PermissionStatus.denied;
     }
   }
@@ -138,21 +138,21 @@ class PermissionService extends GetxController {
     VoidCallback? onGrantPressed,
     VoidCallback? onDenyPressed,
   }) async {
-    await Get.dialog(
+    await Get.dialog<void>(
       AlertDialog(
         title: Text(title),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () {
-              Get.back();
+              Get.back<void>();
               onDenyPressed?.call();
             },
             child: const Text('Not Now'),
           ),
           TextButton(
             onPressed: () {
-              Get.back();
+              Get.back<void>();
               onGrantPressed?.call();
             },
             child: const Text('Grant Permission'),
@@ -168,7 +168,7 @@ class PermissionService extends GetxController {
     required String title,
     required String message,
   }) async {
-    await Get.dialog(
+    await Get.dialog<void>(
       AlertDialog(
         title: Text(title),
         content: Column(
@@ -189,7 +189,7 @@ class PermissionService extends GetxController {
           ),
           TextButton(
             onPressed: () {
-              Get.back();
+              Get.back<void>();
               openAppSettings();
             },
             child: const Text('Open Settings'),

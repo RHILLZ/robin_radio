@@ -127,7 +127,7 @@ class _LoadingIndicatorState extends State<LoadingIndicator>
   Color get _primaryColor => widget.color ?? Theme.of(context).primaryColor;
   Color get _backgroundColorValue =>
       widget.backgroundColor ??
-      Theme.of(context).colorScheme.surface.withOpacity(0.3);
+      Theme.of(context).colorScheme.surface.withValues(alpha: 0.3);
 
   Widget _buildCircularIndicator() => SizedBox(
         width: _indicatorSize,
@@ -163,7 +163,7 @@ class _LoadingIndicatorState extends State<LoadingIndicator>
               height: _indicatorSize / 3,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _primaryColor.withOpacity(opacity.abs()),
+                color: _primaryColor.withValues(alpha: opacity.abs()),
               ),
             );
           }),
@@ -243,7 +243,7 @@ class _LoadingIndicatorState extends State<LoadingIndicator>
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.7),
+                          .withValues(alpha: 0.7),
                     ),
             textAlign: TextAlign.center,
           ),

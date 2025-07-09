@@ -76,11 +76,11 @@ class ShimmerConfig {
 
     return ShimmerConfig(
       baseColor: isDark
-          ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
-          : colorScheme.surfaceContainerHighest.withOpacity(0.4),
+          ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
       highlightColor: isDark
-          ? colorScheme.surfaceContainerHighest.withOpacity(0.1)
-          : colorScheme.surfaceContainerHighest.withOpacity(0.2),
+          ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.1)
+          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
       direction: direction,
       duration: duration,
     );

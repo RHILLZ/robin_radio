@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../data/models/song.dart';
 import '../../global/albumCover.dart';
 import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
@@ -137,7 +138,7 @@ class PlayerView extends GetView<PlayerController> {
     );
   }
 
-  Widget _buildTrackInfo(BuildContext context, song) {
+  Widget _buildTrackInfo(BuildContext context, Song song) {
     final songTitle = _formatSongTitle(song.songName as String);
 
     return Padding(
@@ -341,7 +342,7 @@ class PlayerView extends GetView<PlayerController> {
                           (album) => album.albumName == currentSong!.albumName,
                         );
                         appController.openTrackList(foundAlbum);
-                      } catch (e) {
+                      } on StateError {
                         // Album not found, do nothing
                         debugPrint(
                           'Could not find album "${currentSong!.albumName}" for navigation',
@@ -430,7 +431,9 @@ class PlayerView extends GetView<PlayerController> {
       );
 
   String _formatSongTitle(String name) {
-    if (name.length < 3) return name;
+    if (name.length < 3) {
+      return name;
+    }
     final parts = name.substring(3).split('.');
     return parts.isNotEmpty ? parts[0] : name;
   }

@@ -173,7 +173,7 @@ class InfiniteScrollController extends ChangeNotifier {
       }
 
       return items.isNotEmpty;
-    } catch (error) {
+    } on Exception catch (error) {
       _errorMessage = error.toString();
       _setStatus(InfiniteScrollStatus.error);
       return false;
@@ -497,7 +497,7 @@ class _InfiniteScrollListViewState extends State<InfiniteScrollListView> {
           if (!success && _controller.hasMore) {
             _controller.markCompleted();
           }
-        } catch (error) {
+        } on Exception catch (error) {
           widget.onError?.call(error.toString());
         }
       },

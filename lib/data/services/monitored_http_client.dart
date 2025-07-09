@@ -21,8 +21,9 @@ class MonitoredHttpClient extends BaseClient {
     }
 
     // Add custom attributes
-    metric.putAttribute('request_method', request.method);
-    metric.putAttribute('request_host', request.url.host);
+    metric
+      ..putAttribute('request_method', request.method)
+      ..putAttribute('request_host', request.url.host);
 
     await metric.start();
 
@@ -37,20 +38,21 @@ class MonitoredHttpClient extends BaseClient {
       }
 
       // Set response metrics
-      metric.responseContentType =
-          response.headers['content-type'] ?? 'unknown';
-      metric.httpResponseCode = response.statusCode;
+      metric
+        ..responseContentType = response.headers['content-type'] ?? 'unknown'
+        ..httpResponseCode = response.statusCode;
 
       if (response.contentLength != null) {
         metric.responsePayloadSize = response.contentLength;
       }
 
       // Add response attributes
-      metric.putAttribute('response_status', response.statusCode.toString());
-      metric.putAttribute(
-        'response_success',
-        (response.statusCode < 400).toString(),
-      );
+      metric
+        ..putAttribute('response_status', response.statusCode.toString())
+        ..putAttribute(
+          'response_success',
+          (response.statusCode < 400).toString(),
+        );
 
       // Add cache status if available
       final cacheControl = response.headers['cache-control'];
@@ -59,8 +61,9 @@ class MonitoredHttpClient extends BaseClient {
       }
     } on Exception catch (e) {
       // Track errors
-      metric.putAttribute('error', e.toString());
-      metric.putAttribute('response_success', 'false');
+      metric
+        ..putAttribute('error', e.toString())
+        ..putAttribute('response_success', 'false');
 
       if (kDebugMode) {
         print('Network request to ${request.url} failed: $e');

@@ -116,6 +116,32 @@ class TrackListView extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(width: 16),
+            GetBuilder<AppController>(
+              builder: (appController) {
+                final isRefreshing =
+                    album.id != null && appController.isAlbumLoading(album.id);
+
+                return isRefreshing
+                    ? Container(
+                        width: 48,
+                        height: 48,
+                        padding: const EdgeInsets.all(12),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      )
+                    : IconButton(
+                        onPressed: () => _refreshAlbum(appController),
+                        icon: const Icon(Icons.refresh),
+                        tooltip: 'Refresh album',
+                        iconSize: 28,
+                      );
+              },
+            ),
           ],
         ),
       );
@@ -155,5 +181,11 @@ class TrackListView extends StatelessWidget {
 
     // Close the bottom sheet
     Get.back<void>();
+  }
+
+  void _refreshAlbum(AppController appController) {
+    if (album.id != null) {
+      appController.refreshSingleAlbum(album.id!);
+    }
   }
 }

@@ -161,7 +161,7 @@ void main() {
         expect(await cacheService.get<String>(key), equals(value));
 
         // Wait for expiry
-        await Future.delayed(const Duration(milliseconds: 150));
+        await Future<void>.delayed(const Duration(milliseconds: 150));
 
         // Should be expired
         expect(await cacheService.has(key), isFalse);
@@ -528,7 +528,7 @@ void main() {
         await mockCache.addTestItems(testData);
 
         for (final entry in testData.entries) {
-          final result = await cacheService.get(entry.key);
+          final result = await cacheService.get<dynamic>(entry.key);
           expect(result, equals(entry.value));
         }
       });
@@ -561,7 +561,7 @@ void main() {
         const key = 'null_test';
 
         await cacheService.set(key, null);
-        final result = await cacheService.get(key);
+        final result = await cacheService.get<dynamic>(key);
 
         expect(result, isNull);
       });
@@ -603,7 +603,7 @@ void main() {
       });
 
       test('should handle concurrent operations', () async {
-        final futures = <Future>[];
+        final futures = <Future<dynamic>>[];
 
         // Perform multiple concurrent operations
         for (var i = 0; i < 10; i++) {

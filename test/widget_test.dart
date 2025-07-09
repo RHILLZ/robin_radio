@@ -44,7 +44,7 @@ void main() {
         final albums = await repository.getAlbumsFromCacheOnly();
 
         expect(albums, isEmpty);
-      } catch (e) {
+      } on Exception catch (e) {
         // In test environment, Firebase might not be initialized
         // This is expected behavior and the test should pass
         expect(e.toString(), contains('Firebase'));

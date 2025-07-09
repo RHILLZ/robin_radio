@@ -173,10 +173,9 @@ class _AlbumsViewState extends State<AlbumsView> {
                 }
 
                 return NotificationListener<ScrollNotification>(
-                  onNotification: (scrollInfo) {
-                    // Pagination removed - no need to load more albums
-                    return false;
-                  },
+                  onNotification: (scrollInfo) =>
+                      // Pagination removed - no need to load more albums
+                      false,
                   child: GridView.builder(
                     padding: const EdgeInsets.all(16),
                     gridDelegate:

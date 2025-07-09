@@ -41,6 +41,10 @@ class FirebaseMusicRepository implements MusicRepository {
   // Stream controller for radio mode
   StreamController<Song>? _radioStreamController;
 
+  // Stream controller for album loading progress
+  final StreamController<AlbumLoadingProgress> _progressController = 
+      StreamController<AlbumLoadingProgress>.broadcast();
+
   @override
   Future<List<Album>> getAlbums() async {
     try {
@@ -72,7 +76,7 @@ class FirebaseMusicRepository implements MusicRepository {
       await _saveToCache(albums);
 
       return albums;
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to get albums');
     }
   }
@@ -105,7 +109,7 @@ class FirebaseMusicRepository implements MusicRepository {
       // Never attempt Firebase - return empty list if no cache available
       debugPrint('MusicRepository: No cache available (cache-only)');
       return [];
-    } catch (e) {
+    } on Exception catch (e) {
       // Never throw exceptions in cache-only mode
       debugPrint('MusicRepository: Cache-only load failed silently: $e');
       return [];
@@ -121,7 +125,7 @@ class FirebaseMusicRepository implements MusicRepository {
         orElse: () => throw const DataRepositoryException.notFound(),
       );
       return album.tracks;
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to get tracks for album: $albumId');
     }
   }
@@ -129,14 +133,14 @@ class FirebaseMusicRepository implements MusicRepository {
   @override
   Future<Stream<Song>> getRadioStream() async {
     try {
-      _radioStreamController?.close();
+      unawaited(_radioStreamController?.close());
       _radioStreamController = StreamController<Song>.broadcast();
 
       // Start generating random songs
-      _generateRadioStream();
+      unawaited(_generateRadioStream());
 
       return _radioStreamController!.stream;
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to create radio stream');
     }
   }
@@ -153,7 +157,7 @@ class FirebaseMusicRepository implements MusicRepository {
         }
       }
       return null;
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to get track by ID: $id');
     }
   }
@@ -161,7 +165,9 @@ class FirebaseMusicRepository implements MusicRepository {
   @override
   Future<List<Album>> searchAlbums(String query) async {
     try {
-      if (query.isEmpty) return [];
+      if (query.isEmpty) {
+        return [];
+      }
 
       final albums = await getAlbums();
       final lowercaseQuery = query.toLowerCase();
@@ -173,7 +179,7 @@ class FirebaseMusicRepository implements MusicRepository {
                 (album.artist?.toLowerCase().contains(lowercaseQuery) ?? false),
           )
           .toList();
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to search albums');
     }
   }
@@ -181,7 +187,9 @@ class FirebaseMusicRepository implements MusicRepository {
   @override
   Future<List<Song>> searchTracks(String query) async {
     try {
-      if (query.isEmpty) return [];
+      if (query.isEmpty) {
+        return [];
+      }
 
       final albums = await getAlbums();
       final lowercaseQuery = query.toLowerCase();
@@ -197,7 +205,7 @@ class FirebaseMusicRepository implements MusicRepository {
       }
 
       return results;
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to search tracks');
     }
   }
@@ -214,7 +222,7 @@ class FirebaseMusicRepository implements MusicRepository {
 
       // Force reload from Firebase
       await getAlbums();
-    } catch (e) {
+    } on Exception catch (e) {
       throw _handleException(e, 'Failed to refresh cache');
     }
   }
@@ -230,7 +238,7 @@ class FirebaseMusicRepository implements MusicRepository {
       _cacheTime = null;
 
       debugPrint('MusicRepository: Cache cleared');
-    } catch (e) {
+    } on Exception {
       throw const CacheRepositoryException.writeFailed();
     }
   }
@@ -256,6 +264,17 @@ class FirebaseMusicRepository implements MusicRepository {
         'MusicRepository: Found ${artistResult.prefixes.length} artists',
       );
 
+      // Emit initial progress
+      _progressController.add(AlbumLoadingProgress(
+        message: 'Found ${artistResult.prefixes.length} artists',
+        progress: 0.1,
+        albumsProcessed: 0,
+        totalAlbums: 0,
+      ));
+
+      var totalAlbumsEstimate = 0;
+      var albumsProcessed = 0;
+
       for (var artistIndex = 0;
           artistIndex < artistResult.prefixes.length;
           artistIndex++) {
@@ -276,6 +295,17 @@ class FirebaseMusicRepository implements MusicRepository {
           debugPrint(
             'MusicRepository: Artist $artistName has ${albumsResult.prefixes.length} albums',
           );
+
+          // Update total albums estimate
+          totalAlbumsEstimate += albumsResult.prefixes.length;
+
+          // Emit progress for artist discovery
+          _progressController.add(AlbumLoadingProgress(
+            message: 'Loading albums from $artistName...',
+            progress: 0.2 + (artistIndex / artistResult.prefixes.length) * 0.6,
+            albumsProcessed: albumsProcessed,
+            totalAlbums: totalAlbumsEstimate,
+          ));
 
           for (var albumIndex = 0;
               albumIndex < albumsResult.prefixes.length;
@@ -312,7 +342,7 @@ class FirebaseMusicRepository implements MusicRepository {
                           ),
                     );
                     break;
-                  } catch (e) {
+                  } on Exception catch (e) {
                     debugPrint(
                       'MusicRepository: Failed to get album art for $albumName: $e',
                     );
@@ -326,7 +356,9 @@ class FirebaseMusicRepository implements MusicRepository {
                 final songName = songRef.name;
 
                 // Skip image files
-                if (_isImageFile(songName)) continue;
+                if (_isImageFile(songName)) {
+                  continue;
+                }
 
                 try {
                   final songUrl = await _executeWithRetry(
@@ -348,7 +380,7 @@ class FirebaseMusicRepository implements MusicRepository {
                       albumName: albumName,
                     ),
                   );
-                } catch (e) {
+                } on Exception catch (e) {
                   debugPrint(
                     'MusicRepository: Failed to load song $songName: $e',
                   );
@@ -370,15 +402,24 @@ class FirebaseMusicRepository implements MusicRepository {
                 debugPrint(
                   'MusicRepository: Added album $albumName with ${tracks.length} tracks',
                 );
+
+                // Update albums processed count and emit progress
+                albumsProcessed++;
+                _progressController.add(AlbumLoadingProgress(
+                  message: 'Added album "$albumName"',
+                  progress: 0.2 + (albumsProcessed / (totalAlbumsEstimate > 0 ? totalAlbumsEstimate : 1)) * 0.6,
+                  albumsProcessed: albumsProcessed,
+                  totalAlbums: totalAlbumsEstimate,
+                ));
               }
-            } catch (e) {
+            } on Exception catch (e) {
               debugPrint(
                 'MusicRepository: Failed to load album $albumName: $e',
               );
               // Continue with other albums
             }
           }
-        } catch (e) {
+        } on Exception catch (e) {
           debugPrint('MusicRepository: Failed to load artist $artistName: $e');
           // Continue with other artists
         }
@@ -387,6 +428,14 @@ class FirebaseMusicRepository implements MusicRepository {
       debugPrint(
         'MusicRepository: Successfully loaded ${albums.length} albums from Firebase',
       );
+
+      // Emit final progress
+      _progressController.add(AlbumLoadingProgress(
+        message: 'Successfully loaded ${albums.length} albums',
+        progress: 1.0,
+        albumsProcessed: albums.length,
+        totalAlbums: albums.length,
+      ));
 
       if (albums.isEmpty) {
         throw const DataRepositoryException.notFound();
@@ -402,7 +451,7 @@ class FirebaseMusicRepository implements MusicRepository {
     } on FirebaseException catch (e) {
       debugPrint('MusicRepository: Firebase error: ${e.message}');
       throw FirebaseRepositoryException('Firebase error: ${e.message}', e.code);
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('MusicRepository: Unexpected error: $e');
       throw NetworkRepositoryException('Network error: $e', 'NETWORK_ERROR');
     }
@@ -432,7 +481,7 @@ class FirebaseMusicRepository implements MusicRepository {
         }
       }
       return null;
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('MusicRepository: Cache loading error: $e');
       return null;
     }
@@ -449,7 +498,7 @@ class FirebaseMusicRepository implements MusicRepository {
       await prefs.setString(_cacheTimeKey, DateTime.now().toIso8601String());
 
       debugPrint('MusicRepository: Saved ${albums.length} albums to cache');
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('MusicRepository: Cache saving error: $e');
       // Don't throw here as caching is non-critical
     }
@@ -480,7 +529,7 @@ class FirebaseMusicRepository implements MusicRepository {
         // Wait before next song (simulating song duration)
         await Future<void>.delayed(const Duration(minutes: 3));
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (!_radioStreamController!.isClosed) {
         _radioStreamController!
             .addError(_handleException(e, 'Radio stream error'));
@@ -493,8 +542,10 @@ class FirebaseMusicRepository implements MusicRepository {
     for (var attempt = 1; attempt <= _maxRetries; attempt++) {
       try {
         return await operation();
-      } catch (e) {
-        if (attempt == _maxRetries) rethrow;
+      } on Exception catch (e) {
+        if (attempt == _maxRetries) {
+          rethrow;
+        }
 
         debugPrint('MusicRepository: Attempt $attempt failed, retrying: $e');
         await Future<void>.delayed(_retryDelay * attempt);
@@ -537,9 +588,13 @@ class FirebaseMusicRepository implements MusicRepository {
     return DataRepositoryException('$context: $error', 'UNKNOWN_ERROR');
   }
 
+  @override
+  Stream<AlbumLoadingProgress> get albumLoadingProgress => _progressController.stream;
+
   /// Disposes of resources.
   void dispose() {
     _radioStreamController?.close();
     _radioStreamController = null;
+    _progressController.close();
   }
 }

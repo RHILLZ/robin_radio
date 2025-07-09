@@ -203,7 +203,9 @@ class ResponsiveScaffold extends StatelessWidget {
     BuildContext context,
     DeviceType deviceType,
   ) {
-    if (appBar == null) return null;
+    if (appBar == null) {
+      return null;
+    }
 
     // If it's already an AppBar, enhance it with adaptive properties
     if (appBar is AppBar) {

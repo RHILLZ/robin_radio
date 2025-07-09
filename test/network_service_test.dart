@@ -278,7 +278,7 @@ void main() {
         );
 
         // Wait for a few updates
-        await Future.delayed(const Duration(milliseconds: 150));
+        await Future<void>.delayed(const Duration(milliseconds: 150));
 
         await networkService.stopQualityMonitoring();
         await subscription.cancel();

@@ -87,7 +87,7 @@ class EnhancedCacheService implements ICacheService {
 
       _isInitialized = true;
       debugPrint('CacheService: Initialized successfully');
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheManagementException.initializationFailed(e);
     }
   }
@@ -128,7 +128,7 @@ class EnhancedCacheService implements ICacheService {
       _misses++;
       _eventController.add(CacheEvent.miss(key));
       return null;
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheReadException.keyAccessFailed(key);
     }
   }
@@ -163,7 +163,7 @@ class EnhancedCacheService implements ICacheService {
 
       // Check cache size and cleanup if needed
       await _enforceMaxCacheSize();
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheWriteException.keyWriteFailed(key, e);
     }
   }
@@ -190,7 +190,7 @@ class EnhancedCacheService implements ICacheService {
           timestamp: DateTime.now(),
         ),
       );
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheWriteException.keyWriteFailed(key, e);
     }
   }
@@ -216,7 +216,7 @@ class EnhancedCacheService implements ICacheService {
           timestamp: DateTime.now(),
         ),
       );
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheManagementException.clearFailed(e);
     }
   }
@@ -261,7 +261,7 @@ class EnhancedCacheService implements ICacheService {
       totalSize += await _getDiskCacheSize();
 
       return totalSize;
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheManagementException.sizeFailed(e);
     }
   }
@@ -286,7 +286,7 @@ class EnhancedCacheService implements ICacheService {
         expiredItems: _expiredItems,
         lastUpdated: DateTime.now(),
       );
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheManagementException.statisticsFailed(e);
     }
   }
@@ -326,7 +326,7 @@ class EnhancedCacheService implements ICacheService {
           ),
         );
       }
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheManagementException.cleanupFailed(e);
     }
   }
@@ -377,7 +377,7 @@ class EnhancedCacheService implements ICacheService {
     try {
       // Test if value can be JSON encoded
       jsonEncode(value);
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheConfigurationException.unsupportedType(T);
     }
   }
@@ -413,8 +413,9 @@ class EnhancedCacheService implements ICacheService {
   }
 
   void _updateAccessOrder(String key) {
-    _accessOrder.remove(key);
-    _accessOrder.add(key);
+    _accessOrder
+      ..remove(key)
+      ..add(key);
   }
 
   void _enforceLRULimit() {
@@ -453,7 +454,7 @@ class EnhancedCacheService implements ICacheService {
 
       final data = jsonDecode(dataJson);
       return data as T;
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheReadException.deserializationFailed(key, e);
     }
   }
@@ -474,7 +475,7 @@ class EnhancedCacheService implements ICacheService {
         'size': dataJson.length,
       };
       await _prefs.setString(metadataKey, jsonEncode(metadata));
-    } catch (e) {
+    } on Exception catch (e) {
       throw CacheWriteException.serializationFailed(key, e);
     }
   }
@@ -505,7 +506,7 @@ class EnhancedCacheService implements ICacheService {
       }
 
       return true;
-    } catch (e) {
+    } on Exception catch (e) {
       return false;
     }
   }
@@ -532,7 +533,7 @@ class EnhancedCacheService implements ICacheService {
         try {
           final metadata = jsonDecode(metadataJson) as Map<String, dynamic>;
           totalSize += metadata['size'] as int? ?? 0;
-        } catch (e) {
+        } on Exception catch (e) {
           // Skip corrupted metadata
         }
       }
@@ -574,7 +575,7 @@ class EnhancedCacheService implements ICacheService {
               expiredCount++;
             }
           }
-        } catch (e) {
+        } on Exception catch (e) {
           // Remove corrupted metadata
           await _prefs.remove(metadataKey);
           expiredCount++;
@@ -609,7 +610,7 @@ class EnhancedCacheService implements ICacheService {
           final metadata = jsonDecode(metadataJson) as Map<String, dynamic>;
           final created = metadata['created'] as int? ?? 0;
           items[metadataKey] = created;
-        } catch (e) {
+        } on Exception catch (e) {
           // Skip corrupted metadata
         }
       }
@@ -635,7 +636,7 @@ class EnhancedCacheService implements ICacheService {
           _evictions++;
 
           _eventController.add(CacheEvent.eviction(key, 'Size limit eviction'));
-        } catch (e) {
+        } on Exception catch (e) {
           // Skip corrupted items
         }
       }
@@ -656,7 +657,7 @@ class EnhancedCacheService implements ICacheService {
     try {
       final serialized = value.toString();
       return serialized.length * 2; // Approximate UTF-16 size
-    } catch (e) {
+    } on Exception catch (e) {
       return 100; // Default estimate
     }
   }
@@ -678,7 +679,7 @@ class _CacheItem {
     try {
       final json = jsonEncode(value);
       return json.length * 2; // Approximate UTF-16 size
-    } catch (e) {
+    } on Exception catch (e) {
       return 100; // Default estimate for non-serializable objects
     }
   }

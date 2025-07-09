@@ -207,7 +207,7 @@ class DownloadManager extends GetxController {
           'HTTP ${response.statusCode}: ${response.reasonPhrase}',
         );
       }
-    } catch (e) {
+    } on Exception catch (e) {
       await _updateDownloadStatus(
         item,
         DownloadStatus.failed,
@@ -302,7 +302,7 @@ class DownloadManager extends GetxController {
   DownloadItem? _findDownloadItem(String downloadId) {
     try {
       return _allDownloads.firstWhere((item) => item.id == downloadId);
-    } catch (e) {
+    } on Exception catch (e) {
       return null;
     }
   }
@@ -328,7 +328,7 @@ class DownloadManager extends GetxController {
       if (await file.exists()) {
         await file.delete();
       }
-    } catch (e) {
+    } on Exception catch (e) {
       // Ignore errors when deleting partial files
     }
   }

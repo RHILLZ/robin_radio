@@ -4,14 +4,13 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 
 /// Default Firebase configuration options for your app
 class DefaultFirebaseOptions {
-  static FirebaseOptions get currentPlatform {
-    // Replace these with your actual Firebase configuration values
-    // You should run 'flutterfire configure' to generate this file properly
-    return const FirebaseOptions(
-      apiKey: 'YOUR_API_KEY',
-      appId: 'YOUR_APP_ID',
-      messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-      projectId: 'YOUR_PROJECT_ID',
-    );
-  }
+  static FirebaseOptions get currentPlatform =>
+      // Replace these with your actual Firebase configuration values
+      // You should run 'flutterfire configure' to generate this file properly
+      const FirebaseOptions(
+        apiKey: 'YOUR_API_KEY',
+        appId: 'YOUR_APP_ID',
+        messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+        projectId: 'YOUR_PROJECT_ID',
+      );
 }

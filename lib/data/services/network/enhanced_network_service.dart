@@ -235,7 +235,7 @@ class EnhancedNetworkService implements INetworkService {
           delayMs *= 1.0 + jitter;
         }
 
-        await Future.delayed(Duration(milliseconds: delayMs.round()));
+        await Future<void>.delayed(Duration(milliseconds: delayMs.round()));
       }
     }
 

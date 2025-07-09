@@ -182,7 +182,9 @@ class AudioPlayerService with WidgetsBindingObserver {
   /// }
   /// ```
   Future<void> initialize() async {
-    if (_isInitialized || _isDisposed) return;
+    if (_isInitialized || _isDisposed) {
+      return;
+    }
 
     try {
       // Add lifecycle observer
@@ -352,7 +354,9 @@ class AudioPlayerService with WidgetsBindingObserver {
   /// await audioService.resume(); // Continues from pause point
   /// ```
   Future<void> resume() async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     try {
       await _ensureInitialized();
@@ -383,7 +387,9 @@ class AudioPlayerService with WidgetsBindingObserver {
   /// await audioService.resume();
   /// ```
   Future<void> pause() async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     try {
       await _ensureInitialized();
@@ -419,7 +425,9 @@ class AudioPlayerService with WidgetsBindingObserver {
   /// // Next play() call will start from beginning
   /// ```
   Future<void> stop() async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     try {
       await _ensureInitialized();
@@ -462,7 +470,9 @@ class AudioPlayerService with WidgetsBindingObserver {
   /// await audioService.seek(halfwayPoint);
   /// ```
   Future<void> seek(Duration position) async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     try {
       await _ensureInitialized();
@@ -506,7 +516,9 @@ class AudioPlayerService with WidgetsBindingObserver {
   /// await audioService.setVolume(1.0);
   /// ```
   Future<void> setVolume(double volume) async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     try {
       await _ensureInitialized();
@@ -546,7 +558,9 @@ class AudioPlayerService with WidgetsBindingObserver {
   /// });
   /// ```
   Future<void> release() async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     try {
       await _ensureInitialized();
@@ -574,7 +588,7 @@ class AudioPlayerService with WidgetsBindingObserver {
       case AppLifecycleState.inactive:
         // Pause audio when app goes to background or becomes inactive
         if (isPlaying) {
-          pause();
+          unawaited(pause());
           if (kDebugMode) {
             print('Audio paused due to app lifecycle change');
           }
@@ -589,12 +603,12 @@ class AudioPlayerService with WidgetsBindingObserver {
         break;
       case AppLifecycleState.detached:
         // Clean up resources when app is being terminated
-        dispose();
+        unawaited(dispose());
         break;
       case AppLifecycleState.hidden:
         // Handle hidden state (iOS 13+)
         if (isPlaying) {
-          pause();
+          unawaited(pause());
         }
         break;
     }
@@ -624,7 +638,9 @@ class AudioPlayerService with WidgetsBindingObserver {
 
   /// Dispose of the entire service
   Future<void> dispose() async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     _isDisposed = true;
 
@@ -659,7 +675,9 @@ class AudioPlayerService with WidgetsBindingObserver {
 
   /// Get current playback progress (0.0 to 1.0)
   double get progress {
-    if (_currentDuration.inMilliseconds <= 0) return 0;
+    if (_currentDuration.inMilliseconds <= 0) {
+      return 0;
+    }
     return _currentPosition.inMilliseconds / _currentDuration.inMilliseconds;
   }
 

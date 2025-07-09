@@ -40,7 +40,7 @@ class SkeletonElement extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final skeletonColor = color ??
-        Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3);
+        Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3);
 
     Widget skeleton;
 
@@ -177,7 +177,7 @@ class SkeletonLoader extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: borderRadius ?? BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Column(

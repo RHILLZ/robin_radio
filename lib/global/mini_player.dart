@@ -21,6 +21,11 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
           return const SizedBox.shrink();
         }
 
+        // Don't show the player if it's being closed
+        if (currentTrack == null && controller.tracks.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -92,7 +97,10 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
                   // Close button
                   RepaintBoundary(
                     child: IconButton(
-                      onPressed: controller.closePlayer,
+                      onPressed: () {
+                        // Immediately trigger close without awaiting - UI stays responsive
+                        controller.closePlayer();
+                      },
                       iconSize: 24,
                       icon: const Icon(
                         Icons.close,
@@ -149,8 +157,12 @@ class MiniPlayerWidget extends GetWidget<PlayerController> {
       );
 
   String _formatTrackTitle(String? name) {
-    if (name == null || name.isEmpty) return '';
-    if (name.length < 3) return name;
+    if (name == null || name.isEmpty) {
+      return '';
+    }
+    if (name.length < 3) {
+      return name;
+    }
 
     final parts = name.substring(3).split('.');
     return parts.isNotEmpty ? parts[0] : name;

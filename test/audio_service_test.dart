@@ -316,7 +316,7 @@ void main() {
         audioService.playbackState.listen(states.add);
 
         await audioService.play(testSong);
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(states, contains(PlaybackState.playing));
       });
@@ -326,7 +326,7 @@ void main() {
         audioService.currentTrack.listen(tracks.add);
 
         await audioService.play(testSong);
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(tracks, contains(testSong));
       });
@@ -336,7 +336,7 @@ void main() {
         audioService.volume.listen(volumes.add);
 
         await audioService.setVolume(0.7);
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(volumes, contains(0.7));
       });

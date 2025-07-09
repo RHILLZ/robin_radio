@@ -81,7 +81,9 @@ class TrackListItem extends GetWidget<PlayerController> {
   }
 
   String _formatSongTitle(String name) {
-    if (name.length < 3) return name;
+    if (name.length < 3) {
+      return name;
+    }
 
     final parts = name.substring(3).split('.');
     return parts.isNotEmpty ? parts[0] : name;
@@ -89,7 +91,9 @@ class TrackListItem extends GetWidget<PlayerController> {
 
   String _getInitials(String title) {
     final words = title.split(' ');
-    if (words.isEmpty) return '';
+    if (words.isEmpty) {
+      return '';
+    }
     if (words.length == 1) {
       return words[0].isNotEmpty ? words[0].substring(0, 1).toUpperCase() : '';
     }

@@ -301,7 +301,7 @@ class MockAudioService implements IAudioService {
   @override
   Future<void> initialize() async {
     _isInitialized = true;
-    await Future.delayed(
+    await Future<void>.delayed(
       const Duration(milliseconds: 100),
     ); // Simulate init time
   }
@@ -325,7 +325,7 @@ class MockAudioService implements IAudioService {
     );
 
     _setState(PlaybackState.buffering);
-    await Future.delayed(
+    await Future<void>.delayed(
       const Duration(milliseconds: 500),
     ); // Simulate buffering
 

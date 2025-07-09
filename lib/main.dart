@@ -86,7 +86,7 @@ void main() async {
     }
 
     runApp(MyApp(theme: theme));
-  } catch (e, stackTrace) {
+  } on Exception catch (e, stackTrace) {
     debugPrint('Error during initialization: $e\n$stackTrace');
     // You might want to show a user-friendly error screen here
     runApp(
@@ -124,16 +124,15 @@ class MyApp extends StatelessWidget {
           theme: _theme,
           initialRoute: Routes.appViewRoute,
           defaultTransition: Transition.fade, // Smooth transitions
-          builder: (context, child) {
-            // Prevent text scaling
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                platformBrightness: Theme.of(context).brightness,
-                textScaler: const TextScaler.linear(1),
+          builder: (context, child) =>
+              // Prevent text scaling
+              MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  platformBrightness: Theme.of(context).brightness,
+                  textScaler: TextScaler.noScaling,
+                ),
+                child: child ?? const SizedBox(),
               ),
-              child: child ?? const SizedBox(),
-            );
-          },
           home: const AppView(),
         ),
       );

@@ -1,14 +1,14 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:miniplayer/miniplayer.dart';
 
+import '../../core/di/service_locator.dart';
 import '../../data/models/album.dart';
 import '../../data/models/song.dart';
-import '../../core/di/service_locator.dart';
 import '../../data/services/audio/audio_service_interface.dart';
 import '../../data/services/audio_player_service.dart' show AudioPlayerService;
 import '../../data/services/performance_service.dart';
@@ -77,8 +77,8 @@ class PlayerController extends GetxController {
 
   // Observable state variables
   final _playerState = PlayerState.stopped.obs;
-  final _playerDuration = const Duration().obs;
-  final _playerPosition = const Duration().obs;
+  final _playerDuration = Duration.zero.obs;
+  final _playerPosition = Duration.zero.obs;
   final _currentSong = Rx<Song?>(null);
   final _currentAlbum = Rx<Album?>(null);
   final _tracks = <Song>[].obs;
@@ -377,7 +377,7 @@ class PlayerController extends GetxController {
 
       // Play the track
       await _audioService.play(randomTrack);
-    } catch (e) {
+    } on Exception catch (e) {
       _playbackError.value = 'Error playing radio: $e';
       debugPrint('Radio playback error: $e');
     }
@@ -412,7 +412,7 @@ class PlayerController extends GetxController {
         print('TRACK INDEX: ${_trackIndex.value}');
         print('TRACKS LENGTH: ${_tracks.length}');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       _playbackError.value = 'Error playing track: $e';
       debugPrint('Track playback error: $e');
     }
@@ -508,41 +508,51 @@ class PlayerController extends GetxController {
   /// Releases audio resources and resets all player state to default values.
   /// Should be called when the player is no longer needed.
   Future<void> closePlayer() async {
+    // FIRST: Dismiss the mini player UI immediately to prevent freeze
+    // This avoids UI blocking while state changes occur
     try {
-      // Stop audio service with timeout to prevent hanging
-      await _audioService.stop().timeout(
-        const Duration(seconds: 3),
-        onTimeout: () {
-          if (kDebugMode) {
-            print('Audio service stop timed out, continuing with cleanup');
-          }
-        },
+      final appController = Get.find<AppController>();
+      // Use height 0 to fully close the mini player
+      appController.miniPlayerController.animateToHeight(
+        height: 0,
       );
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
-        print('Error stopping audio service: $e');
+        print('Error dismissing mini player: $e');
       }
+      // Continue with cleanup even if mini player dismissal fails
     }
 
-    // Clear all player state
+    // SECOND: Clear all UI state atomically to prevent multiple Obx rebuilds
+    // This prevents the mini player from trying to rebuild during state changes
     _tracks.clear();
     _trackIndex.value = 0;
     _currentSong.value = null;
     _currentRadioSong.value = null;
     _currentAlbum.value = null;
     _coverURL.value = null;
+    _playerState.value = PlayerState.stopped;
 
-    // Dismiss the mini player UI
-    try {
-      final appController = Get.find<AppController>();
-      appController.miniPlayerController.animateToHeight(
-        state: PanelState.dismiss,
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error dismissing mini player: $e');
-      }
-    }
+    // THIRD: Defer audio cleanup to prevent UI blocking
+    // Use a separate microtask to avoid blocking the main thread
+    // unawaited(Future.microtask(() async {
+    //   try {
+    //     // Stop audio service with aggressive timeout
+    //     await _audioService.stop().timeout(
+    //       const Duration(milliseconds: 1500), // Reduced timeout
+    //       onTimeout: () {
+    //         if (kDebugMode) {
+    //           print('Audio service stop timed out, forcing cleanup');
+    //         }
+    //       },
+    //     );
+    //   } on Exception catch (e) {
+    //     if (kDebugMode) {
+    //       print('Error stopping audio service: $e');
+    //     }
+    //     // Continue cleanup even if audio service fails
+    //   }
+    // }),);
   }
 
   /// Toggles between play and pause states.
@@ -589,13 +599,17 @@ class PlayerController extends GetxController {
       _tracks.value = List.from(_originalQueue);
       if (currentTrack != null) {
         _trackIndex.value = _tracks.indexOf(currentTrack);
-        if (_trackIndex.value == -1) _trackIndex.value = 0;
+        if (_trackIndex.value == -1) {
+          _trackIndex.value = 0;
+        }
       }
     }
   }
 
   void _shuffleQueue() {
-    if (_tracks.isEmpty) return;
+    if (_tracks.isEmpty) {
+      return;
+    }
 
     // Save current track
     final currentTrack = _tracks.isNotEmpty ? _tracks[_trackIndex.value] : null;

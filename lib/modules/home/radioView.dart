@@ -228,7 +228,9 @@ class RadioView extends GetView<PlayerController> {
       );
 
   String _formatSongTitle(String name) {
-    if (name.length < 3) return name;
+    if (name.length < 3) {
+      return name;
+    }
     final parts = name.substring(3).split('.');
     return parts.isNotEmpty ? parts[0] : name;
   }

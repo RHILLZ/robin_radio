@@ -304,7 +304,7 @@ class MockCacheService implements ICacheService {
     try {
       final serialized = value.toString();
       return serialized.length * 2; // Approximate UTF-16 size
-    } catch (e) {
+    } on Exception {
       return 100; // Default estimate
     }
   }

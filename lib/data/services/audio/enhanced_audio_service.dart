@@ -703,7 +703,7 @@ class EnhancedAudioService implements IAudioService {
       if (kDebugMode) {
         print('EnhancedAudioService disposed');
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (kDebugMode) {
         print('Error during EnhancedAudioService disposal: $e');
       }

@@ -242,7 +242,7 @@ class _PullToRefreshState extends State<PullToRefresh>
       });
 
       // Brief delay to show completion state
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
     } finally {
       _animationController.reverse();
       setState(() {

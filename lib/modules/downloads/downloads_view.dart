@@ -389,7 +389,7 @@ class _DownloadsViewState extends State<DownloadsView>
     final formattedSize = _formatBytes(totalSize);
     final songCount = _storageService.getAllOfflineSongs().length;
 
-    Get.dialog(
+    Get.dialog<void>(
       AlertDialog(
         title: const AdaptiveText('Storage Information'),
         content: Column(
@@ -413,7 +413,7 @@ class _DownloadsViewState extends State<DownloadsView>
 
   /// Shows confirmation dialog for clearing all offline data.
   void _showClearAllOfflineDialog() {
-    Get.dialog(
+    Get.dialog<void>(
       AlertDialog(
         title: const AdaptiveText('Clear All Offline Data'),
         content: const AdaptiveText(
@@ -426,7 +426,7 @@ class _DownloadsViewState extends State<DownloadsView>
           ),
           TextButton(
             onPressed: () {
-              Get.back();
+              Get.back<void>();
               _storageService.clearAllOfflineData();
             },
             child: const AdaptiveText(
@@ -441,7 +441,7 @@ class _DownloadsViewState extends State<DownloadsView>
 
   /// Shows confirmation dialog for deleting an offline song.
   void _showDeleteOfflineSongDialog(OfflineSong offlineSong) {
-    Get.dialog(
+    Get.dialog<void>(
       AlertDialog(
         title: const AdaptiveText('Delete Offline Song'),
         content: AdaptiveText(
@@ -454,7 +454,7 @@ class _DownloadsViewState extends State<DownloadsView>
           ),
           TextButton(
             onPressed: () {
-              Get.back();
+              Get.back<void>();
               _storageService.deleteOfflineSong(offlineSong.id);
             },
             child: const AdaptiveText(
@@ -472,8 +472,12 @@ class _DownloadsViewState extends State<DownloadsView>
 
   /// Formats bytes into human-readable format.
   String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
     if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }

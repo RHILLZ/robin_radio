@@ -43,6 +43,29 @@ import 'repositories.dart' show RepositoryException;
 /// final radioStream = await musicRepo.getRadioStream();
 /// radioStream.listen((song) => playTrack(song));
 /// ```
+
+/// Progress information for album loading operations
+class AlbumLoadingProgress {
+  const AlbumLoadingProgress({
+    required this.message,
+    required this.progress,
+    required this.albumsProcessed,
+    required this.totalAlbums,
+  });
+
+  /// Human-readable message describing the current operation
+  final String message;
+
+  /// Progress as a value between 0.0 and 1.0
+  final double progress;
+
+  /// Number of albums processed so far
+  final int albumsProcessed;
+
+  /// Total number of albums to process (if known)
+  final int totalAlbums;
+}
+
 abstract class MusicRepository {
   /// Retrieves all available albums from the optimal data source.
   ///
@@ -621,4 +644,24 @@ abstract class MusicRepository {
   /// }
   /// ```
   Future<void> clearCache();
+
+  /// Stream of album loading progress updates.
+  ///
+  /// Provides real-time updates during album loading operations including:
+  /// - Progress percentage (0.0 to 1.0)
+  /// - Current operation description
+  /// - Number of albums processed
+  /// - Total albums to process
+  ///
+  /// The stream emits updates as albums are loaded from Firebase Storage
+  /// and added to the cache. This allows UI components to display
+  /// detailed progress information to users.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// musicRepo.albumLoadingProgress.listen((progress) {
+  ///   updateLoadingUI(progress.message, progress.progress);
+  /// });
+  /// ```
+  Stream<AlbumLoadingProgress> get albumLoadingProgress;
 }

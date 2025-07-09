@@ -48,13 +48,13 @@ class MockNetworkService implements INetworkService {
 
   @override
   Future<bool> get isConnected async {
-    await Future.delayed(_simulatedLatency);
+    await Future<void>.delayed(_simulatedLatency);
     return _isConnected;
   }
 
   @override
   Future<ConnectivityResult> checkConnectivity() async {
-    await Future.delayed(_simulatedLatency);
+    await Future<void>.delayed(_simulatedLatency);
     if (_simulateNetworkFailures && Random().nextDouble() < _failureRate) {
       throw const NetworkConnectivityException(
         'Mock connectivity check failed',
@@ -66,7 +66,7 @@ class MockNetworkService implements INetworkService {
 
   @override
   Future<NetworkState> getNetworkState() async {
-    await Future.delayed(_simulatedLatency);
+    await Future<void>.delayed(_simulatedLatency);
 
     if (_simulateNetworkFailures && Random().nextDouble() < _failureRate) {
       throw const NetworkConnectivityException(
@@ -89,7 +89,7 @@ class MockNetworkService implements INetworkService {
 
   @override
   Future<NetworkQuality> assessNetworkQuality() async {
-    await Future.delayed(_simulatedLatency);
+    await Future<void>.delayed(_simulatedLatency);
 
     if (_simulateNetworkFailures && Random().nextDouble() < _failureRate) {
       throw const NetworkQualityException(
@@ -103,7 +103,7 @@ class MockNetworkService implements INetworkService {
 
   @override
   Future<NetworkUsageStats> getUsageStats() async {
-    await Future.delayed(_simulatedLatency);
+    await Future<void>.delayed(_simulatedLatency);
 
     return NetworkUsageStats(
       bytesSent: _bytesSent,
@@ -116,7 +116,7 @@ class MockNetworkService implements INetworkService {
 
   @override
   Future<void> resetUsageStats() async {
-    await Future.delayed(_simulatedLatency);
+    await Future<void>.delayed(_simulatedLatency);
     _bytesSent = 0;
     _bytesReceived = 0;
     _usageStatsStartTime = DateTime.now();
@@ -185,11 +185,11 @@ class MockNetworkService implements INetworkService {
         for (final listener in _networkStateListeners) {
           try {
             listener(networkState);
-          } catch (e) {
+          } on Exception {
             // Ignore listener errors
           }
         }
-      } catch (e) {
+      } on Exception {
         // Ignore monitoring errors in mock
       }
     });
@@ -206,7 +206,7 @@ class MockNetworkService implements INetworkService {
     int port = 80,
     Duration? timeout,
   }) async {
-    await Future.delayed(_simulatedLatency);
+    await Future<void>.delayed(_simulatedLatency);
 
     if (_simulateNetworkFailures && Random().nextDouble() < _failureRate) {
       return false;
@@ -218,7 +218,7 @@ class MockNetworkService implements INetworkService {
 
   @override
   Future<double?> estimateDownloadSpeed({Duration? timeout}) async {
-    await Future.delayed(_simulatedLatency);
+    await Future<void>.delayed(_simulatedLatency);
 
     if (!_isConnected) {
       return null;
@@ -304,7 +304,7 @@ class MockNetworkService implements INetworkService {
     for (final listener in _networkStateListeners) {
       try {
         listener(networkState);
-      } catch (e) {
+      } on Exception {
         // Ignore listener errors
       }
     }

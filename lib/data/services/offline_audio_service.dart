@@ -115,7 +115,9 @@ class OfflineAudioService extends GetxController {
 
   /// Plays offline songs in a queue.
   Future<void> playOfflineQueue(List<OfflineSong> songs) async {
-    if (songs.isEmpty) return;
+    if (songs.isEmpty) {
+      return;
+    }
 
     // Clear current queue
     await _audioService.clearQueue();
@@ -169,7 +171,7 @@ class OfflineAudioService extends GetxController {
     try {
       final file = File(offlineSong.localPath);
       return await file.exists();
-    } catch (e) {
+    } on Exception {
       return false;
     }
   }
@@ -182,8 +184,12 @@ class OfflineAudioService extends GetxController {
 
   /// Formats bytes into human-readable format.
   String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
     if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }

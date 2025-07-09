@@ -436,8 +436,9 @@ class ImagePreloadService {
 
       await precacheImage(AssetImage(assetPath), context);
 
-      analytics.endTime = DateTime.now();
-      analytics.success = true;
+      analytics
+        ..endTime = DateTime.now()
+        ..success = true;
 
       _preloadedUrls.add(assetPath);
 
@@ -485,8 +486,9 @@ class ImagePreloadService {
       await precacheImage(imageProvider, context)
           .timeout(config.preloadTimeout);
 
-      analytics.endTime = DateTime.now();
-      analytics.success = true;
+      analytics
+        ..endTime = DateTime.now()
+        ..success = true;
 
       _preloadedUrls.add(url);
 

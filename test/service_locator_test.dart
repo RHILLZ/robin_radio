@@ -202,7 +202,7 @@ void main() {
         try {
           ServiceLocator.get<INetworkService>();
           fail('Should have thrown ServiceLocatorException');
-        } catch (e) {
+        } on ServiceLocatorException catch (e) {
           expect(e, isA<ServiceLocatorException>());
           final exception = e as ServiceLocatorException;
           expect(exception.message.contains('not initialized'), true);

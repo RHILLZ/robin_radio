@@ -88,7 +88,9 @@ class OfflineSyncService extends GetxController {
 
   /// Manually triggers a sync operation.
   Future<void> syncNow() async {
-    if (_isSyncing.value) return;
+    if (_isSyncing.value) {
+      return;
+    }
 
     _isSyncing.value = true;
 
@@ -154,7 +156,7 @@ class OfflineSyncService extends GetxController {
           await _storageService.deleteOfflineSong(song.id);
           removedCount++;
         }
-      } catch (e) {
+      } on Exception {
         // Remove invalid entries
         await _storageService.deleteOfflineSong(song.id);
         removedCount++;
@@ -166,7 +168,7 @@ class OfflineSyncService extends GetxController {
 
   /// Sets up connectivity monitoring.
   Future<void> _setupConnectivityMonitoring() async {
-    _connectivitySubscription?.cancel();
+    await _connectivitySubscription?.cancel();
 
     if (_syncMode.value == SyncMode.auto) {
       _connectivitySubscription =
@@ -217,16 +219,16 @@ class OfflineSyncService extends GetxController {
   }
 
   /// Gets a file object from path.
-  Future<dynamic> _getFile(String path) async {
-    // This would be implemented with dart:io File
-    // For now, return a mock object
-    return _MockFile(path);
-  }
+  Future<dynamic> _getFile(String path) async => _MockFile(path);
 
   /// Formats bytes into human-readable format.
   String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
     if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
@@ -235,7 +237,7 @@ class OfflineSyncService extends GetxController {
 
   @override
   Future<void> onClose() async {
-    _connectivitySubscription?.cancel();
+    await _connectivitySubscription?.cancel();
     super.onClose();
   }
 }
@@ -254,11 +256,7 @@ enum SyncMode {
 
 /// Mock file class for demonstration.
 class _MockFile {
-  _MockFile(this._path);
-  final String _path;
+  _MockFile(String _);
 
-  Future<bool> exists() async {
-    // Mock implementation
-    return true;
-  }
+  Future<bool> exists() async => true;
 }

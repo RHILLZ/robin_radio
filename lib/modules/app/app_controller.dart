@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:miniplayer/miniplayer.dart';
@@ -44,6 +45,9 @@ class AppController extends GetxController {
   /// Observable status message describing the current loading operation.
   final RxString _loadingStatusMessage = 'Initializing...'.obs;
 
+  /// Subscription to album loading progress updates
+  StreamSubscription<AlbumLoadingProgress>? _progressSubscription;
+
   /// Set of album IDs that are currently being reloaded
   final RxSet<String> _albumsBeingReloaded = <String>{}.obs;
 
@@ -80,7 +84,9 @@ class AppController extends GetxController {
 
   /// Checks if a specific album is currently being reloaded
   bool isAlbumLoading(String? albumId) {
-    if (albumId == null) return false;
+    if (albumId == null) {
+      return false;
+    }
     return _albumsBeingReloaded.contains(albumId);
   }
 
@@ -89,6 +95,19 @@ class AppController extends GetxController {
     super.onInit();
     // Initialize repository from ServiceLocator
     _musicRepository = ServiceLocator.get<MusicRepository>();
+    
+    // Set up progress listener
+    _progressSubscription = _musicRepository.albumLoadingProgress.listen(
+      (progress) {
+        _loadingStatusMessage.value = progress.message;
+        // Only update progress if it's greater than current progress
+        // This prevents backward progress during different loading phases
+        if (progress.progress > _loadingProgress.value) {
+          _loadingProgress.value = progress.progress;
+        }
+      },
+    );
+    
     await _initializeServices();
     await _initializeMusic();
   }
@@ -159,7 +178,7 @@ class AppController extends GetxController {
       if (elapsed < minLoadingDuration) {
         await Future<void>.delayed(minLoadingDuration - elapsed);
       }
-    } catch (e) {
+    } on Exception catch (e) {
       _handleError('Failed to initialize music: $e');
       // Still enforce minimum duration even on error
       final elapsed = DateTime.now().difference(startTime);
@@ -177,14 +196,14 @@ class AppController extends GetxController {
     try {
       return await Future.any([
         _loadAlbumsWithProgressUpdates(),
-        Future.delayed(const Duration(seconds: 30)).then(
+        Future<void>.delayed(const Duration(seconds: 30)).then<List<Album>>(
           (_) => throw TimeoutException(
             'Loading music timed out after 30 seconds',
             const Duration(seconds: 30),
           ),
         ),
       ]);
-    } catch (e) {
+    } on Exception catch (e) {
       if (e.toString().contains('timeout') ||
           e.toString().contains('TimeoutException')) {
         // If timeout occurs, try to load from cache only
@@ -239,8 +258,10 @@ class AppController extends GetxController {
   /// This method is kept for compatibility but now triggers a full refresh
   /// since all albums are loaded at once. Will be deprecated in future versions.
   Future<void> loadMoreAlbums() async {
-    if (_isLoading.value) return;
-    refreshMusic();
+    if (_isLoading.value) {
+      return;
+    }
+    unawaited(refreshMusic());
   }
 
   /// Refreshes the music library by clearing cache and reloading from the repository.
@@ -269,11 +290,9 @@ class AppController extends GetxController {
       _loadingProgress.value = 0.6;
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
+      // The progress listener will automatically update the UI as albums load
       final albums = await _musicRepository.getAlbums();
       _albums.value = albums;
-
-      _loadingProgress.value = 1.0;
-      _loadingStatusMessage.value = 'Music refreshed successfully';
 
       // Ensure minimum loading duration for proper UI feedback
       final elapsed = DateTime.now().difference(startTime);
@@ -287,7 +306,7 @@ class AppController extends GetxController {
       if (elapsed < minLoadingDuration) {
         await Future<void>.delayed(minLoadingDuration - elapsed);
       }
-    } catch (e) {
+    } on Exception catch (e) {
       _handleError('Failed to refresh music: $e');
       // Still enforce minimum duration even on error
       final elapsed = DateTime.now().difference(startTime);
@@ -296,6 +315,92 @@ class AppController extends GetxController {
       }
     } finally {
       _isLoading.value = false;
+    }
+  }
+
+  /// Refreshes a single album from Firebase and updates it in the cache.
+  ///
+  /// Shows loading indicator for the specific album while refreshing.
+  /// Updates only the specified album without affecting other cached data.
+  ///
+  /// [albumId] The unique identifier of the album to refresh.
+  Future<void> refreshSingleAlbum(String albumId) async {
+    // Check if this album is already being reloaded
+    if (_albumsBeingReloaded.contains(albumId)) {
+      debugPrint('Album $albumId is already being refreshed, skipping...');
+      return;
+    }
+
+    // Find the current album
+    final currentAlbum = getAlbumById(albumId);
+    if (currentAlbum == null) {
+      debugPrint('Album $albumId not found in current albums list');
+      return;
+    }
+
+    debugPrint(
+      'Targeted refresh for album: ${currentAlbum.albumName} ($albumId)',
+    );
+
+    // Add to loading set to show loading indicator
+    _albumsBeingReloaded.add(albumId);
+
+    try {
+      // Parse albumId to get artist and album name (format: ${artistName}_${albumName})
+      final parts = albumId.split('_');
+      if (parts.length < 2) {
+        throw Exception('Invalid album ID format: $albumId');
+      }
+
+      final artistName = parts[0];
+      final albumName =
+          parts.sublist(1).join('_'); // Handle album names with underscores
+
+      // Fetch fresh data directly from Firebase for this specific album
+      final refreshedAlbum =
+          await _fetchSingleAlbumFromFirebase(artistName, albumName, albumId);
+
+      if (refreshedAlbum != null) {
+        // Update just this album in our albums list
+        final albumIndex = _albums.indexWhere((a) => a.id == albumId);
+        if (albumIndex >= 0) {
+          final updatedAlbums = List<Album>.from(_albums);
+          updatedAlbums[albumIndex] = refreshedAlbum;
+          _albums.value = updatedAlbums;
+
+          debugPrint(
+            'Successfully refreshed album: ${refreshedAlbum.albumName} with ${refreshedAlbum.tracks.length} tracks',
+          );
+
+          // Show a brief success message
+          Get.snackbar(
+            'Album Refreshed',
+            '${refreshedAlbum.albumName} has been updated',
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green.withValues(alpha: 0.8),
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(16),
+          );
+        }
+      } else {
+        throw Exception('Failed to fetch album data from Firebase');
+      }
+    } on Exception catch (e) {
+      debugPrint('Unexpected error refreshing album $albumId: $e');
+
+      // Show generic error message
+      Get.snackbar(
+        'Refresh Failed',
+        'Unable to refresh ${currentAlbum.albumName}. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.8),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } finally {
+      // Remove from loading set
+      _albumsBeingReloaded.remove(albumId);
     }
   }
 
@@ -382,7 +487,7 @@ class AppController extends GetxController {
             );
           }
         }
-      } catch (e) {
+      } on Exception catch (e) {
         debugPrint('Failed to reload album tracks: $e');
         // Continue with original album even if it has no tracks
       } finally {
@@ -393,8 +498,9 @@ class AppController extends GetxController {
 
     // Track album loading performance
     final performanceService = PerformanceService();
-    await performanceService
-        .startAlbumLoadTrace(albumToShow.id ?? 'unknown_album');
+    unawaited(
+      performanceService.startAlbumLoadTrace(albumToShow.id ?? 'unknown_album'),
+    );
 
     Get.bottomSheet<void>(
       Scaffold(body: TrackListView(album: albumToShow)),
@@ -415,7 +521,7 @@ class AppController extends GetxController {
   Album? getAlbumById(String id) {
     try {
       return _albums.firstWhere((album) => album.id == id);
-    } catch (e) {
+    } on Exception catch (e) {
       return null;
     }
   }
@@ -428,7 +534,9 @@ class AppController extends GetxController {
   /// [query] The search term to match against album and artist names.
   /// Returns a list of albums that match the search criteria.
   List<Album> searchAlbums(String query) {
-    if (query.isEmpty) return _albums;
+    if (query.isEmpty) {
+      return _albums;
+    }
 
     final lowercaseQuery = query.toLowerCase();
     return _albums
@@ -448,7 +556,9 @@ class AppController extends GetxController {
   /// [query] The search term to match against song and artist names.
   /// Returns a list of songs that match the search criteria.
   List<Song> searchSongs(String query) {
-    if (query.isEmpty) return [];
+    if (query.isEmpty) {
+      return [];
+    }
 
     final lowercaseQuery = query.toLowerCase();
     final results = <Song>[];
@@ -465,8 +575,106 @@ class AppController extends GetxController {
     return results;
   }
 
+  /// Fetches a single album directly from Firebase Storage without affecting the cache.
+  Future<Album?> _fetchSingleAlbumFromFirebase(
+      String artistName, String albumName, String albumId) async {
+    try {
+      final storage = FirebaseStorage.instance;
+      final albumRef =
+          storage.ref().child('Artist').child(artistName).child(albumName);
+
+      // Get all items in the album folder with timeout
+      final result = await albumRef.listAll().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException(
+                'Firebase fetch timeout', const Duration(seconds: 10)),
+          );
+
+      String? albumArt;
+      final tracks = <Song>[];
+
+      // First pass: find album art
+      for (final item in result.items) {
+        final itemName = item.name;
+        if (_isImageFile(itemName)) {
+          try {
+            albumArt = await item.getDownloadURL().timeout(
+                  const Duration(seconds: 5),
+                  onTimeout: () => throw TimeoutException(
+                      'Album art URL timeout', const Duration(seconds: 5)),
+                );
+            break;
+          } catch (e) {
+            debugPrint('Failed to get album art URL: $e');
+          }
+        }
+      }
+
+      // Second pass: process songs
+      for (final songRef in result.items) {
+        final songName = songRef.name;
+
+        // Skip image files
+        if (_isImageFile(songName)) {
+          continue;
+        }
+
+        try {
+          final songUrl = await songRef.getDownloadURL().timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => throw TimeoutException(
+                    'Song URL timeout for $songName',
+                    const Duration(seconds: 5)),
+              );
+
+          tracks.add(
+            Song(
+              id: '${artistName}_${albumName}_$songName',
+              songName: songName,
+              songUrl: songUrl,
+              artist: artistName,
+              albumName: albumName,
+            ),
+          );
+        } catch (e) {
+          debugPrint('Failed to load song $songName: $e');
+          // Continue with other songs
+        }
+      }
+
+      if (tracks.isNotEmpty) {
+        return Album(
+          id: albumId,
+          albumName: albumName,
+          tracks: tracks,
+          albumCover: albumArt,
+          artist: artistName,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching album from Firebase: $e');
+      return null;
+    }
+  }
+
+  /// Checks if a file is an image based on its extension.
+  bool _isImageFile(String fileName) {
+    final lowerName = fileName.toLowerCase();
+    return lowerName.endsWith('.jpg') ||
+        lowerName.endsWith('.jpeg') ||
+        lowerName.endsWith('.png') ||
+        lowerName.endsWith('.gif') ||
+        lowerName.endsWith('.webp');
+  }
+
   @override
   void onClose() {
+    // Cancel progress subscription
+    _progressSubscription?.cancel();
+    _progressSubscription = null;
+    
     // Clear all reactive variables to prevent memory leaks
     _albums.clear();
     _isLoading.value = false;
