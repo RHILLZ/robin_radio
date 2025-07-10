@@ -216,7 +216,7 @@ class AppController extends GetxController {
           if (cachedAlbums.isNotEmpty) {
             return cachedAlbums;
           }
-        } catch (_) {
+        } on Exception {
           // Cache also failed (this should rarely happen with the cache-only method)
         }
 
@@ -261,7 +261,7 @@ class AppController extends GetxController {
     if (_isLoading.value) {
       return;
     }
-    unawaited(refreshMusic());
+    await refreshMusic();
   }
 
   /// Refreshes the music library by clearing cache and reloading from the repository.
@@ -498,11 +498,9 @@ class AppController extends GetxController {
 
     // Track album loading performance
     final performanceService = PerformanceService();
-    unawaited(
-      performanceService.startAlbumLoadTrace(albumToShow.id ?? 'unknown_album'),
-    );
+    await performanceService.startAlbumLoadTrace(albumToShow.id ?? 'unknown_album');
 
-    Get.bottomSheet<void>(
+    await Get.bottomSheet<void>(
       Scaffold(body: TrackListView(album: albumToShow)),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -521,7 +519,7 @@ class AppController extends GetxController {
   Album? getAlbumById(String id) {
     try {
       return _albums.firstWhere((album) => album.id == id);
-    } on Exception catch (e) {
+    } on Exception {
       return null;
     }
   }
@@ -577,7 +575,10 @@ class AppController extends GetxController {
 
   /// Fetches a single album directly from Firebase Storage without affecting the cache.
   Future<Album?> _fetchSingleAlbumFromFirebase(
-      String artistName, String albumName, String albumId) async {
+    String artistName,
+    String albumName,
+    String albumId,
+  ) async {
     try {
       final storage = FirebaseStorage.instance;
       final albumRef =
@@ -585,10 +586,12 @@ class AppController extends GetxController {
 
       // Get all items in the album folder with timeout
       final result = await albumRef.listAll().timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => throw TimeoutException(
-                'Firebase fetch timeout', const Duration(seconds: 10)),
-          );
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException(
+          'Firebase fetch timeout',
+          const Duration(seconds: 10),
+        ),
+      );
 
       String? albumArt;
       final tracks = <Song>[];
@@ -599,12 +602,14 @@ class AppController extends GetxController {
         if (_isImageFile(itemName)) {
           try {
             albumArt = await item.getDownloadURL().timeout(
-                  const Duration(seconds: 5),
-                  onTimeout: () => throw TimeoutException(
-                      'Album art URL timeout', const Duration(seconds: 5)),
-                );
+              const Duration(seconds: 5),
+              onTimeout: () => throw TimeoutException(
+                'Album art URL timeout',
+                const Duration(seconds: 5),
+              ),
+            );
             break;
-          } catch (e) {
+          } on Exception catch (e) {
             debugPrint('Failed to get album art URL: $e');
           }
         }
@@ -621,11 +626,12 @@ class AppController extends GetxController {
 
         try {
           final songUrl = await songRef.getDownloadURL().timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => throw TimeoutException(
-                    'Song URL timeout for $songName',
-                    const Duration(seconds: 5)),
-              );
+            const Duration(seconds: 5),
+            onTimeout: () => throw TimeoutException(
+              'Song URL timeout for $songName',
+              const Duration(seconds: 5),
+            ),
+          );
 
           tracks.add(
             Song(
@@ -636,7 +642,7 @@ class AppController extends GetxController {
               albumName: albumName,
             ),
           );
-        } catch (e) {
+        } on Exception catch (e) {
           debugPrint('Failed to load song $songName: $e');
           // Continue with other songs
         }
@@ -653,7 +659,7 @@ class AppController extends GetxController {
       }
 
       return null;
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('Error fetching album from Firebase: $e');
       return null;
     }

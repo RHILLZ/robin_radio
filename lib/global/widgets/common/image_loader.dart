@@ -5,35 +5,55 @@ import 'package:flutter/material.dart';
 
 /// Progressive loading mode options
 enum ProgressiveLoadingMode {
+  /// No progressive loading
   none,
+  /// Blur up effect from low to high quality
   blurUp,
+  /// Two phase loading with thumbnail first
   twoPhase,
+  /// Simple fade transition
   fade,
 }
 
 /// Size constraint constants for different UI contexts
 class ImageSizeConstraints {
+  /// Private constructor to prevent instantiation
+  ImageSizeConstraints._();
+  /// Thumbnail size constraint
   static const int thumbnailSize = 150;
+  /// List item size constraint
   static const int listItemSize = 300;
+  /// Detail view size constraint
   static const int detailViewSize = 800;
+  /// Full screen size constraint
   static const int fullScreenSize = 1200;
 
   /// Calculate appropriate cache size based on display size
   static int calculateCacheSize(double? displaySize) {
-    if (displaySize == null) return listItemSize;
+    if (displaySize == null) {
+      return listItemSize;
+    }
 
     final pixelSize = (displaySize * 3).round(); // 3x for high DPI displays
 
-    if (pixelSize <= thumbnailSize) return thumbnailSize;
-    if (pixelSize <= listItemSize) return listItemSize;
-    if (pixelSize <= detailViewSize) return detailViewSize;
+    if (pixelSize <= thumbnailSize) {
+      return thumbnailSize;
+    }
+    if (pixelSize <= listItemSize) {
+      return listItemSize;
+    }
+    if (pixelSize <= detailViewSize) {
+      return detailViewSize;
+    }
     return fullScreenSize;
   }
 
   /// Generate thumbnail URL for progressive loading
   static String generateThumbnailUrl(String originalUrl, {int maxSize = 50}) {
     final uri = Uri.tryParse(originalUrl);
-    if (uri == null) return originalUrl;
+    if (uri == null) {
+      return originalUrl;
+    }
 
     final queryParams = Map<String, String>.from(uri.queryParameters);
     queryParams['width'] = maxSize.toString();
@@ -47,12 +67,18 @@ class ImageSizeConstraints {
 
 /// Image context for automatic sizing optimization
 enum ImageContext {
+  /// Thumbnail context
   thumbnail,
+  /// List item context
   listItem,
+  /// Detail view context
   detailView,
+  /// Full screen context
   fullScreen,
+  /// Custom context
   custom;
 
+  /// Get maximum size for this context
   int get maxSize {
     switch (this) {
       case ImageContext.thumbnail:
@@ -71,6 +97,7 @@ enum ImageContext {
 
 /// A reusable image loader widget with progressive loading and intelligent resizing.
 class ImageLoader extends StatefulWidget {
+  /// Creates an ImageLoader widget
   const ImageLoader({
     required this.imageUrl,
     this.width,
@@ -91,21 +118,37 @@ class ImageLoader extends StatefulWidget {
     super.key,
   });
 
+  /// The URL of the image to load
   final String imageUrl;
+  /// The width of the image
   final double? width;
+  /// The height of the image
   final double? height;
+  /// How the image should be fitted
   final BoxFit fit;
+  /// The border radius to apply
   final double borderRadius;
+  /// Cache key for the image
   final String? cacheKey;
+  /// Cache width for the image
   final int? cacheWidth;
+  /// Cache height for the image
   final int? cacheHeight;
+  /// Placeholder widget while loading
   final Widget Function(BuildContext, String)? placeholder;
+  /// Error widget if loading fails
   final Widget Function(BuildContext, String, Object)? errorWidget;
+  /// Image context for sizing optimization
   final ImageContext context;
+  /// Whether to enable server-side resizing
   final bool enableServerSideResizing;
+  /// Maximum cache size
   final int? maxCacheSize;
+  /// Progressive loading mode
   final ProgressiveLoadingMode progressiveMode;
+  /// Hero tag for hero animations
   final String? heroTag;
+  /// Duration for transition animations
   final Duration transitionDuration;
 
   @override
@@ -151,10 +194,14 @@ class _ImageLoaderState extends State<ImageLoader>
 
   /// Generate optimized image URL with size parameters for server-side resizing
   String _getOptimizedImageUrl() {
-    if (!widget.enableServerSideResizing) return widget.imageUrl;
+    if (!widget.enableServerSideResizing) {
+      return widget.imageUrl;
+    }
 
     final uri = Uri.tryParse(widget.imageUrl);
-    if (uri == null) return widget.imageUrl;
+    if (uri == null) {
+      return widget.imageUrl;
+    }
 
     // Calculate optimal size
     final targetWidth = _calculateOptimalCacheWidth();
@@ -184,8 +231,12 @@ class _ImageLoaderState extends State<ImageLoader>
 
   /// Calculate optimal cache width based on display width and context
   int _calculateOptimalCacheWidth() {
-    if (widget.cacheWidth != null) return widget.cacheWidth!;
-    if (widget.maxCacheSize != null) return widget.maxCacheSize!;
+    if (widget.cacheWidth != null) {
+      return widget.cacheWidth!;
+    }
+    if (widget.maxCacheSize != null) {
+      return widget.maxCacheSize!;
+    }
 
     if (widget.width != null) {
       return ImageSizeConstraints.calculateCacheSize(widget.width);
@@ -196,8 +247,12 @@ class _ImageLoaderState extends State<ImageLoader>
 
   /// Calculate optimal cache height based on display height and context
   int _calculateOptimalCacheHeight() {
-    if (widget.cacheHeight != null) return widget.cacheHeight!;
-    if (widget.maxCacheSize != null) return widget.maxCacheSize!;
+    if (widget.cacheHeight != null) {
+      return widget.cacheHeight!;
+    }
+    if (widget.maxCacheSize != null) {
+      return widget.maxCacheSize!;
+    }
 
     if (widget.height != null) {
       return ImageSizeConstraints.calculateCacheSize(widget.height);

@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
+/// A reusable widget for displaying error states with retry functionality.
+///
+/// This widget provides a consistent error UI across the application,
+/// including an icon, title, message, and retry button.
 class ErrorStateWidget extends StatelessWidget {
+  /// Creates an error state widget.
+  ///
+  /// The [title], [message], and [onRetry] parameters are required.
+  /// The [icon] defaults to [Icons.error_outline] and [iconColor] defaults to [Colors.red].
   const ErrorStateWidget({
     required this.title,
     required this.message,
@@ -11,10 +19,19 @@ class ErrorStateWidget extends StatelessWidget {
     this.iconColor = Colors.red,
   });
 
+  /// The title text to display for the error.
   final String title;
+  
+  /// The detailed error message to display.
   final String message;
+  
+  /// Callback function to execute when the retry button is pressed.
   final VoidCallback onRetry;
+  
+  /// The icon to display. Defaults to [Icons.error_outline].
   final IconData icon;
+  
+  /// The color of the icon. Defaults to [Colors.red].
   final Color iconColor;
 
   @override

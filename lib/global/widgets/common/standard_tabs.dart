@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 /// Const widgets for standard app tabs
 /// Provides performance benefits and consistency across the app
 
+/// A standard tab widget for the Radio section.
 class RadioTab extends StatelessWidget {
+  /// Creates a RadioTab widget.
   const RadioTab({super.key});
 
   @override
@@ -13,7 +15,9 @@ class RadioTab extends StatelessWidget {
       );
 }
 
+/// A standard tab widget for the Albums section.
 class AlbumsTab extends StatelessWidget {
+  /// Creates an AlbumsTab widget.
   const AlbumsTab({super.key});
 
   @override

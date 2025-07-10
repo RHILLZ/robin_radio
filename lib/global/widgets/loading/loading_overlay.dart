@@ -25,6 +25,34 @@ class LoadingOverlayConfig {
     this.semanticsValue,
   });
 
+  /// Create a light-themed overlay configuration
+  const LoadingOverlayConfig.light({
+    double opacity = 0.6,
+    bool blurBackground = false,
+    LoadingOverlayPosition position = LoadingOverlayPosition.center,
+    bool dismissible = false,
+  }) : this(
+        backgroundColor: Colors.white,
+        opacity: opacity,
+        blurBackground: blurBackground,
+        position: position,
+        dismissible: dismissible,
+      );
+
+  /// Create a dark-themed overlay configuration
+  const LoadingOverlayConfig.dark({
+    double opacity = 0.8,
+    bool blurBackground = false,
+    LoadingOverlayPosition position = LoadingOverlayPosition.center,
+    bool dismissible = false,
+  }) : this(
+        backgroundColor: Colors.black,
+        opacity: opacity,
+        blurBackground: blurBackground,
+        position: position,
+        dismissible: dismissible,
+      );
+
   /// Background color of the overlay (defaults to black)
   final Color? backgroundColor;
 
@@ -57,36 +85,6 @@ class LoadingOverlayConfig {
 
   /// Accessibility value for screen readers
   final String? semanticsValue;
-
-  /// Create a light-themed overlay configuration
-  static LoadingOverlayConfig light({
-    double opacity = 0.6,
-    bool blurBackground = false,
-    LoadingOverlayPosition position = LoadingOverlayPosition.center,
-    bool dismissible = false,
-  }) =>
-      LoadingOverlayConfig(
-        backgroundColor: Colors.white,
-        opacity: opacity,
-        blurBackground: blurBackground,
-        position: position,
-        dismissible: dismissible,
-      );
-
-  /// Create a dark-themed overlay configuration
-  static LoadingOverlayConfig dark({
-    double opacity = 0.8,
-    bool blurBackground = false,
-    LoadingOverlayPosition position = LoadingOverlayPosition.center,
-    bool dismissible = false,
-  }) =>
-      LoadingOverlayConfig(
-        backgroundColor: Colors.black,
-        opacity: opacity,
-        blurBackground: blurBackground,
-        position: position,
-        dismissible: dismissible,
-      );
 }
 
 /// A widget that displays a loading overlay over content, blocking user interaction
@@ -300,6 +298,8 @@ class _LoadingOverlayState extends State<LoadingOverlay>
 
 /// Static methods for showing modal loading overlays
 class LoadingOverlayManager {
+  /// Private constructor to prevent instantiation
+  LoadingOverlayManager._();
   static OverlayEntry? _currentOverlay;
 
   /// Show a full-screen loading overlay
@@ -507,6 +507,8 @@ extension LoadingOverlayExtensions on Widget {
 
 /// Convenience widgets for common loading overlay patterns
 class LoadingOverlays {
+  /// Private constructor to prevent instantiation
+  LoadingOverlays._();
   /// Simple loading overlay with circular indicator
   static Widget simple({
     required bool isLoading,

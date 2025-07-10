@@ -53,7 +53,7 @@ class PermissionService extends GetxController {
 
       _storagePermissionStatus.value = status;
       return status;
-    } on Exception catch (e) {
+    } on Exception {
       _storagePermissionStatus.value = PermissionStatus.denied;
       return PermissionStatus.denied;
     }
@@ -75,7 +75,7 @@ class PermissionService extends GetxController {
     try {
       final status = await Permission.notification.request();
       return status;
-    } on Exception catch (e) {
+    } on Exception {
       return PermissionStatus.denied;
     }
   }
@@ -107,7 +107,7 @@ class PermissionService extends GetxController {
       }
 
       _storagePermissionStatus.value = storageStatus;
-    } on Exception catch (e) {
+    } on Exception {
       _storagePermissionStatus.value = PermissionStatus.denied;
     }
   }
@@ -184,7 +184,7 @@ class PermissionService extends GetxController {
         ),
         actions: [
           TextButton(
-            onPressed: Get.back,
+            onPressed: Get.back<void>,
             child: const Text('Cancel'),
           ),
           TextButton(

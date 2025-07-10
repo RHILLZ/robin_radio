@@ -5,6 +5,8 @@ import '../../data/services/performance_service.dart';
 
 /// Performance dashboard widget for monitoring app performance in debug mode
 class PerformanceDashboard extends StatefulWidget {
+  /// Creates a performance dashboard widget that displays performance metrics
+  /// and provides manual tracking capabilities. Only visible in debug mode.
   const PerformanceDashboard({super.key});
 
   @override
@@ -23,7 +25,9 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
   }
 
   Future<void> _checkPerformanceStatus() async {
-    if (!kDebugMode) return;
+    if (!kDebugMode) {
+      return;
+    }
 
     final isEnabled =
         await _performanceService.isPerformanceCollectionEnabled();

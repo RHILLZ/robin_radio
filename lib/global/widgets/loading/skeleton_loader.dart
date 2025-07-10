@@ -2,24 +2,47 @@ import 'package:flutter/material.dart';
 
 /// Predefined skeleton types for common UI patterns
 enum SkeletonType {
+  /// Text line skeleton placeholder
   text,
+  
+  /// Avatar or circular profile picture placeholder
   avatar,
+  
+  /// Image or rectangular thumbnail placeholder
   image,
+  
+  /// Button or action element placeholder
   button,
+  
+  /// Card layout with header, content, and footer
   card,
+  
+  /// List item with avatar, text, and trailing element
   listItem,
+  
+  /// Custom skeleton layout using provided child widget
   custom,
 }
 
 /// Skeleton shape options
 enum SkeletonShape {
+  /// Sharp rectangular corners
   rectangle,
+  
+  /// Circular shape
   circle,
+  
+  /// Rounded rectangular corners
   roundedRectangle,
 }
 
 /// A single skeleton element that can be combined to create complex loading layouts
 class SkeletonElement extends StatelessWidget {
+  /// Creates a skeleton element with the specified dimensions and styling.
+  /// 
+  /// The [width] and [height] parameters are required. The [shape] defaults
+  /// to [SkeletonShape.roundedRectangle]. Optional parameters allow for
+  /// custom styling including [borderRadius], [color], and [margin].
   const SkeletonElement({
     required this.width,
     required this.height,
@@ -30,11 +53,22 @@ class SkeletonElement extends StatelessWidget {
     this.margin,
   });
 
+  /// Width of the skeleton element in logical pixels
   final double width;
+  
+  /// Height of the skeleton element in logical pixels
   final double height;
+  
+  /// Shape of the skeleton element
   final SkeletonShape shape;
+  
+  /// Custom border radius, overrides the default for the shape
   final BorderRadius? borderRadius;
+  
+  /// Color of the skeleton element, defaults to theme-based color if not specified
   final Color? color;
+  
+  /// Optional margin around the skeleton element
   final EdgeInsetsGeometry? margin;
 
   @override
@@ -91,6 +125,12 @@ class SkeletonElement extends StatelessWidget {
 
 /// Main skeleton loader component with predefined patterns and custom layout support
 class SkeletonLoader extends StatelessWidget {
+  /// Creates a skeleton loader with customizable appearance and behavior.
+  /// 
+  /// The [type] parameter determines which predefined skeleton pattern to use,
+  /// defaulting to [SkeletonType.custom]. For custom layouts, provide a [child].
+  /// The [itemCount] parameter controls how many skeleton items are displayed.
+  /// The [spacing] parameter controls the distance between skeleton elements.
   const SkeletonLoader({
     super.key,
     this.type = SkeletonType.custom,
@@ -133,7 +173,7 @@ class SkeletonLoader extends StatelessWidget {
 
   Color _getSkeletonColor(BuildContext context) =>
       color ??
-      Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3);
+      Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3);
 
   Widget _buildTextSkeleton(BuildContext context) => SkeletonElement(
         width: width ?? 120,
@@ -446,6 +486,8 @@ extension SkeletonLoaderConvenience on SkeletonLoader {
 
 /// Specialized skeletons for Robin Radio app content
 class RadioSkeletons {
+  // Private constructor to prevent instantiation
+  RadioSkeletons._();
   /// Skeleton for track/song list items
   static Widget trackItem({
     Color? color,

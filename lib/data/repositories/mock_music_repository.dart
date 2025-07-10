@@ -127,8 +127,13 @@ class MockMusicRepository implements MusicRepository {
       if (allSongs.isNotEmpty && !controller.isClosed) {
         final randomSong = allSongs[Random().nextInt(allSongs.length)];
         controller.add(randomSong);
+      } else {
+        timer.cancel();
       }
     });
+
+    // Clean up controller when stream is done
+    controller.onCancel = controller.close;
 
     return controller.stream;
   }
@@ -224,6 +229,6 @@ class MockMusicRepository implements MusicRepository {
   }
 
   @override
-  Stream<AlbumLoadingProgress> get albumLoadingProgress => 
-      Stream<AlbumLoadingProgress>.empty();
+  Stream<AlbumLoadingProgress> get albumLoadingProgress =>
+      const Stream<AlbumLoadingProgress>.empty();
 }

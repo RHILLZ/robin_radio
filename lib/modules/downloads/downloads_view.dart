@@ -8,11 +8,24 @@ import '../../data/services/download_manager.dart';
 import '../../data/services/offline_storage_service.dart';
 import '../../global/widgets/widgets.dart';
 
-/// View for managing downloads and offline content.
+/// Downloads management view for Robin Radio.
 ///
-/// Provides UI for viewing download progress, managing download queue,
-/// and controlling offline content storage.
+/// This view provides a comprehensive interface for managing music downloads
+/// and offline content. It features a tabbed interface with three main sections:
+/// active downloads, download history, and offline songs management.
+///
+/// Features:
+/// - Active downloads tab with real-time progress tracking
+/// - Download history showing completed, failed, and cancelled downloads
+/// - Offline songs management with storage information
+/// - Download queue management with pause/resume/cancel controls
+/// - Storage usage monitoring and cleanup options
+/// - Responsive grid layout that adapts to different screen sizes
+/// - Comprehensive error handling and user feedback
 class DownloadsView extends StatefulWidget {
+  /// Creates an instance of [DownloadsView].
+  ///
+  /// The [key] parameter is optional and follows standard Flutter widget conventions.
   const DownloadsView({super.key});
 
   @override
@@ -389,7 +402,7 @@ class _DownloadsViewState extends State<DownloadsView>
     final formattedSize = _formatBytes(totalSize);
     final songCount = _storageService.getAllOfflineSongs().length;
 
-    Get.dialog<void>(
+    await Get.dialog<void>(
       AlertDialog(
         title: const AdaptiveText('Storage Information'),
         content: Column(
@@ -403,7 +416,7 @@ class _DownloadsViewState extends State<DownloadsView>
         ),
         actions: [
           TextButton(
-            onPressed: Get.back,
+            onPressed: Get.back<void>,
             child: const AdaptiveText('OK'),
           ),
         ],
@@ -421,7 +434,7 @@ class _DownloadsViewState extends State<DownloadsView>
         ),
         actions: [
           TextButton(
-            onPressed: Get.back,
+            onPressed: Get.back<void>,
             child: const AdaptiveText('Cancel'),
           ),
           TextButton(
@@ -449,7 +462,7 @@ class _DownloadsViewState extends State<DownloadsView>
         ),
         actions: [
           TextButton(
-            onPressed: Get.back,
+            onPressed: Get.back<void>,
             child: const AdaptiveText('Cancel'),
           ),
           TextButton(

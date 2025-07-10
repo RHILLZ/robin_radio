@@ -5,14 +5,23 @@ import 'skeleton_loader.dart';
 
 /// Status of infinite scroll loading
 enum InfiniteScrollStatus {
+  /// No loading operation in progress
   idle,
+  /// Currently loading more items
   loading,
+  /// All items have been loaded
   completed,
+  /// An error occurred during loading
   error,
 }
 
 /// Configuration for infinite scroll behavior
 class InfiniteScrollConfig {
+  /// Creates an infinite scroll configuration with customizable options.
+  ///
+  /// The [threshold] determines how close to the bottom the user needs to scroll
+  /// before loading more items. Various loading indicators and messages can be
+  /// customized to match the app's design.
   const InfiniteScrollConfig({
     this.threshold = 200.0,
     this.loadingIndicatorType = LoadingIndicatorType.circular,
@@ -32,6 +41,35 @@ class InfiniteScrollConfig {
     this.enableVibration = false,
     this.semanticsLabel,
   });
+
+  /// Create a minimal configuration
+  const InfiniteScrollConfig.minimal() : this(
+        threshold: 100,
+        padding: const EdgeInsets.all(8),
+      );
+
+  /// Create a skeleton-based configuration
+  InfiniteScrollConfig.skeleton({
+    int itemCount = 3,
+    double itemHeight = 72.0,
+    double threshold = 200.0,
+  }) : this(
+        threshold: threshold,
+        showSkeletonLoader: true,
+        skeletonItemCount: itemCount,
+        skeletonHeight: itemHeight,
+      );
+
+  /// Create a configuration with messages
+  InfiniteScrollConfig.withMessages({
+    String? loadingMessage,
+    String? completedMessage,
+    String? errorMessage,
+  }) : this(
+        loadingMessage: loadingMessage ?? 'Loading more...',
+        completedMessage: completedMessage ?? 'No more items',
+        errorMessage: errorMessage ?? 'Failed to load more items',
+      );
 
   /// Distance from bottom to trigger loading (in pixels)
   final double threshold;
@@ -83,41 +121,14 @@ class InfiniteScrollConfig {
 
   /// Accessibility label
   final String? semanticsLabel;
-
-  /// Create a minimal configuration
-  static InfiniteScrollConfig minimal() => const InfiniteScrollConfig(
-        threshold: 100,
-        padding: EdgeInsets.all(8),
-      );
-
-  /// Create a skeleton-based configuration
-  static InfiniteScrollConfig skeleton({
-    int itemCount = 3,
-    double itemHeight = 72.0,
-    double threshold = 200.0,
-  }) =>
-      InfiniteScrollConfig(
-        threshold: threshold,
-        showSkeletonLoader: true,
-        skeletonItemCount: itemCount,
-        skeletonHeight: itemHeight,
-      );
-
-  /// Create a configuration with messages
-  static InfiniteScrollConfig withMessages({
-    String? loadingMessage,
-    String? completedMessage,
-    String? errorMessage,
-  }) =>
-      InfiniteScrollConfig(
-        loadingMessage: loadingMessage ?? 'Loading more...',
-        completedMessage: completedMessage ?? 'No more items',
-        errorMessage: errorMessage ?? 'Failed to load more items',
-      );
 }
 
 /// Controller for managing infinite scroll state and pagination
 class InfiniteScrollController extends ChangeNotifier {
+  /// Creates an infinite scroll controller.
+  ///
+  /// The [initialPage] is the starting page number (defaults to 1).
+  /// The [pageSize] determines how many items to load per page (defaults to 20).
   InfiniteScrollController({
     int initialPage = 1,
     this.pageSize = 20,
@@ -141,14 +152,23 @@ class InfiniteScrollController extends ChangeNotifier {
   /// Timer for throttling requests
   Timer? _throttleTimer;
 
+  /// Current page number being loaded
   int get currentPage => _currentPage;
+  /// Initial page number (same as current page)
   int get initialPage => _currentPage;
+  /// Current loading status
   InfiniteScrollStatus get status => _status;
+  /// Whether there are more items to load
   bool get hasMore => _hasMore;
+  /// Whether currently loading more items
   bool get isLoading => _status == InfiniteScrollStatus.loading;
+  /// Whether all items have been loaded
   bool get isCompleted => _status == InfiniteScrollStatus.completed;
+  /// Whether an error occurred during loading
   bool get isError => _status == InfiniteScrollStatus.error;
+  /// Whether no loading operation is in progress
   bool get isIdle => _status == InfiniteScrollStatus.idle;
+  /// Error message if loading failed
   String? get errorMessage => _errorMessage;
 
   /// Load next page of data
@@ -192,7 +212,9 @@ class InfiniteScrollController extends ChangeNotifier {
   Future<bool> retry(
     Future<List<dynamic>> Function(int page, int pageSize) loader,
   ) async {
-    if (_status != InfiniteScrollStatus.error) return false;
+    if (_status != InfiniteScrollStatus.error) {
+      return false;
+    }
     return loadMore(loader);
   }
 
@@ -224,6 +246,12 @@ class InfiniteScrollController extends ChangeNotifier {
 
 /// Widget that adds infinite scrolling capability to any scrollable widget
 class InfiniteScroll extends StatefulWidget {
+  /// Creates an infinite scroll widget.
+  ///
+  /// The [child] is the scrollable widget to add infinite scrolling to.
+  /// The [onLoadMore] callback is called when more items need to be loaded.
+  /// Optional [controller], [config], and [scrollController] can be provided
+  /// for customization.
   const InfiniteScroll({
     required this.child,
     required this.onLoadMore,
@@ -323,7 +351,9 @@ class _InfiniteScrollState extends State<InfiniteScroll> {
   }
 
   void _onScroll() {
-    if (!_scrollController.hasClients) return;
+    if (!_scrollController.hasClients) {
+      return;
+    }
 
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
@@ -372,6 +402,12 @@ class _InfiniteScrollState extends State<InfiniteScroll> {
 
 /// A complete infinite scroll list view with built-in loading indicators
 class InfiniteScrollListView extends StatefulWidget {
+  /// Creates a complete infinite scroll list view with built-in loading indicators.
+  ///
+  /// The [itemCount] is the current number of items in the list.
+  /// The [itemBuilder] creates widgets for each item at the given index.
+  /// The [onLoadMore] callback is called when more items need to be loaded.
+  /// Various customization options are available through optional parameters.
   const InfiniteScrollListView({
     required this.itemCount,
     required this.itemBuilder,
@@ -476,7 +512,9 @@ class _InfiniteScrollListViewState extends State<InfiniteScrollListView> {
   }
 
   void _onScroll() {
-    if (!_scrollController.hasClients) return;
+    if (!_scrollController.hasClients) {
+      return;
+    }
 
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
@@ -687,6 +725,8 @@ extension InfiniteScrollExtensions on Widget {
 
 /// Ready-to-use infinite scroll widgets
 class InfiniteScrollWidgets {
+  /// Private constructor to prevent instantiation
+  InfiniteScrollWidgets._();
   /// Simple infinite scroll list with minimal configuration
   static Widget list({
     required int itemCount,

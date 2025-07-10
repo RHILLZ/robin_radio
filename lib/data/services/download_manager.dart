@@ -15,10 +15,14 @@ import 'offline_storage_service.dart';
 /// Handles download queue management, progress tracking, and file storage.
 /// Supports concurrent downloads and retry mechanisms.
 class DownloadManager extends GetxController {
+  /// Creates a new download manager with the specified storage service.
   DownloadManager(this._storageService);
   final OfflineStorageService _storageService;
 
+  /// Maximum number of concurrent downloads allowed.
   static const int maxConcurrentDownloads = 3;
+  
+  /// Maximum number of retry attempts for failed downloads.
   static const int maxRetryAttempts = 3;
 
   /// Currently active downloads.
@@ -33,10 +37,10 @@ class DownloadManager extends GetxController {
   /// Currently active downloads.
   List<DownloadItem> get activeDownloads => _activeDownloads;
 
-  /// Download queue.
+  /// Download queue containing pending downloads.
   List<DownloadItem> get downloadQueue => _downloadQueue;
 
-  /// All download items.
+  /// All download items including active, queued, completed, and failed downloads.
   List<DownloadItem> get allDownloads => _allDownloads;
 
   /// Initializes the download manager.
@@ -46,6 +50,9 @@ class DownloadManager extends GetxController {
   }
 
   /// Adds a song to the download queue.
+  ///
+  /// Returns the unique download ID for tracking the download progress.
+  /// Throws an exception if the song is already in the queue or downloaded.
   Future<String> downloadSong(Song song) async {
     // Check if already downloading or downloaded
     if (_allDownloads.any((item) => item.songId == song.id)) {
@@ -77,7 +84,10 @@ class DownloadManager extends GetxController {
     return downloadId;
   }
 
-  /// Pauses a download.
+  /// Pauses an active download.
+  ///
+  /// The download will be moved from active downloads back to the queue.
+  /// Only downloads with status [DownloadStatus.downloading] can be paused.
   Future<void> pauseDownload(String downloadId) async {
     final item = _findDownloadItem(downloadId);
     if (item != null && item.status == DownloadStatus.downloading) {
@@ -88,6 +98,9 @@ class DownloadManager extends GetxController {
   }
 
   /// Resumes a paused download.
+  ///
+  /// The download will be moved from paused status back to pending and
+  /// added to the processing queue.
   Future<void> resumeDownload(String downloadId) async {
     final item = _findDownloadItem(downloadId);
     if (item != null && item.status == DownloadStatus.paused) {
@@ -96,7 +109,10 @@ class DownloadManager extends GetxController {
     }
   }
 
-  /// Cancels a download.
+  /// Cancels an active or pending download.
+  ///
+  /// Removes the download from all queues and deletes any partial files.
+  /// The download status will be set to [DownloadStatus.cancelled].
   Future<void> cancelDownload(String downloadId) async {
     final item = _findDownloadItem(downloadId);
     if (item != null) {
@@ -112,6 +128,9 @@ class DownloadManager extends GetxController {
   }
 
   /// Retries a failed download.
+  ///
+  /// Resets the download progress and status, then adds it back to the queue.
+  /// Only downloads with status [DownloadStatus.failed] can be retried.
   Future<void> retryDownload(String downloadId) async {
     final item = _findDownloadItem(downloadId);
     if (item != null && item.status == DownloadStatus.failed) {
@@ -128,13 +147,19 @@ class DownloadManager extends GetxController {
   }
 
   /// Removes a download item from history.
+  ///
+  /// Cancels the download if active and removes it from storage.
+  /// This action cannot be undone.
   Future<void> removeDownloadItem(String downloadId) async {
     await cancelDownload(downloadId);
     await _storageService.deleteDownloadItem(downloadId);
     _allDownloads.removeWhere((d) => d.id == downloadId);
   }
 
-  /// Clears all completed and failed downloads.
+  /// Clears all completed and failed downloads from history.
+  ///
+  /// Removes all downloads with status [DownloadStatus.completed],
+  /// [DownloadStatus.failed], or [DownloadStatus.cancelled].
   Future<void> clearDownloadHistory() async {
     final toRemove = _allDownloads
         .where(
@@ -302,7 +327,7 @@ class DownloadManager extends GetxController {
   DownloadItem? _findDownloadItem(String downloadId) {
     try {
       return _allDownloads.firstWhere((item) => item.id == downloadId);
-    } on Exception catch (e) {
+    } on Exception {
       return null;
     }
   }
@@ -325,10 +350,10 @@ class DownloadManager extends GetxController {
       final localPath = path.join(directory.path, '$fileName.mp3');
       final file = File(localPath);
 
-      if (await file.exists()) {
+      if (file.existsSync()) {
         await file.delete();
       }
-    } on Exception catch (e) {
+    } on Exception {
       // Ignore errors when deleting partial files
     }
   }

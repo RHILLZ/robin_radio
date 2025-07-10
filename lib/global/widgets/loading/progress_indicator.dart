@@ -55,6 +55,7 @@ enum ProgressIndicatorStyle {
 
 /// Configuration for progress indicator appearance and behavior
 class ProgressIndicatorConfig {
+  /// Creates a progress indicator configuration with customizable appearance and behavior
   const ProgressIndicatorConfig({
     this.type = ProgressIndicatorType.linear,
     this.style = ProgressIndicatorStyle.material,
@@ -76,6 +77,52 @@ class ProgressIndicatorConfig {
     this.minHeight = 2.0,
     this.maxHeight = 20.0,
   });
+
+  /// Create a minimal linear progress indicator
+  const ProgressIndicatorConfig.linear({
+    double height = 6.0,
+    Color? color,
+    bool showPercentage = true,
+  }) : this(
+        height: height,
+        color: color,
+        showPercentage: showPercentage,
+      );
+
+  /// Create a circular progress indicator
+  const ProgressIndicatorConfig.circular({
+    double strokeWidth = 4.0,
+    Color? color,
+    bool showPercentage = true,
+  }) : this(
+        type: ProgressIndicatorType.circular,
+        strokeWidth: strokeWidth,
+        color: color,
+        showPercentage: showPercentage,
+      );
+
+  /// Create a ring-style progress indicator
+  const ProgressIndicatorConfig.ring({
+    double strokeWidth = 8.0,
+    Color? color,
+    bool showPercentage = true,
+  }) : this(
+        type: ProgressIndicatorType.ring,
+        strokeWidth: strokeWidth,
+        color: color,
+        showPercentage: showPercentage,
+        textPosition: ProgressTextPosition.center,
+      );
+
+  /// Create a step-based progress indicator
+  const ProgressIndicatorConfig.step({
+    Color? color,
+    bool showPercentage = false,
+  }) : this(
+        type: ProgressIndicatorType.step,
+        color: color,
+        showPercentage: showPercentage,
+      );
 
   /// Type of progress indicator
   final ProgressIndicatorType type;
@@ -133,56 +180,6 @@ class ProgressIndicatorConfig {
 
   /// Maximum height for responsive design
   final double maxHeight;
-
-  /// Create a minimal linear progress indicator
-  static ProgressIndicatorConfig linear({
-    double height = 6.0,
-    Color? color,
-    bool showPercentage = true,
-  }) =>
-      ProgressIndicatorConfig(
-        height: height,
-        color: color,
-        showPercentage: showPercentage,
-      );
-
-  /// Create a circular progress indicator
-  static ProgressIndicatorConfig circular({
-    double strokeWidth = 4.0,
-    Color? color,
-    bool showPercentage = true,
-  }) =>
-      ProgressIndicatorConfig(
-        type: ProgressIndicatorType.circular,
-        strokeWidth: strokeWidth,
-        color: color,
-        showPercentage: showPercentage,
-      );
-
-  /// Create a ring-style progress indicator
-  static ProgressIndicatorConfig ring({
-    double strokeWidth = 8.0,
-    Color? color,
-    bool showPercentage = true,
-  }) =>
-      ProgressIndicatorConfig(
-        type: ProgressIndicatorType.ring,
-        strokeWidth: strokeWidth,
-        color: color,
-        showPercentage: showPercentage,
-        textPosition: ProgressTextPosition.center,
-      );
-
-  /// Create a step-based progress indicator
-  static ProgressIndicatorConfig step({
-    Color? color,
-    bool showPercentage = false,
-  }) =>
-      ProgressIndicatorConfig(
-        type: ProgressIndicatorType.step,
-        color: color,
-        showPercentage: showPercentage,
-      );
 }
 
 /// Data class for progress information
@@ -262,6 +259,7 @@ class ProgressData {
 
 /// Controller for managing progress state
 class ProgressController extends ChangeNotifier {
+  /// Creates a progress controller with optional initial data
   ProgressController({
     ProgressData? initialData,
   }) : _data = initialData ?? const ProgressData(current: 0, total: 100);
@@ -352,6 +350,7 @@ class ProgressController extends ChangeNotifier {
 
 /// Advanced progress indicator widget with multiple styles and configurations
 class AdvancedProgressIndicator extends StatefulWidget {
+  /// Creates an advanced progress indicator
   const AdvancedProgressIndicator({
     required this.progress,
     super.key,
@@ -587,7 +586,9 @@ class _AdvancedProgressIndicatorState extends State<AdvancedProgressIndicator>
   }
 
   Widget _buildProgressText() {
-    if (!_config.showProgressText) return const SizedBox.shrink();
+    if (!_config.showProgressText) {
+      return const SizedBox.shrink();
+    }
 
     return AnimatedBuilder(
       animation: _progressAnimation,
@@ -781,9 +782,10 @@ class _WaveProgressPainter extends CustomPainter {
         path.lineTo(x, y);
       }
 
-      path.lineTo(progressWidth, size.height);
-      path.lineTo(0, size.height);
-      path.close();
+      path
+        ..lineTo(progressWidth, size.height)
+        ..lineTo(0, size.height)
+        ..close();
 
       canvas.drawPath(path, paint);
     }
@@ -874,8 +876,7 @@ class ProgressManager {
     double total = 100,
     String? message,
   }) {
-    final controller = getController(id);
-    controller.start(total: total, message: message);
+    getController(id).start(total: total, message: message);
   }
 
   /// Complete progress
@@ -921,7 +922,10 @@ extension ProgressIndicatorExtensions on Widget {
 }
 
 /// Ready-to-use progress indicator widgets
+/// This class provides static factory methods for common progress indicators
 class ProgressIndicators {
+  /// Private constructor to prevent instantiation
+  ProgressIndicators._();
   /// Simple linear progress indicator
   static Widget linear({
     required double progress,

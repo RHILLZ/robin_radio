@@ -12,8 +12,9 @@ void main() {
     });
 
     tearDown(() {
-      service.clearPreloadCache();
-      service.clearAnalytics();
+      service
+        ..clearPreloadCache()
+        ..clearAnalytics();
     });
 
     group('Configuration Tests', () {
@@ -114,9 +115,9 @@ void main() {
           success: true,
           fileSize: 1024,
           connectionType: 'wifi',
-        );
-        analytics.endTime =
-            DateTime.now().add(const Duration(milliseconds: 500));
+        )
+          ..endTime =
+              DateTime.now().add(const Duration(milliseconds: 500));
 
         expect(analytics.url, equals('test_url'));
         expect(analytics.success, isTrue);
@@ -136,8 +137,8 @@ void main() {
           success: true,
           fileSize: 1024,
           connectionType: 'wifi',
-        );
-        analytics.endTime = endTime;
+        )
+          ..endTime = endTime;
 
         final json = analytics.toJson();
         expect(json['url'], equals('test_url'));
@@ -231,11 +232,12 @@ void main() {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   // These would normally make network calls, but in test environment
                   // they will handle gracefully
-                  context.preloadImages(['https://example.com/image1.jpg']);
-                  context.preloadAlbumCovers(
-                    ['https://example.com/cover1.jpg'],
-                    limit: 5,
-                  );
+                  context
+                    ..preloadImages(['https://example.com/image1.jpg'])
+                    ..preloadAlbumCovers(
+                      ['https://example.com/cover1.jpg'],
+                      limit: 5,
+                    );
                 });
                 return const Scaffold(
                   body: Center(child: Text('Extension Test')),

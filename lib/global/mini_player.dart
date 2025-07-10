@@ -5,7 +5,13 @@ import 'package:sizer/sizer.dart';
 import '../modules/player/player_controller.dart';
 import 'widgets/widgets.dart';
 
+/// A compact mini player widget that displays current track information and controls.
+///
+/// This widget provides a condensed view of the music player that appears
+/// at the bottom of the screen, showing current track details and basic
+/// playback controls without taking up the full screen.
 class MiniPlayerWidget extends GetWidget<PlayerController> {
+  /// Creates a mini player widget.
   const MiniPlayerWidget({super.key});
 
   @override

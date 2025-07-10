@@ -44,8 +44,15 @@ import 'repositories.dart' show RepositoryException;
 /// radioStream.listen((song) => playTrack(song));
 /// ```
 
-/// Progress information for album loading operations
+/// Progress information for album loading operations.
+///
+/// Provides detailed information about the current state of album loading
+/// operations, including progress percentage, descriptive messages, and
+/// processing counts for user interface updates.
 class AlbumLoadingProgress {
+  /// Creates an instance of [AlbumLoadingProgress] with the specified values.
+  ///
+  /// All parameters are required to provide complete progress information.
   const AlbumLoadingProgress({
     required this.message,
     required this.progress,
@@ -66,6 +73,12 @@ class AlbumLoadingProgress {
   final int totalAlbums;
 }
 
+/// Abstract base class defining the contract for music data repositories.
+///
+/// This interface establishes the complete API for accessing music content
+/// across all supported data sources including remote services, local cache,
+/// and offline storage. Implementations handle the complexities of data
+/// synchronization, caching strategies, and network optimization.
 abstract class MusicRepository {
   /// Retrieves all available albums from the optimal data source.
   ///
@@ -430,7 +443,7 @@ abstract class MusicRepository {
   ///        - Album names to find all tracks from matching albums
   ///        - Lyrical content searches (where lyrics are available)
   ///        - Genre and mood-based search terms
-  ///        - Natural language queries like "songs by [artist]"
+  ///        - Natural language queries like "songs by \[artist\]"
   ///
   /// Query processing:
   /// - Automatic query expansion for common abbreviations

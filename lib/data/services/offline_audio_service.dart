@@ -12,6 +12,10 @@ import 'offline_storage_service.dart';
 /// Extends the enhanced audio service to support offline song playback
 /// by managing local file paths and integration with online/offline states.
 class OfflineAudioService extends GetxController {
+  /// Creates an offline audio service with the required dependencies.
+  ///
+  /// [_audioService] handles the actual audio playback operations.
+  /// [_storageService] manages local storage of offline songs.
   OfflineAudioService(this._audioService, this._storageService);
   final EnhancedAudioService _audioService;
   final OfflineStorageService _storageService;
@@ -67,7 +71,7 @@ class OfflineAudioService extends GetxController {
   }
 
   /// Sets the offline mode for the service.
-  Future<void> setOfflineMode(bool enabled) async {
+  Future<void> setOfflineMode({required bool enabled}) async {
     _isOfflineMode.value = enabled;
 
     if (enabled) {
@@ -170,7 +174,7 @@ class OfflineAudioService extends GetxController {
   Future<bool> _isOfflineFileValid(OfflineSong offlineSong) async {
     try {
       final file = File(offlineSong.localPath);
-      return await file.exists();
+      return file.existsSync();
     } on Exception {
       return false;
     }

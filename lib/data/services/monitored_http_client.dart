@@ -2,8 +2,13 @@ import 'package:firebase_performance/firebase_performance.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 
-/// Custom HTTP client that monitors network requests for performance tracking
+/// Custom HTTP client that monitors network requests for performance tracking.
+///
+/// This client wraps an underlying HTTP client and adds Firebase Performance
+/// monitoring to track network request metrics including response times,
+/// payload sizes, and success/failure rates.
 class MonitoredHttpClient extends BaseClient {
+  /// Creates a new monitored HTTP client that wraps the provided [_inner] client.
   MonitoredHttpClient(this._inner);
 
   final Client _inner;

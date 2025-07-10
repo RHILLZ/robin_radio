@@ -308,12 +308,4 @@ class AlbumCardWidget extends StatelessWidget {
         ),
       );
 
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is AlbumCardWidget && other.album.id == album.id;
-  }
-
-  @override
-  int get hashCode => album.id.hashCode;
 }

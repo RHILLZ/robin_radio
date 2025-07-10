@@ -554,7 +554,7 @@ abstract class IAudioService {
   /// Throws [AudioServiceException] if:
   /// - Background audio is not supported on the platform
   /// - Required permissions are not granted
-  Future<void> setBackgroundPlaybackEnabled(bool enabled);
+  Future<void> setBackgroundPlaybackEnabled({required bool enabled});
 
   /// Get formatted string representation of current position.
   ///

@@ -9,7 +9,25 @@ import '../../data/services/image_preload_service.dart';
 import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
 
+/// Albums browsing view for Robin Radio.
+///
+/// This view displays the user's music collection in a grid layout with
+/// comprehensive search and filtering capabilities. It provides an intuitive
+/// interface for browsing albums with responsive design and performance
+/// optimizations.
+///
+/// Features:
+/// - Responsive grid layout that adapts to different screen sizes
+/// - Real-time search functionality with debounced input
+/// - Album cover preloading for smooth scrolling experience
+/// - Error state handling with retry functionality
+/// - Empty state messaging for better user experience
+/// - Floating action button for quick search access
+/// - Automatic focus management for search interactions
 class AlbumsView extends StatefulWidget {
+  /// Creates an instance of [AlbumsView].
+  ///
+  /// The [key] parameter is optional and follows standard Flutter widget conventions.
   const AlbumsView({super.key});
 
   @override
@@ -86,9 +104,9 @@ class _AlbumsViewState extends State<AlbumsView> {
     // Dispose of the TextEditingController when the widget is disposed
     _searchController.dispose();
     // Remove listener before disposing focus node
-    _searchFocusNode.removeListener(_onFocusChange);
-    // Dispose of the FocusNode when the widget is disposed
-    _searchFocusNode.dispose();
+    _searchFocusNode
+      ..removeListener(_onFocusChange)
+      ..dispose(); // Dispose of the FocusNode when the widget is disposed
     super.dispose();
   }
 

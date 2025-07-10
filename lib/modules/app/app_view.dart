@@ -11,7 +11,23 @@ import '../player/player_controller.dart';
 import '../player/player_view.dart';
 import 'app_controller.dart';
 
+/// Main application view that provides the core UI structure for Robin Radio.
+///
+/// This view serves as the root layout container that orchestrates the main
+/// application components including the music player, mini player, and loading states.
+/// It integrates with the miniplayer widget to provide a seamless music playback
+/// experience with collapsible player controls.
+///
+/// Features:
+/// - Responsive miniplayer that transitions between collapsed and expanded states
+/// - Loading overlay with progress indicators during music library initialization
+/// - Performance monitoring dashboard for debugging
+/// - Essential asset preloading for improved user experience
+/// - Safe area handling for different device configurations
 class AppView extends GetView<AppController> {
+  /// Creates an instance of [AppView].
+  ///
+  /// The [key] parameter is optional and follows standard Flutter widget conventions.
   const AppView({super.key});
 
   @override

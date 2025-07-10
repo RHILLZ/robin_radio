@@ -204,7 +204,7 @@ void main() {
           fail('Should have thrown ServiceLocatorException');
         } on ServiceLocatorException catch (e) {
           expect(e, isA<ServiceLocatorException>());
-          final exception = e as ServiceLocatorException;
+          final exception = e;
           expect(exception.message.contains('not initialized'), true);
           expect(
             exception.toString().contains('ServiceLocatorException'),

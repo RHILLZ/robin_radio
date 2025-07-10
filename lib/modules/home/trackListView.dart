@@ -11,11 +11,20 @@ import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
 import '../player/player_controller.dart';
 
+/// A view that displays a list of tracks for a specific album.
+/// 
+/// This widget shows album information, track listing, and provides
+/// playback controls for the entire album or individual tracks.
 class TrackListView extends StatelessWidget {
+  /// Creates a track list view for the given album.
+  /// 
+  /// [album] The album whose tracks will be displayed.
   const TrackListView({
     required this.album,
     super.key,
   });
+  
+  /// The album containing the tracks to display.
   final Album album;
 
   @override
@@ -159,8 +168,9 @@ class TrackListView extends StatelessWidget {
   }
 
   void _playAlbumShuffled(PlayerController controller) {
-    controller.playAlbum(album);
-    controller.toggleShuffleMode();
+    controller
+      ..playAlbum(album)
+      ..toggleShuffleMode();
 
     // Expand the player to full screen instead of showing mini player
     Get.find<AppController>().miniPlayerController.animateToHeight(

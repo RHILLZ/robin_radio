@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -5,6 +7,7 @@ import 'loading_indicator.dart';
 
 /// Configuration for pull-to-refresh behavior and appearance
 class PullToRefreshConfig {
+  /// Creates a pull-to-refresh configuration
   const PullToRefreshConfig({
     this.displacement = 40.0,
     this.strokeWidth = 2.0,
@@ -25,6 +28,32 @@ class PullToRefreshConfig {
     this.animationDuration = const Duration(milliseconds: 300),
     this.platformStyle = PullToRefreshPlatformStyle.material,
   });
+
+  /// Create iOS-style configuration
+  const PullToRefreshConfig.ios({
+    Color? color,
+    String? refreshMessage,
+    bool showRefreshMessage = false,
+  }) : this(
+        platformStyle: PullToRefreshPlatformStyle.cupertino,
+        color: color,
+        refreshMessage: refreshMessage ?? 'Pull to refresh',
+        showRefreshMessage: showRefreshMessage,
+        animationDuration: const Duration(milliseconds: 400),
+      );
+
+  /// Create Material Design configuration
+  const PullToRefreshConfig.material({
+    Color? color,
+    Color? backgroundColor,
+    String? refreshMessage,
+    bool showRefreshMessage = true,
+  }) : this(
+        color: color,
+        backgroundColor: backgroundColor,
+        refreshMessage: refreshMessage ?? 'Pull to refresh',
+        showRefreshMessage: showRefreshMessage,
+      );
 
   /// Distance from the top where the refresh indicator appears
   final double displacement;
@@ -79,34 +108,6 @@ class PullToRefreshConfig {
 
   /// Platform-specific styling
   final PullToRefreshPlatformStyle platformStyle;
-
-  /// Create iOS-style configuration
-  static PullToRefreshConfig ios({
-    Color? color,
-    String? refreshMessage,
-    bool showRefreshMessage = false,
-  }) =>
-      PullToRefreshConfig(
-        platformStyle: PullToRefreshPlatformStyle.cupertino,
-        color: color,
-        refreshMessage: refreshMessage ?? 'Pull to refresh',
-        showRefreshMessage: showRefreshMessage,
-        animationDuration: const Duration(milliseconds: 400),
-      );
-
-  /// Create Material Design configuration
-  static PullToRefreshConfig material({
-    Color? color,
-    Color? backgroundColor,
-    String? refreshMessage,
-    bool showRefreshMessage = true,
-  }) =>
-      PullToRefreshConfig(
-        color: color,
-        backgroundColor: backgroundColor,
-        refreshMessage: refreshMessage ?? 'Pull to refresh',
-        showRefreshMessage: showRefreshMessage,
-      );
 }
 
 /// Platform-specific styling options
@@ -123,15 +124,21 @@ enum PullToRefreshPlatformStyle {
 
 /// State of the pull-to-refresh interaction
 enum PullToRefreshState {
+  /// Not pulling, resting state
   idle,
+  /// User is pulling down
   pulling,
+  /// Pull threshold reached, ready to refresh
   armed,
+  /// Currently refreshing
   refreshing,
+  /// Refresh completed
   done,
 }
 
 /// A customizable pull-to-refresh widget that wraps scrollable content
 class PullToRefresh extends StatefulWidget {
+  /// Creates a pull-to-refresh widget
   const PullToRefresh({
     required this.onRefresh,
     required this.child,
@@ -226,14 +233,16 @@ class _PullToRefreshState extends State<PullToRefresh>
   }
 
   Future<void> _handleRefresh() async {
-    if (_isRefreshing) return;
+    if (_isRefreshing) {
+      return;
+    }
 
     setState(() {
       _isRefreshing = true;
       _refreshState = PullToRefreshState.refreshing;
     });
 
-    _animationController.forward();
+    unawaited(_animationController.forward());
 
     try {
       await widget.onRefresh();
@@ -242,9 +251,9 @@ class _PullToRefreshState extends State<PullToRefresh>
       });
 
       // Brief delay to show completion state
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      unawaited(Future<void>.delayed(const Duration(milliseconds: 300)));
     } finally {
-      _animationController.reverse();
+      unawaited(_animationController.reverse());
       setState(() {
         _isRefreshing = false;
         _refreshState = PullToRefreshState.idle;
@@ -398,6 +407,8 @@ extension PullToRefreshExtensions on Widget {
 
 /// Ready-to-use pull-to-refresh widgets for common scenarios
 class PullToRefreshWidgets {
+  /// Private constructor to prevent instantiation
+  PullToRefreshWidgets._();
   /// Simple Material Design pull-to-refresh
   static Widget material({
     required Future<void> Function() onRefresh,
@@ -471,6 +482,7 @@ class PullToRefreshWidgets {
 
 /// A specialized pull-to-refresh for lists with built-in empty state handling
 class ListPullToRefresh extends StatelessWidget {
+  /// Creates a list pull-to-refresh widget
   const ListPullToRefresh({
     required this.onRefresh,
     required this.itemCount,

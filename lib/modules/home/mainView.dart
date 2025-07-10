@@ -10,7 +10,24 @@ import '../player/player_controller.dart';
 import 'albumsView.dart';
 import 'radioView.dart';
 
+/// Primary navigation view for Robin Radio.
+///
+/// This view provides the main navigation structure for the application using
+/// a tabbed interface. It serves as the container for the radio and albums
+/// sections, featuring a responsive app bar with integrated player controls
+/// and navigation options.
+///
+/// Features:
+/// - Tabbed navigation between Radio and Albums sections
+/// - Floating app bar with snap and pin behavior
+/// - Integrated player controls in the app bar
+/// - Context-aware menu options based on player state
+/// - Responsive design that adapts to different screen sizes
+/// - Nested scroll view for smooth scrolling experience
 class MainView extends StatelessWidget {
+  /// Creates an instance of [MainView].
+  ///
+  /// The [key] parameter is optional and follows standard Flutter widget conventions.
   const MainView({super.key});
 
   @override

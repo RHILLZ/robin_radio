@@ -75,7 +75,7 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
     // Listen to sequence state changes
     _sequenceStateSubscription = _player.sequenceStateStream.listen((state) {
       if (state != null) {
-        _currentIndex = state.currentIndex ?? 0;
+        _currentIndex = state.currentIndex;
         if (state.currentSource != null) {
           final tag = state.currentSource!.tag as Song?;
           if (tag != null) {
@@ -280,7 +280,8 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
       case PlaybackMode.repeatAll:
         await _player.setLoopMode(LoopMode.all);
         break;
-      default:
+      case PlaybackMode.normal:
+      case PlaybackMode.shuffle:
         await _player.setLoopMode(LoopMode.off);
         break;
     }
@@ -303,7 +304,9 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
 
         // Find the index of the current song
         _currentIndex = playlist.indexWhere((s) => s.id == song.id);
-        if (_currentIndex == -1) _currentIndex = 0;
+        if (_currentIndex == -1) {
+          _currentIndex = 0;
+        }
       } else {
         sources = [AudioSource.uri(Uri.parse(song.songUrl), tag: song)];
         _currentIndex = 0;
@@ -376,7 +379,8 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
         artist: mediaItem.artist ?? '',
         albumName: mediaItem.album,
         songUrl: mediaItem.extras?['songUrl'] as String? ?? '',
-        duration: Duration(seconds: mediaItem.extras?['duration'] as int? ?? 0),
+        duration:
+            Duration(seconds: mediaItem.extras?['duration'] as int? ?? 0),
       );
 
   /// Broadcast the current playback state
@@ -447,7 +451,9 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
   /// Get the next index based on playback mode
   int _getNextIndex() {
     final queueLength = queue.value.length;
-    if (queueLength == 0) return -1;
+    if (queueLength == 0) {
+      return -1;
+    }
 
     switch (_playbackMode) {
       case PlaybackMode.normal:
@@ -464,7 +470,9 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
   /// Get the previous index based on playback mode
   int _getPreviousIndex() {
     final queueLength = queue.value.length;
-    if (queueLength == 0) return -1;
+    if (queueLength == 0) {
+      return -1;
+    }
 
     switch (_playbackMode) {
       case PlaybackMode.normal:
@@ -481,7 +489,9 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
   /// Get a random index different from current
   int _getRandomIndex() {
     final queueLength = queue.value.length;
-    if (queueLength <= 1) return _currentIndex;
+    if (queueLength <= 1) {
+      return _currentIndex;
+    }
 
     int randomIndex;
     do {

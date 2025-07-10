@@ -250,13 +250,13 @@ void main() {
       });
 
       test('should enable background playback', () async {
-        await audioService.setBackgroundPlaybackEnabled(true);
+        await audioService.setBackgroundPlaybackEnabled(enabled: true);
         // Note: In mock implementation, this just sets a flag
         // In real implementation, this would configure platform-specific settings
       });
 
       test('should disable background playback', () async {
-        await audioService.setBackgroundPlaybackEnabled(false);
+        await audioService.setBackgroundPlaybackEnabled(enabled: false);
         // Note: In mock implementation, this just sets a flag
       });
     });
@@ -386,8 +386,9 @@ void main() {
 
     test('should handle lifecycle events', () {
       // Test the manual lifecycle handler
-      realService.handleAppLifecycleState(AppLifecycleState.paused);
-      realService.handleAppLifecycleState(AppLifecycleState.resumed);
+      realService
+        ..handleAppLifecycleState(AppLifecycleState.paused)
+        ..handleAppLifecycleState(AppLifecycleState.resumed);
       // No assertion needed - just ensure it doesn't crash
     });
   });

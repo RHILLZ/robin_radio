@@ -59,8 +59,8 @@ class OfflineStorageService {
     if (song != null) {
       // Delete local file
       final file = File(song.localPath);
-      if (await file.exists()) {
-        await file.delete();
+      if (file.existsSync()) {
+        file.deleteSync();
       }
 
       // Remove from storage
@@ -131,8 +131,8 @@ class OfflineStorageService {
     final appDir = await getApplicationDocumentsDirectory();
     final offlineDir = Directory('${appDir.path}/offline_music');
 
-    if (!await offlineDir.exists()) {
-      await offlineDir.create(recursive: true);
+    if (!offlineDir.existsSync()) {
+      offlineDir.createSync(recursive: true);
     }
 
     return offlineDir;
@@ -149,8 +149,8 @@ class OfflineStorageService {
       } else {
         // Calculate file size if not stored
         final file = File(song.localPath);
-        if (await file.exists()) {
-          final size = await file.length();
+        if (file.existsSync()) {
+          final size = file.lengthSync();
           totalSize += size;
 
           // Update the song with file size
@@ -169,8 +169,8 @@ class OfflineStorageService {
     final songs = getAllOfflineSongs();
     for (final song in songs) {
       final file = File(song.localPath);
-      if (await file.exists()) {
-        await file.delete();
+      if (file.existsSync()) {
+        file.deleteSync();
       }
     }
 

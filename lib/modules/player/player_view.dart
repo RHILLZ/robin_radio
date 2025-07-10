@@ -9,7 +9,26 @@ import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
 import 'player_controller.dart';
 
+/// Full-screen music player view for Robin Radio.
+///
+/// This view provides a comprehensive music playback interface with complete
+/// player controls, track information, and advanced features. It supports both
+/// album playback and radio streaming modes with adaptive UI elements.
+///
+/// Features:
+/// - Responsive album artwork display with dynamic sizing
+/// - Complete playback controls (play/pause, skip, seek)
+/// - Progress tracking with interactive seek bar
+/// - Shuffle and repeat mode controls
+/// - Current playlist management and navigation
+/// - Context-aware options menu
+/// - Support for both album and radio playback modes
+/// - Smooth animations and transitions
+/// - Safe area handling for different device configurations
 class PlayerView extends GetView<PlayerController> {
+  /// Creates an instance of [PlayerView].
+  ///
+  /// The [key] parameter is optional and follows standard Flutter widget conventions.
   const PlayerView({super.key});
 
   @override
@@ -139,7 +158,7 @@ class PlayerView extends GetView<PlayerController> {
   }
 
   Widget _buildTrackInfo(BuildContext context, Song song) {
-    final songTitle = _formatSongTitle(song.songName as String);
+    final songTitle = _formatSongTitle(song.songName);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
@@ -157,16 +176,16 @@ class PlayerView extends GetView<PlayerController> {
           ),
           SizedBox(height: 1.h),
           Text(
-            song.artist as String,
+            song.artist,
             style: TextStyle(
               fontSize: 18,
               color: Theme.of(context).colorScheme.onSurface.withAlpha(179),
             ),
             textAlign: TextAlign.center,
           ),
-          if (song.albumName != null && (song.albumName as String).isNotEmpty)
+          if (song.albumName != null && song.albumName!.isNotEmpty)
             Text(
-              song.albumName as String,
+              song.albumName!,
               style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
@@ -342,7 +361,7 @@ class PlayerView extends GetView<PlayerController> {
                           (album) => album.albumName == currentSong!.albumName,
                         );
                         appController.openTrackList(foundAlbum);
-                      } on StateError {
+                      } on Exception {
                         // Album not found, do nothing
                         debugPrint(
                           'Could not find album "${currentSong!.albumName}" for navigation',

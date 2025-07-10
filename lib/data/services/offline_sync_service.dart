@@ -14,6 +14,11 @@ import 'offline_storage_service.dart';
 /// Handles switching between online and offline playback modes based on
 /// network connectivity and provides seamless transitions.
 class OfflineSyncService extends GetxController {
+  /// Creates an offline sync service with the required dependencies.
+  ///
+  /// [_networkService] handles network connectivity monitoring.
+  /// [_storageService] manages local storage of offline songs.
+  /// [_audioService] handles offline audio playback operations.
   OfflineSyncService(
     this._networkService,
     this._storageService,
@@ -205,7 +210,7 @@ class OfflineSyncService extends GetxController {
   Future<void> _setOfflineMode(bool offline) async {
     if (_isOfflineMode.value != offline) {
       _isOfflineMode.value = offline;
-      await _audioService.setOfflineMode(offline);
+      await _audioService.setOfflineMode(enabled: offline);
     }
   }
 

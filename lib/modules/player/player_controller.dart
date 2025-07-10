@@ -254,10 +254,12 @@ class PlayerController extends GetxController {
     );
   }
 
+  // ignore: use_setters_to_change_properties
   void _onDurationChanged(Duration duration) {
     _playerDuration.value = duration;
   }
 
+  // ignore: use_setters_to_change_properties
   void _onPositionChanged(Duration position) {
     _playerPosition.value = position;
   }

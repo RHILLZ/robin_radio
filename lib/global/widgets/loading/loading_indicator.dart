@@ -4,23 +4,33 @@ import 'package:flutter/material.dart';
 
 /// Loading indicator animation types
 enum LoadingIndicatorType {
+  /// Circular progress indicator with spinning animation
   circular,
+  /// Linear progress bar with sliding animation
   linear,
+  /// Animated dots with pulsing opacity
   dots,
+  /// Pulsing circle with scaling animation
   pulse,
+  /// Wave animation with rising and falling bars
   wave,
 }
 
 /// Size presets for loading indicators
 enum LoadingIndicatorSize {
+  /// Small size (16px) for compact spaces
   small,
+  /// Medium size (24px) for standard layouts
   medium,
+  /// Large size (32px) for prominent displays
   large,
+  /// Custom size specified by customSize parameter
   custom,
 }
 
 /// A reusable loading indicator widget with multiple animation types and customization options
 class LoadingIndicator extends StatefulWidget {
+  /// Creates a LoadingIndicator with customizable animation and appearance
   const LoadingIndicator({
     super.key,
     this.type = LoadingIndicatorType.circular,
@@ -69,6 +79,7 @@ class LoadingIndicator extends StatefulWidget {
   State<LoadingIndicator> createState() => _LoadingIndicatorState();
 }
 
+/// Internal state management for LoadingIndicator animations
 class _LoadingIndicatorState extends State<LoadingIndicator>
     with TickerProviderStateMixin {
   late AnimationController _controller;
@@ -96,6 +107,7 @@ class _LoadingIndicatorState extends State<LoadingIndicator>
     super.dispose();
   }
 
+  /// Gets the indicator size based on the selected size preset
   double get _indicatorSize {
     switch (widget.size) {
       case LoadingIndicatorSize.small:
@@ -109,8 +121,11 @@ class _LoadingIndicatorState extends State<LoadingIndicator>
     }
   }
 
+  /// Gets the stroke width for circular and linear indicators
   double get _strokeWidth {
-    if (widget.strokeWidth != null) return widget.strokeWidth!;
+    if (widget.strokeWidth != null) {
+      return widget.strokeWidth!;
+    }
 
     switch (widget.size) {
       case LoadingIndicatorSize.small:

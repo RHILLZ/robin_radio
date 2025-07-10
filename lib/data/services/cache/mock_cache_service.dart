@@ -252,8 +252,11 @@ class MockCacheService implements ICacheService {
     _errorType = '';
   }
 
+  // ignore: unused_element
   void _checkForSimulatedErrors() {
-    if (!_shouldSimulateError) return;
+    if (!_shouldSimulateError) {
+      return;
+    }
 
     switch (_errorType) {
       case 'read':
@@ -277,7 +280,9 @@ class MockCacheService implements ICacheService {
 
   Future<void> _enforceSizeLimit() async {
     final currentSize = await getCacheSize();
-    if (currentSize <= _maxCacheSize) return;
+    if (currentSize <= _maxCacheSize) {
+      return;
+    }
 
     // Sort items by creation time (oldest first)
     final sortedEntries = _cache.entries.toList()
@@ -287,7 +292,9 @@ class MockCacheService implements ICacheService {
     final targetReduction = currentSize - _maxCacheSize;
 
     for (final entry in sortedEntries) {
-      if (evictedSize >= targetReduction) break;
+      if (evictedSize >= targetReduction) {
+        break;
+      }
 
       evictedSize += entry.value.size;
       _cache.remove(entry.key);
@@ -299,7 +306,9 @@ class MockCacheService implements ICacheService {
   }
 
   int _estimateSize(Object? value) {
-    if (value == null) return 0;
+    if (value == null) {
+      return 0;
+    }
 
     try {
       final serialized = value.toString();

@@ -3,7 +3,17 @@
 import 'package:flutter/material.dart';
 import 'widgets/common/image_loader.dart';
 
+/// A widget that displays album artwork with fallback handling.
+///
+/// Provides a consistent way to display album covers throughout the app
+/// with proper loading states, error handling, and fallback imagery.
 class AlbumCover extends StatelessWidget {
+  /// Creates an album cover widget.
+  ///
+  /// [imageUrl] is the URL of the album artwork to display.
+  /// [albumName] is the name of the album for accessibility.
+  /// [size] is the desired width and height of the cover.
+  /// [borderRadius] is the radius for rounded corners (defaults to 8.0).
   const AlbumCover({
     super.key,
     this.imageUrl,
@@ -12,9 +22,16 @@ class AlbumCover extends StatelessWidget {
     this.borderRadius = 8.0,
   });
 
+  /// The URL of the album artwork to display.
   final String? imageUrl;
+  
+  /// The name of the album for accessibility purposes.
   final String? albumName;
+  
+  /// The desired width and height of the cover in logical pixels.
   final double? size;
+  
+  /// The radius for rounded corners of the album cover.
   final double borderRadius;
 
   @override

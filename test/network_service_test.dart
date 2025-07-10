@@ -49,9 +49,10 @@ void main() {
 
     group('Network State Management', () {
       test('should return complete network state when connected', () async {
-        mockNetwork.setMockConnectivity(ConnectivityResult.wifi);
-        mockNetwork.setMockQuality(NetworkQuality.excellent);
-        mockNetwork.setMockLatency(50);
+        mockNetwork
+          ..setMockConnectivity(ConnectivityResult.wifi)
+          ..setMockQuality(NetworkQuality.excellent)
+          ..setMockLatency(50);
 
         final networkState = await networkService.getNetworkState();
 
@@ -88,8 +89,9 @@ void main() {
 
     group('Network Quality Assessment', () {
       test('should assess quality as excellent for good metrics', () async {
-        mockNetwork.setMockConnectivity(ConnectivityResult.wifi);
-        mockNetwork.setMockQuality(NetworkQuality.excellent);
+        mockNetwork
+          ..setMockConnectivity(ConnectivityResult.wifi)
+          ..setMockQuality(NetworkQuality.excellent);
 
         final quality = await networkService.assessNetworkQuality();
         expect(quality, NetworkQuality.excellent);
@@ -103,8 +105,9 @@ void main() {
       });
 
       test('should assess quality as poor for bad metrics', () async {
-        mockNetwork.setMockConnectivity(ConnectivityResult.mobile);
-        mockNetwork.setMockQuality(NetworkQuality.poor);
+        mockNetwork
+          ..setMockConnectivity(ConnectivityResult.mobile)
+          ..setMockQuality(NetworkQuality.poor);
 
         final quality = await networkService.assessNetworkQuality();
         expect(quality, NetworkQuality.poor);
@@ -316,8 +319,9 @@ void main() {
 
     group('Download Speed Estimation', () {
       test('should estimate download speed when connected', () async {
-        mockNetwork.setMockConnectivity(ConnectivityResult.wifi);
-        mockNetwork.setMockBandwidth(1024 * 1024); // 1MB/s
+        mockNetwork
+          ..setMockConnectivity(ConnectivityResult.wifi)
+          ..setMockBandwidth(1024 * 1024); // 1MB/s
 
         final speed = await networkService.estimateDownloadSpeed();
         expect(speed, 1024 * 1024);
@@ -354,7 +358,7 @@ void main() {
         await mockNetwork.simulateConnectivityChange(ConnectivityResult.mobile);
 
         // Give time for async operations
-        await Future.delayed(const Duration(milliseconds: 200));
+        await Future<void>.delayed(const Duration(milliseconds: 200));
 
         expect(stateChanges.length, greaterThan(0));
         expect(stateChanges.last.connectivity, ConnectivityResult.mobile);
@@ -369,12 +373,13 @@ void main() {
           stateChanges.add(state);
         }
 
-        networkService.addNetworkStateListener(listener);
-        networkService.removeNetworkStateListener(listener);
+        networkService
+          ..addNetworkStateListener(listener)
+          ..removeNetworkStateListener(listener);
 
         // Simulate connectivity change after removing listener
         await mockNetwork.simulateConnectivityChange(ConnectivityResult.mobile);
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         // Should not receive updates after removal
         expect(stateChanges.length, 0);
@@ -391,7 +396,7 @@ void main() {
         await mockNetwork.simulateConnectivityChange(ConnectivityResult.wifi);
         await mockNetwork.simulateConnectivityChange(ConnectivityResult.none);
 
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
         await subscription.cancel();
 
         expect(connectivityChanges, contains(ConnectivityResult.mobile));
@@ -408,7 +413,7 @@ void main() {
         await mockNetwork.simulateDisconnection();
         await mockNetwork.simulateReconnection();
 
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
         await subscription.cancel();
 
         expect(networkStateChanges.length, greaterThan(0));
@@ -427,7 +432,7 @@ void main() {
     group('Network Failure Simulation', () {
       test('should simulate network failures when enabled', () async {
         mockNetwork.setSimulateNetworkFailures(
-          true,
+          simulate: true,
           failureRate: 1,
         ); // Always fail
 
@@ -438,8 +443,9 @@ void main() {
       });
 
       test('should work normally when failure simulation disabled', () async {
-        mockNetwork.setSimulateNetworkFailures(false);
-        mockNetwork.setMockConnectivity(ConnectivityResult.wifi);
+        mockNetwork
+          ..setSimulateNetworkFailures(simulate: false)
+          ..setMockConnectivity(ConnectivityResult.wifi);
 
         final connectivity = await networkService.checkConnectivity();
         expect(connectivity, ConnectivityResult.wifi);
@@ -497,7 +503,7 @@ void main() {
         );
 
         await service.dispose();
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(connectivityStreamClosed, true);
         expect(networkStateStreamClosed, true);
@@ -506,12 +512,12 @@ void main() {
 
     group('Mock Specific Features', () {
       test('should reset mock state correctly', () async {
-        mockNetwork.setMockConnectivity(ConnectivityResult.mobile);
-        mockNetwork.setMockQuality(NetworkQuality.poor);
-        mockNetwork.setMockLatency(2000);
-        mockNetwork.addMockUsage(bytesSent: 1000, bytesReceived: 2000);
-
-        mockNetwork.resetMockState();
+        mockNetwork
+          ..setMockConnectivity(ConnectivityResult.mobile)
+          ..setMockQuality(NetworkQuality.poor)
+          ..setMockLatency(2000)
+          ..addMockUsage(bytesSent: 1000, bytesReceived: 2000)
+          ..resetMockState();
 
         final connectivity = await networkService.checkConnectivity();
         final quality = await networkService.assessNetworkQuality();

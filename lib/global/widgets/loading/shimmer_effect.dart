@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 
 /// Direction of the shimmer animation
 enum ShimmerDirection {
+  /// Shimmer moves from left to right
   leftToRight,
+  /// Shimmer moves from right to left
   rightToLeft,
+  /// Shimmer moves from top to bottom
   topToBottom,
+  /// Shimmer moves from bottom to top
   bottomToTop,
 }
 
 /// Shimmer effect configuration
 class ShimmerConfig {
+  /// Creates a shimmer configuration
   const ShimmerConfig({
     this.baseColor,
     this.highlightColor,
@@ -19,32 +24,13 @@ class ShimmerConfig {
     this.enabled = true,
   });
 
-  /// Base color of the shimmer (background)
-  final Color? baseColor;
-
-  /// Highlight color that moves across the shimmer
-  final Color? highlightColor;
-
-  /// Direction of the shimmer animation
-  final ShimmerDirection direction;
-
-  /// Duration of one complete shimmer cycle
-  final Duration duration;
-
-  /// Animation curve for the shimmer effect
-  final Curve curve;
-
-  /// Whether the shimmer animation is enabled
-  final bool enabled;
-
   /// Create a light theme shimmer configuration
-  static ShimmerConfig light({
+  factory ShimmerConfig.light({
     Color? baseColor,
     Color? highlightColor,
     ShimmerDirection direction = ShimmerDirection.leftToRight,
     Duration duration = const Duration(milliseconds: 1500),
-  }) =>
-      ShimmerConfig(
+  }) => ShimmerConfig(
         baseColor: baseColor ?? Colors.grey.shade300,
         highlightColor: highlightColor ?? Colors.grey.shade100,
         direction: direction,
@@ -52,13 +38,12 @@ class ShimmerConfig {
       );
 
   /// Create a dark theme shimmer configuration
-  static ShimmerConfig dark({
+  factory ShimmerConfig.dark({
     Color? baseColor,
     Color? highlightColor,
     ShimmerDirection direction = ShimmerDirection.leftToRight,
     Duration duration = const Duration(milliseconds: 1500),
-  }) =>
-      ShimmerConfig(
+  }) => ShimmerConfig(
         baseColor: baseColor ?? Colors.grey.shade700,
         highlightColor: highlightColor ?? Colors.grey.shade600,
         direction: direction,
@@ -66,7 +51,7 @@ class ShimmerConfig {
       );
 
   /// Create a shimmer configuration from theme
-  static ShimmerConfig fromTheme(
+  factory ShimmerConfig.fromTheme(
     BuildContext context, {
     ShimmerDirection direction = ShimmerDirection.leftToRight,
     Duration duration = const Duration(milliseconds: 1500),
@@ -85,10 +70,29 @@ class ShimmerConfig {
       duration: duration,
     );
   }
+
+  /// Base color of the shimmer (background)
+  final Color? baseColor;
+
+  /// Highlight color that moves across the shimmer
+  final Color? highlightColor;
+
+  /// Direction of the shimmer animation
+  final ShimmerDirection direction;
+
+  /// Duration of one complete shimmer cycle
+  final Duration duration;
+
+  /// Animation curve for the shimmer effect
+  final Curve curve;
+
+  /// Whether the shimmer animation is enabled
+  final bool enabled;
 }
 
 /// A widget that creates a shimmer effect animation
 class ShimmerEffect extends StatefulWidget {
+  /// Creates a shimmer effect widget
   const ShimmerEffect({
     required this.child,
     super.key,
@@ -287,6 +291,7 @@ class _ShimmerGradientPainter extends CustomPainter {
 
 /// Convenience widget that combines skeleton loading with shimmer effect
 class ShimmerSkeleton extends StatelessWidget {
+  /// Creates a shimmer skeleton widget
   const ShimmerSkeleton({
     required this.child,
     super.key,
@@ -384,6 +389,8 @@ extension ShimmerExtension on Widget {
 
 /// Shimmer-enabled skeleton components with built-in animations
 class AnimatedSkeletons {
+  /// Private constructor to prevent instantiation
+  AnimatedSkeletons._();
   /// Animated skeleton text
   static Widget text({
     double? width,

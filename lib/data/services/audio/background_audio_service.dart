@@ -162,7 +162,9 @@ class BackgroundAudioService implements IAudioService {
 
   @override
   Future<void> initialize() async {
-    if (_isInitialized || _isDisposed) return;
+    if (_isInitialized || _isDisposed) {
+      return;
+    }
 
     try {
       // Initialize audio service
@@ -505,7 +507,7 @@ class BackgroundAudioService implements IAudioService {
   }
 
   @override
-  Future<void> setBackgroundPlaybackEnabled(bool enabled) async {
+  Future<void> setBackgroundPlaybackEnabled({required bool enabled}) async {
     // Background playback is enabled by default with audio_service
     // This method is maintained for interface compatibility
   }
@@ -558,7 +560,9 @@ class BackgroundAudioService implements IAudioService {
 
   @override
   Future<void> dispose() async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     _isDisposed = true;
 

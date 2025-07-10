@@ -28,7 +28,7 @@ class MockNetworkService implements INetworkService {
   // Mock usage statistics
   int _bytesSent = 0;
   int _bytesReceived = 0;
-  DateTime _usageStatsStartTime = DateTime.now();
+  // DateTime _usageStatsStartTime = DateTime.now();
   double? _estimatedBandwidth = 1024 * 1024; // 1MB/s default
 
   // State change listeners
@@ -119,7 +119,7 @@ class MockNetworkService implements INetworkService {
     await Future<void>.delayed(_simulatedLatency);
     _bytesSent = 0;
     _bytesReceived = 0;
-    _usageStatsStartTime = DateTime.now();
+    // _usageStatsStartTime = DateTime.now();
     _estimatedBandwidth = 1024 * 1024; // Reset to 1MB/s
   }
 
@@ -156,7 +156,7 @@ class MockNetworkService implements INetworkService {
           delayMs *= 1.0 + jitter;
         }
 
-        await Future.delayed(Duration(milliseconds: delayMs.round()));
+        await Future<void>.delayed(Duration(milliseconds: delayMs.round()));
       }
     }
 
@@ -175,7 +175,9 @@ class MockNetworkService implements INetworkService {
 
     // Simulate periodic quality monitoring
     Timer.periodic(interval, (_) async {
-      if (!_isMonitoringQuality || _isDisposed) return;
+      if (!_isMonitoringQuality || _isDisposed) {
+        return;
+      }
 
       try {
         final networkState = await getNetworkState();
@@ -245,7 +247,9 @@ class MockNetworkService implements INetworkService {
 
   @override
   Future<void> dispose() async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     _isDisposed = true;
     await stopQualityMonitoring();
@@ -266,27 +270,31 @@ class MockNetworkService implements INetworkService {
   }
 
   /// Set the mock network quality for testing
+  // ignore: use_setters_to_change_properties
   void setMockQuality(NetworkQuality quality) {
     _currentQuality = quality;
   }
 
   /// Set mock latency for testing
+  // ignore: use_setters_to_change_properties
   void setMockLatency(int? latencyMs) {
     _latencyMs = latencyMs;
   }
 
   /// Set mock bandwidth for testing
+  // ignore: use_setters_to_change_properties
   void setMockBandwidth(double? bandwidth) {
     _estimatedBandwidth = bandwidth;
   }
 
   /// Enable/disable network failure simulation
-  void setSimulateNetworkFailures(bool simulate, {double failureRate = 0.1}) {
+  void setSimulateNetworkFailures({required bool simulate, double failureRate = 0.1}) {
     _simulateNetworkFailures = simulate;
     _failureRate = failureRate.clamp(0.0, 1.0);
   }
 
   /// Set simulated network latency
+  // ignore: use_setters_to_change_properties
   void setSimulatedLatency(Duration latency) {
     _simulatedLatency = latency;
   }

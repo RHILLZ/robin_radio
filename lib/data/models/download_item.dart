@@ -5,16 +5,27 @@ part 'download_item.g.dart';
 /// Represents the status of a download operation.
 @HiveType(typeId: 2)
 enum DownloadStatus {
+  /// Download is queued and waiting to start
   @HiveField(0)
   pending,
+  
+  /// Download is actively in progress
   @HiveField(1)
   downloading,
+  
+  /// Download has completed successfully
   @HiveField(2)
   completed,
+  
+  /// Download has failed due to an error
   @HiveField(3)
   failed,
+  
+  /// Download has been paused by user
   @HiveField(4)
   paused,
+  
+  /// Download has been cancelled by user
   @HiveField(5)
   cancelled,
 }

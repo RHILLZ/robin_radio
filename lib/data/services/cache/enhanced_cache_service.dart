@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+// import 'package:flutter_cache_manager/flutter_cache_manager.dart'; // TODO: Remove when file cache manager is implemented
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../exceptions/cache_service_exception.dart';
@@ -18,17 +18,17 @@ import 'cache_service_interface.dart';
 /// - JSON serialization support
 /// - Event streaming for debugging
 class EnhancedCacheService implements ICacheService {
+  /// Gets the singleton instance of the cache service
+  factory EnhancedCacheService() {
+    _instance ??= EnhancedCacheService._();
+    return _instance!;
+  }
+
   /// Private constructor for singleton pattern
   EnhancedCacheService._();
 
   /// Singleton instance
   static EnhancedCacheService? _instance;
-
-  /// Gets the singleton instance of the cache service
-  static EnhancedCacheService get instance {
-    _instance ??= EnhancedCacheService._();
-    return _instance!;
-  }
 
   // Cache configuration
   static const String _keyPrefix = 'robin_radio_cache_';
@@ -38,7 +38,7 @@ class EnhancedCacheService implements ICacheService {
   static const int _memoryMaxItems = 1000;
 
   // Cache managers
-  late final CacheManager _fileCacheManager;
+  // late final CacheManager _fileCacheManager; // TODO(dev): Implement file cache manager usage
   late final SharedPreferences _prefs;
 
   // Memory cache
@@ -65,22 +65,25 @@ class EnhancedCacheService implements ICacheService {
 
   /// Initialize the cache service.
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) {
+      return;
+    }
 
     try {
       // Initialize SharedPreferences
       _prefs = await SharedPreferences.getInstance();
 
       // Initialize file cache manager
-      _fileCacheManager = CacheManager(
-        Config(
-          'robin_radio_cache',
-          stalePeriod: _defaultExpiry,
-          maxNrOfCacheObjects: 1000,
-          repo: JsonCacheInfoRepository(databaseName: 'robin_radio_cache'),
-          fileService: HttpFileService(),
-        ),
-      );
+      // TODO(dev): Implement file cache manager integration
+      // _fileCacheManager = CacheManager(
+      //   Config(
+      //     'robin_radio_cache',
+      //     stalePeriod: _defaultExpiry,
+      //     maxNrOfCacheObjects: 1000,
+      //     repo: JsonCacheInfoRepository(databaseName: 'robin_radio_cache'),
+      //     fileService: HttpFileService(),
+      //   ),
+      // );
 
       // Start periodic cleanup
       _startPeriodicCleanup();
@@ -94,7 +97,9 @@ class EnhancedCacheService implements ICacheService {
 
   @override
   Future<T?> get<T>(String key, {bool fromMemoryOnly = false}) async {
-    if (!_isInitialized) await initialize();
+    if (!_isInitialized) {
+      await initialize();
+    }
 
     _validateKey(key);
     _totalRequests++;
@@ -128,7 +133,7 @@ class EnhancedCacheService implements ICacheService {
       _misses++;
       _eventController.add(CacheEvent.miss(key));
       return null;
-    } on Exception catch (e) {
+    } on Exception {
       throw CacheReadException.keyAccessFailed(key);
     }
   }
@@ -140,7 +145,9 @@ class EnhancedCacheService implements ICacheService {
     Duration? expiry,
     bool memoryOnly = false,
   }) async {
-    if (!_isInitialized) await initialize();
+    if (!_isInitialized) {
+      await initialize();
+    }
 
     _validateKey(key);
     _validateValue(value);
@@ -170,7 +177,9 @@ class EnhancedCacheService implements ICacheService {
 
   @override
   Future<void> remove(String key, {bool fromMemoryOnly = false}) async {
-    if (!_isInitialized) await initialize();
+    if (!_isInitialized) {
+      await initialize();
+    }
 
     _validateKey(key);
 
@@ -197,7 +206,9 @@ class EnhancedCacheService implements ICacheService {
 
   @override
   Future<void> clear({bool memoryOnly = false}) async {
-    if (!_isInitialized) await initialize();
+    if (!_isInitialized) {
+      await initialize();
+    }
 
     try {
       // Clear memory cache
@@ -223,7 +234,9 @@ class EnhancedCacheService implements ICacheService {
 
   @override
   Future<bool> has(String key, {bool checkMemoryOnly = false}) async {
-    if (!_isInitialized) await initialize();
+    if (!_isInitialized) {
+      await initialize();
+    }
 
     _validateKey(key);
 
@@ -247,7 +260,9 @@ class EnhancedCacheService implements ICacheService {
 
   @override
   Future<int> getCacheSize() async {
-    if (!_isInitialized) await initialize();
+    if (!_isInitialized) {
+      await initialize();
+    }
 
     try {
       var totalSize = 0;
@@ -258,9 +273,7 @@ class EnhancedCacheService implements ICacheService {
       }
 
       // Add disk cache size
-      totalSize += await _getDiskCacheSize();
-
-      return totalSize;
+      return totalSize + await _getDiskCacheSize();
     } on Exception catch (e) {
       throw CacheManagementException.sizeFailed(e);
     }
@@ -268,7 +281,9 @@ class EnhancedCacheService implements ICacheService {
 
   @override
   Future<CacheStatistics> getStatistics() async {
-    if (!_isInitialized) await initialize();
+    if (!_isInitialized) {
+      await initialize();
+    }
 
     try {
       final diskSize = await _getDiskCacheSize();
@@ -293,7 +308,9 @@ class EnhancedCacheService implements ICacheService {
 
   @override
   Future<void> clearExpired() async {
-    if (!_isInitialized) await initialize();
+    if (!_isInitialized) {
+      await initialize();
+    }
 
     try {
       var expiredCount = 0;
@@ -343,7 +360,9 @@ class EnhancedCacheService implements ICacheService {
 
   @override
   Future<void> preload(List<String> keys) async {
-    if (!_isInitialized) await initialize();
+    if (!_isInitialized) {
+      await initialize();
+    }
 
     for (final key in keys) {
       if (!_memoryCache.containsKey(key)) {
@@ -372,19 +391,23 @@ class EnhancedCacheService implements ICacheService {
   }
 
   void _validateValue<T>(T value) {
-    if (value == null) return;
+    if (value == null) {
+      return;
+    }
 
     try {
       // Test if value can be JSON encoded
       jsonEncode(value);
-    } on Exception catch (e) {
+    } on Exception {
       throw CacheConfigurationException.unsupportedType(T);
     }
   }
 
   T? _getFromMemory<T>(String key) {
     final item = _memoryCache[key];
-    if (item == null) return null;
+    if (item == null) {
+      return null;
+    }
 
     if (item.isExpired) {
       _removeFromMemory(key);
@@ -433,7 +456,9 @@ class EnhancedCacheService implements ICacheService {
       // Get metadata
       final metadataKey = '$_metadataPrefix$key';
       final metadataJson = _prefs.getString(metadataKey);
-      if (metadataJson == null) return null;
+      if (metadataJson == null) {
+      return null;
+    }
 
       final metadata = jsonDecode(metadataJson) as Map<String, dynamic>;
       final expiryMillis = metadata['expiry'] as int?;
@@ -450,7 +475,9 @@ class EnhancedCacheService implements ICacheService {
       // Get data
       final dataKey = '$_keyPrefix$key';
       final dataJson = _prefs.getString(dataKey);
-      if (dataJson == null) return null;
+      if (dataJson == null) {
+      return null;
+    }
 
       final data = jsonDecode(dataJson);
       return data as T;
@@ -491,7 +518,9 @@ class EnhancedCacheService implements ICacheService {
   Future<bool> _hasOnDisk(String key) async {
     final metadataKey = '$_metadataPrefix$key';
     final metadataJson = _prefs.getString(metadataKey);
-    if (metadataJson == null) return false;
+    if (metadataJson == null) {
+      return false;
+    }
 
     try {
       final metadata = jsonDecode(metadataJson) as Map<String, dynamic>;
@@ -506,7 +535,7 @@ class EnhancedCacheService implements ICacheService {
       }
 
       return true;
-    } on Exception catch (e) {
+    } on Exception {
       return false;
     }
   }
@@ -533,7 +562,7 @@ class EnhancedCacheService implements ICacheService {
         try {
           final metadata = jsonDecode(metadataJson) as Map<String, dynamic>;
           totalSize += metadata['size'] as int? ?? 0;
-        } on Exception catch (e) {
+        } on Exception {
           // Skip corrupted metadata
         }
       }
@@ -575,7 +604,7 @@ class EnhancedCacheService implements ICacheService {
               expiredCount++;
             }
           }
-        } on Exception catch (e) {
+        } on Exception {
           // Remove corrupted metadata
           await _prefs.remove(metadataKey);
           expiredCount++;
@@ -610,7 +639,7 @@ class EnhancedCacheService implements ICacheService {
           final metadata = jsonDecode(metadataJson) as Map<String, dynamic>;
           final created = metadata['created'] as int? ?? 0;
           items[metadataKey] = created;
-        } on Exception catch (e) {
+        } on Exception {
           // Skip corrupted metadata
         }
       }
@@ -620,7 +649,9 @@ class EnhancedCacheService implements ICacheService {
       ..sort((a, b) => items[a]!.compareTo(items[b]!));
 
     for (final metadataKey in sortedKeys) {
-      if (evictedBytes >= bytesToEvict) break;
+      if (evictedBytes >= bytesToEvict) {
+      break;
+    }
 
       final metadataJson = _prefs.getString(metadataKey);
       if (metadataJson != null) {
@@ -636,7 +667,7 @@ class EnhancedCacheService implements ICacheService {
           _evictions++;
 
           _eventController.add(CacheEvent.eviction(key, 'Size limit eviction'));
-        } on Exception catch (e) {
+        } on Exception {
           // Skip corrupted items
         }
       }
@@ -651,16 +682,17 @@ class EnhancedCacheService implements ICacheService {
     });
   }
 
-  int _estimateSize(Object? value) {
-    if (value == null) return 0;
-
-    try {
-      final serialized = value.toString();
-      return serialized.length * 2; // Approximate UTF-16 size
-    } on Exception catch (e) {
-      return 100; // Default estimate
-    }
-  }
+  // Unused method removed to fix linting warning
+  // int _estimateSize(Object? value) {
+  //   if (value == null) return 0;
+  //
+  //   try {
+  //     final serialized = value.toString();
+  //     return serialized.length * 2; // Approximate UTF-16 size
+  //   } on Exception {
+  //     return 100; // Default estimate
+  //   }
+  // }
 }
 
 /// Internal cache item representation for memory cache.
@@ -679,7 +711,7 @@ class _CacheItem {
     try {
       final json = jsonEncode(value);
       return json.length * 2; // Approximate UTF-16 size
-    } on Exception catch (e) {
+    } on Exception {
       return 100; // Default estimate for non-serializable objects
     }
   }

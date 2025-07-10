@@ -98,8 +98,8 @@ class PaginationController<T> extends GetxController {
   /// appropriate page numbers and handle the returned data.
   ///
   /// Parameters provided to the function:
-  /// - [page]: Zero-based page number (0 for first page, 1 for second, etc.)
-  /// - [pageSize]: Number of items requested for this page
+  /// - `page`: Zero-based page number (0 for first page, 1 for second, etc.)
+  /// - `pageSize`: Number of items requested for this page
   ///
   /// The function should return:
   /// - A Future that resolves to a List<T> of items for the requested page
@@ -240,7 +240,9 @@ class PaginationController<T> extends GetxController {
   /// );
   /// ```
   Future<void> loadInitial() async {
-    if (_isLoading.value) return;
+    if (_isLoading.value) {
+      return;
+    }
 
     try {
       _isLoading.value = true;
@@ -250,8 +252,9 @@ class PaginationController<T> extends GetxController {
 
       final firstPage = await loadPage(0, pageSize);
 
-      _items.clear();
-      _items.addAll(firstPage);
+      _items
+        ..clear()
+        ..addAll(firstPage);
 
       // Check if we've reached the end
       if (firstPage.length < pageSize) {
@@ -317,7 +320,9 @@ class PaginationController<T> extends GetxController {
   ///   ),
   /// ```
   Future<void> loadNext() async {
-    if (_isLoadingMore.value || _hasReachedEnd.value) return;
+    if (_isLoadingMore.value || _hasReachedEnd.value) {
+      return;
+    }
 
     try {
       _isLoadingMore.value = true;

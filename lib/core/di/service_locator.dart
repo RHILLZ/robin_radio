@@ -206,6 +206,7 @@ import '../environment/app_environment.dart';
 /// This ensures safe usage from multiple isolates and async contexts
 /// without additional synchronization requirements.
 class ServiceLocator {
+  ServiceLocator._();
   static bool _isInitialized = false;
   static AppEnvironment _currentEnvironment = AppEnvironment.development;
 
@@ -310,7 +311,7 @@ class ServiceLocator {
       );
     } else {
       Get.put<INetworkService>(
-        EnhancedNetworkService.instance,
+        EnhancedNetworkService(),
         permanent: true,
       );
     }
@@ -323,7 +324,7 @@ class ServiceLocator {
       );
     } else {
       Get.put<ICacheService>(
-        EnhancedCacheService.instance,
+        EnhancedCacheService(),
         permanent: true,
       );
     }
@@ -533,7 +534,7 @@ class ServiceLocator {
       }
     } on Exception catch (e) {
       // Log disposal errors but don't throw - using debugPrint for development
-      // TODO: Replace with proper logging service when available
+      // TODO(dev): Replace with proper logging service when available
       if (kDebugMode) {
         debugPrint('Error during ServiceLocator disposal: $e');
       }

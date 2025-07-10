@@ -42,7 +42,7 @@ class FirebaseMusicRepository implements MusicRepository {
   StreamController<Song>? _radioStreamController;
 
   // Stream controller for album loading progress
-  final StreamController<AlbumLoadingProgress> _progressController = 
+  final StreamController<AlbumLoadingProgress> _progressController =
       StreamController<AlbumLoadingProgress>.broadcast();
 
   @override
@@ -265,12 +265,14 @@ class FirebaseMusicRepository implements MusicRepository {
       );
 
       // Emit initial progress
-      _progressController.add(AlbumLoadingProgress(
-        message: 'Found ${artistResult.prefixes.length} artists',
-        progress: 0.1,
-        albumsProcessed: 0,
-        totalAlbums: 0,
-      ));
+      _progressController.add(
+        AlbumLoadingProgress(
+          message: 'Found ${artistResult.prefixes.length} artists',
+          progress: 0.1,
+          albumsProcessed: 0,
+          totalAlbums: 0,
+        ),
+      );
 
       var totalAlbumsEstimate = 0;
       var albumsProcessed = 0;
@@ -300,12 +302,14 @@ class FirebaseMusicRepository implements MusicRepository {
           totalAlbumsEstimate += albumsResult.prefixes.length;
 
           // Emit progress for artist discovery
-          _progressController.add(AlbumLoadingProgress(
-            message: 'Loading albums from $artistName...',
-            progress: 0.2 + (artistIndex / artistResult.prefixes.length) * 0.6,
-            albumsProcessed: albumsProcessed,
-            totalAlbums: totalAlbumsEstimate,
-          ));
+          _progressController.add(
+            AlbumLoadingProgress(
+              message: 'Loading albums from $artistName...',
+              progress: 0.2 + (artistIndex / artistResult.prefixes.length) * 0.6,
+              albumsProcessed: albumsProcessed,
+              totalAlbums: totalAlbumsEstimate,
+            ),
+          );
 
           for (var albumIndex = 0;
               albumIndex < albumsResult.prefixes.length;
@@ -405,12 +409,19 @@ class FirebaseMusicRepository implements MusicRepository {
 
                 // Update albums processed count and emit progress
                 albumsProcessed++;
-                _progressController.add(AlbumLoadingProgress(
-                  message: 'Added album "$albumName"',
-                  progress: 0.2 + (albumsProcessed / (totalAlbumsEstimate > 0 ? totalAlbumsEstimate : 1)) * 0.6,
-                  albumsProcessed: albumsProcessed,
-                  totalAlbums: totalAlbumsEstimate,
-                ));
+                _progressController.add(
+                  AlbumLoadingProgress(
+                    message: 'Added album "$albumName"',
+                    progress: 0.2 +
+                        (albumsProcessed /
+                                (totalAlbumsEstimate > 0
+                                    ? totalAlbumsEstimate
+                                    : 1)) *
+                            0.6,
+                    albumsProcessed: albumsProcessed,
+                    totalAlbums: totalAlbumsEstimate,
+                  ),
+                );
               }
             } on Exception catch (e) {
               debugPrint(
@@ -430,12 +441,14 @@ class FirebaseMusicRepository implements MusicRepository {
       );
 
       // Emit final progress
-      _progressController.add(AlbumLoadingProgress(
-        message: 'Successfully loaded ${albums.length} albums',
-        progress: 1.0,
-        albumsProcessed: albums.length,
-        totalAlbums: albums.length,
-      ));
+      _progressController.add(
+        AlbumLoadingProgress(
+          message: 'Successfully loaded ${albums.length} albums',
+          progress: 1,
+          albumsProcessed: albums.length,
+          totalAlbums: albums.length,
+        ),
+      );
 
       if (albums.isEmpty) {
         throw const DataRepositoryException.notFound();
@@ -507,8 +520,8 @@ class FirebaseMusicRepository implements MusicRepository {
   /// Generates a continuous stream of random songs for radio mode.
   Future<void> _generateRadioStream() async {
     try {
-      while (
-          _radioStreamController != null && !_radioStreamController!.isClosed) {
+      while (_radioStreamController != null &&
+          !_radioStreamController!.isClosed) {
         final albums = await getAlbums();
         if (albums.isEmpty) {
           await Future<void>.delayed(const Duration(seconds: 5));
@@ -589,7 +602,8 @@ class FirebaseMusicRepository implements MusicRepository {
   }
 
   @override
-  Stream<AlbumLoadingProgress> get albumLoadingProgress => _progressController.stream;
+  Stream<AlbumLoadingProgress> get albumLoadingProgress =>
+      _progressController.stream;
 
   /// Disposes of resources.
   void dispose() {

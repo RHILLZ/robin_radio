@@ -11,6 +11,9 @@ import '../app/app_controller.dart';
 /// Demonstrates the use of the new responsive design components
 /// to create adaptive layouts that work across mobile, tablet, and desktop.
 class ResponsiveAlbumsView extends StatefulWidget {
+  /// Creates a responsive albums view.
+  /// 
+  /// This widget automatically adapts its layout based on screen size and orientation.
   const ResponsiveAlbumsView({super.key});
 
   @override
@@ -50,8 +53,9 @@ class _ResponsiveAlbumsViewState extends State<ResponsiveAlbumsView> {
   void dispose() {
     _searchWorker?.dispose();
     _searchController.dispose();
-    _searchFocusNode.removeListener(_onFocusChange);
-    _searchFocusNode.dispose();
+    _searchFocusNode
+      ..removeListener(_onFocusChange)
+      ..dispose();
     super.dispose();
   }
 

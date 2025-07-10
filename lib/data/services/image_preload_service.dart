@@ -113,15 +113,21 @@ class PreloadAnalytics {
 
 /// Compression settings for different use cases
 enum CompressionPreset {
+  /// Small, low quality images for thumbnails
   thumbnail,
+  /// Medium size, good quality images for previews
   preview,
+  /// Balanced quality and size for standard use
   standard,
+  /// High quality with larger file sizes
   highQuality,
+  /// Maximum quality with no compression
   lossless,
 }
 
 /// Configuration for image compression
 class CompressionConfig {
+  /// Creates a compression configuration
   const CompressionConfig({
     required this.quality,
     this.maxWidth,
@@ -130,10 +136,23 @@ class CompressionConfig {
     this.keepExif = false,
   });
 
+  /// Get compression config by preset
+  CompressionConfig.fromPreset(CompressionPreset preset)
+      : quality = _getQualityForPreset(preset),
+        maxWidth = _getMaxWidthForPreset(preset),
+        maxHeight = _getMaxHeightForPreset(preset),
+        format = CompressFormat.webp,
+        keepExif = false;
+
+  /// Compression quality (0-100)
   final int quality;
+  /// Maximum width in pixels
   final int? maxWidth;
+  /// Maximum height in pixels
   final int? maxHeight;
+  /// Output format for compressed image
   final CompressFormat format;
+  /// Whether to keep EXIF data
   final bool keepExif;
 
   /// Thumbnail compression (small, low quality)
@@ -164,19 +183,51 @@ class CompressionConfig {
     maxHeight: 2048,
   );
 
-  /// Get compression config by preset
-  static CompressionConfig fromPreset(CompressionPreset preset) {
+  /// Get compression quality for preset
+  static int _getQualityForPreset(CompressionPreset preset) {
     switch (preset) {
       case CompressionPreset.thumbnail:
-        return thumbnail;
+        return 60;
       case CompressionPreset.preview:
-        return preview;
+        return 75;
       case CompressionPreset.standard:
-        return standard;
+        return 85;
       case CompressionPreset.highQuality:
-        return highQuality;
+        return 95;
       case CompressionPreset.lossless:
-        return const CompressionConfig(quality: 100);
+        return 100;
+    }
+  }
+
+  /// Get maximum width for preset
+  static int? _getMaxWidthForPreset(CompressionPreset preset) {
+    switch (preset) {
+      case CompressionPreset.thumbnail:
+        return 150;
+      case CompressionPreset.preview:
+        return 500;
+      case CompressionPreset.standard:
+        return 1024;
+      case CompressionPreset.highQuality:
+        return 2048;
+      case CompressionPreset.lossless:
+        return null;
+    }
+  }
+
+  /// Get maximum height for preset
+  static int? _getMaxHeightForPreset(CompressionPreset preset) {
+    switch (preset) {
+      case CompressionPreset.thumbnail:
+        return 150;
+      case CompressionPreset.preview:
+        return 500;
+      case CompressionPreset.standard:
+        return 1024;
+      case CompressionPreset.highQuality:
+        return 2048;
+      case CompressionPreset.lossless:
+        return null;
     }
   }
 }
@@ -186,6 +237,8 @@ class ImagePreloadService {
   ImagePreloadService._privateConstructor();
   static final ImagePreloadService _instance =
       ImagePreloadService._privateConstructor();
+  
+  /// Get the singleton instance of the ImagePreloadService
   static ImagePreloadService get instance => _instance;
 
   ImagePreloadConfig _config = const ImagePreloadConfig();
@@ -203,7 +256,9 @@ class ImagePreloadService {
 
   /// Preload essential app assets on startup
   Future<void> preloadEssentialAssets(BuildContext context) async {
-    if (!await _shouldPreload()) return;
+    if (!await _shouldPreload()) {
+      return;
+    }
 
     const essentialAssets = [
       'assets/logo/rr-logo.webp',
@@ -223,7 +278,9 @@ class ImagePreloadService {
   }) async {
     final activeConfig = customConfig ?? _config;
 
-    if (!await _shouldPreload()) return;
+    if (!await _shouldPreload()) {
+      return;
+    }
 
     // Filter out already preloaded or currently preloading URLs
     final urlsToPreload = urls
@@ -235,7 +292,9 @@ class ImagePreloadService {
         .take(activeConfig.maxConcurrentPreloads)
         .toList();
 
-    if (urlsToPreload.isEmpty) return;
+    if (urlsToPreload.isEmpty) {
+      return;
+    }
 
     debugPrint('🖼️ Preloading ${urlsToPreload.length} network images');
 
@@ -251,14 +310,18 @@ class ImagePreloadService {
     List<String> coverUrls, {
     int? limit,
   }) async {
-    if (!await _shouldPreload()) return;
+    if (!await _shouldPreload()) {
+      return;
+    }
 
     final urlsToPreload =
         coverUrls.take(limit ?? _config.maxConcurrentPreloads).toList();
 
     debugPrint('🎵 Preloading ${urlsToPreload.length} album covers');
 
-    await preloadNetworkImages(context, urlsToPreload);
+    if (context.mounted) {
+      await preloadNetworkImages(context, urlsToPreload);
+    }
   }
 
   /// Compress an image file for upload
@@ -273,14 +336,14 @@ class ImagePreloadService {
       debugPrint('🗜️ Compressing image: $filePath (Q:${config.quality})');
 
       final file = File(filePath);
-      if (!await file.exists()) {
+      if (!file.existsSync()) {
         throw NetworkServiceInitializationException(
           'File not found: $filePath',
           'IMAGE_FILE_NOT_FOUND',
         );
       }
 
-      final originalSize = await file.length();
+      final originalSize = file.lengthSync();
       debugPrint('📏 Original size: ${_formatFileSize(originalSize)}');
 
       final compressedData = await FlutterImageCompress.compressWithFile(
@@ -411,7 +474,11 @@ class ImagePreloadService {
           return _config.preloadOnWifi; // Treat ethernet like WiFi
         case ConnectivityResult.none:
           return false;
-        default:
+        case ConnectivityResult.bluetooth:
+          return false;
+        case ConnectivityResult.vpn:
+          return _config.preloadOnWifi; // Treat VPN like WiFi
+        case ConnectivityResult.other:
           return false;
       }
     } on Exception catch (e) {
@@ -468,23 +535,28 @@ class ImagePreloadService {
     String url,
     ImagePreloadConfig config,
   ) async {
-    if (_currentlyPreloading.contains(url)) return;
+    if (_currentlyPreloading.contains(url)) {
+      return;
+    }
 
     _currentlyPreloading.add(url);
 
     try {
       debugPrint('🌐 Preloading network image: $url');
 
+      final connectionType = await _getConnectionType();
       final analytics = PreloadAnalytics(
         url: url,
         startTime: DateTime.now(),
-        connectionType: await _getConnectionType(),
+        connectionType: connectionType,
       );
 
       final imageProvider = CachedNetworkImageProvider(url);
 
-      await precacheImage(imageProvider, context)
-          .timeout(config.preloadTimeout);
+      if (context.mounted) {
+        await precacheImage(imageProvider, context)
+            .timeout(config.preloadTimeout);
+      }
 
       analytics
         ..endTime = DateTime.now()
@@ -501,12 +573,13 @@ class ImagePreloadService {
       debugPrint('❌ Network preload failed: $url - $e');
 
       if (config.enableAnalytics) {
+        final connectionType = await _getConnectionType();
         _analytics[url] = PreloadAnalytics(
           url: url,
           startTime: DateTime.now(),
           endTime: DateTime.now(),
           error: e.toString(),
-          connectionType: await _getConnectionType(),
+          connectionType: connectionType,
         );
       }
     } finally {
@@ -527,8 +600,12 @@ class ImagePreloadService {
           return 'ethernet';
         case ConnectivityResult.none:
           return 'none';
-        default:
-          return 'unknown';
+        case ConnectivityResult.bluetooth:
+          return 'bluetooth';
+        case ConnectivityResult.vpn:
+          return 'vpn';
+        case ConnectivityResult.other:
+          return 'other';
       }
     } on Exception {
       return 'unknown';
@@ -550,8 +627,12 @@ class ImagePreloadService {
 
   /// Format file size for display
   String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '${bytes}B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}KB';
+    if (bytes < 1024) {
+      return '${bytes}B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)}KB';
+    }
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';
   }
 

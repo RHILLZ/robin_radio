@@ -194,6 +194,7 @@ class MockAudioService implements IAudioService {
   double _currentVolume = 1;
   double _currentSpeed = 1;
   PlaybackMode _currentMode = PlaybackMode.normal;
+  // ignore: unused_field
   bool _backgroundPlaybackEnabled = false;
   final List<Song> _queue = <Song>[];
   int _currentIndex = -1;
@@ -288,7 +289,9 @@ class MockAudioService implements IAudioService {
 
   @override
   double get progress {
-    if (_trackDuration.inMilliseconds <= 0) return 0;
+    if (_trackDuration.inMilliseconds <= 0) {
+      return 0;
+    }
     return _currentPosition.inMilliseconds / _trackDuration.inMilliseconds;
   }
 
@@ -393,7 +396,9 @@ class MockAudioService implements IAudioService {
 
   @override
   Future<void> skipToNext() async {
-    if (_queue.isEmpty) return;
+    if (_queue.isEmpty) {
+      return;
+    }
 
     final nextIndex = _getNextIndex();
     if (nextIndex != -1) {
@@ -403,7 +408,9 @@ class MockAudioService implements IAudioService {
 
   @override
   Future<void> skipToPrevious() async {
-    if (_queue.isEmpty) return;
+    if (_queue.isEmpty) {
+      return;
+    }
 
     final prevIndex = _getPreviousIndex();
     if (prevIndex != -1) {
@@ -426,7 +433,9 @@ class MockAudioService implements IAudioService {
 
   @override
   Future<void> removeFromQueue(int index) async {
-    if (index < 0 || index >= _queue.length) return;
+    if (index < 0 || index >= _queue.length) {
+      return;
+    }
 
     _queue.removeAt(index);
 
@@ -457,7 +466,7 @@ class MockAudioService implements IAudioService {
   }
 
   @override
-  Future<void> setBackgroundPlaybackEnabled(bool enabled) async {
+  Future<void> setBackgroundPlaybackEnabled({required bool enabled}) async {
     _backgroundPlaybackEnabled = enabled;
   }
 
@@ -479,7 +488,9 @@ class MockAudioService implements IAudioService {
 
   @override
   Future<void> dispose() async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     _isDisposed = true;
     _currentState = PlaybackState.stopped;
@@ -601,7 +612,9 @@ class MockAudioService implements IAudioService {
   /// - RepeatAll: Next index with wrapping to start
   /// - Shuffle: Random index different from current
   int _getNextIndex() {
-    if (_queue.isEmpty) return -1;
+    if (_queue.isEmpty) {
+      return -1;
+    }
 
     switch (_currentMode) {
       case PlaybackMode.normal:
@@ -624,7 +637,9 @@ class MockAudioService implements IAudioService {
   /// - RepeatAll: Previous index with wrapping to end
   /// - Shuffle: Random index different from current
   int _getPreviousIndex() {
-    if (_queue.isEmpty) return -1;
+    if (_queue.isEmpty) {
+      return -1;
+    }
 
     switch (_currentMode) {
       case PlaybackMode.normal:
@@ -645,7 +660,9 @@ class MockAudioService implements IAudioService {
   ///
   /// Returns a random valid queue index that differs from [_currentIndex].
   int _getRandomIndex() {
-    if (_queue.length <= 1) return _currentIndex;
+    if (_queue.length <= 1) {
+      return _currentIndex;
+    }
     int randomIndex;
     do {
       randomIndex = Random().nextInt(_queue.length);
@@ -658,7 +675,9 @@ class MockAudioService implements IAudioService {
   /// Used by shuffle mode to select and play a random track.
   /// Safe to call with empty queue - will return without action.
   Future<void> _playRandomTrack() async {
-    if (_queue.isEmpty) return;
+    if (_queue.isEmpty) {
+      return;
+    }
     final randomIndex = _getRandomIndex();
     if (randomIndex != -1) {
       await play(_queue[randomIndex]);

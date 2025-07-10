@@ -4,6 +4,11 @@ import '../../../data/services/pagination_controller.dart';
 
 /// A ListView widget that automatically handles pagination
 class PaginatedListView<T> extends StatelessWidget {
+  /// Creates a paginated list view with automatic pagination handling.
+  ///
+  /// The [controller] manages the pagination state and data loading.
+  /// The [itemBuilder] is called for each item in the list.
+  /// Optional builders can be provided for different states like loading, error, etc.
   const PaginatedListView({
     required this.controller,
     required this.itemBuilder,
@@ -163,6 +168,12 @@ class PaginatedListView<T> extends StatelessWidget {
 
 /// A GridView widget that automatically handles pagination
 class PaginatedGridView<T> extends StatelessWidget {
+  /// Creates a paginated grid view with automatic pagination handling.
+  ///
+  /// The [controller] manages the pagination state and data loading.
+  /// The [itemBuilder] is called for each item in the grid.
+  /// The [gridDelegate] defines the layout of grid items.
+  /// Optional builders can be provided for different states like loading, error, etc.
   const PaginatedGridView({
     required this.controller,
     required this.itemBuilder,

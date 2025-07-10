@@ -7,7 +7,14 @@ import 'package:sizer/sizer.dart';
 import '../../global/widgets/widgets.dart';
 import '../player/player_controller.dart';
 
+/// A view that displays the radio interface with playback controls.
+/// 
+/// This widget provides a radio-style interface allowing users to start
+/// radio playback and view currently playing tracks with album art.
 class RadioView extends GetView<PlayerController> {
+  /// Creates a radio view.
+  /// 
+  /// This view automatically manages radio playback state and UI updates.
   const RadioView({super.key});
 
   @override

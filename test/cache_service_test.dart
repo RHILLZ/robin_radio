@@ -304,8 +304,9 @@ void main() {
         );
 
         // Manually expire items
-        mockCache.expireItem('expire1');
-        mockCache.expireItem('expire2');
+        mockCache
+          ..expireItem('expire1')
+          ..expireItem('expire2');
 
         await cacheService.clearExpired();
 

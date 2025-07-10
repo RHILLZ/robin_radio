@@ -19,13 +19,13 @@ import 'network_service_interface.dart';
 /// - Performance monitoring and event streaming
 /// - Cross-platform support (iOS, Android, Web, Desktop)
 class EnhancedNetworkService implements INetworkService {
+  /// Creates and returns the singleton instance of the network service
+  factory EnhancedNetworkService() => _instance ??= EnhancedNetworkService._();
+  
   // Private constructor for singleton
   EnhancedNetworkService._();
+  
   static EnhancedNetworkService? _instance;
-
-  /// Singleton instance of the network service
-  static EnhancedNetworkService get instance =>
-      _instance ??= EnhancedNetworkService._();
 
   // Core dependencies
   final Connectivity _connectivity = Connectivity();
@@ -38,7 +38,7 @@ class EnhancedNetworkService implements INetworkService {
 
   // Internal state management
   ConnectivityResult? _lastConnectivity;
-  NetworkState? _lastNetworkState;
+  // late NetworkState? _lastNetworkState;
   Timer? _qualityMonitoringTimer;
   bool _isMonitoringQuality = false;
   bool _isDisposed = false;
@@ -46,7 +46,7 @@ class EnhancedNetworkService implements INetworkService {
   // Network usage tracking
   int _bytesSent = 0;
   int _bytesReceived = 0;
-  DateTime _usageStatsStartTime = DateTime.now();
+  // DateTime _usageStatsStartTime = DateTime.now();
   double? _lastEstimatedBandwidth;
 
   // State change listeners
@@ -56,7 +56,7 @@ class EnhancedNetworkService implements INetworkService {
   static const Duration _defaultQualityTestTimeout = Duration(seconds: 10);
   static const String _defaultSpeedTestUrl =
       'https://httpbin.org/bytes/1024'; // 1KB test
-  static const int _qualityTestSampleSize = 1024; // 1KB for speed test
+  // static const int _qualityTestSampleSize = 1024; // 1KB for speed test
 
   @override
   Stream<ConnectivityResult> get connectivityStream =>
@@ -132,7 +132,7 @@ class EnhancedNetworkService implements INetworkService {
         timestamp: DateTime.now(),
       );
 
-      _lastNetworkState = networkState;
+      // _lastNetworkState = networkState;
       return networkState;
     } on Exception catch (e) {
       throw NetworkConnectivityException(
@@ -196,7 +196,7 @@ class EnhancedNetworkService implements INetworkService {
   Future<void> resetUsageStats() async {
     _bytesSent = 0;
     _bytesReceived = 0;
-    _usageStatsStartTime = DateTime.now();
+    // _usageStatsStartTime = DateTime.now();
     _lastEstimatedBandwidth = null;
   }
 
@@ -317,8 +317,8 @@ class EnhancedNetworkService implements INetworkService {
       final stopwatch = Stopwatch()..start();
 
       // Use HTTP client to download test data
-      final client = HttpClient();
-      client.connectionTimeout = testTimeout;
+      final client = HttpClient()
+        ..connectionTimeout = testTimeout;
 
       try {
         final request = await client.getUrl(Uri.parse(_defaultSpeedTestUrl));
@@ -365,7 +365,9 @@ class EnhancedNetworkService implements INetworkService {
 
   @override
   Future<void> dispose() async {
-    if (_isDisposed) return;
+    if (_isDisposed) {
+      return;
+    }
 
     _isDisposed = true;
     await stopQualityMonitoring();

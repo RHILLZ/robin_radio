@@ -6,6 +6,7 @@ library;
 
 /// Screen size breakpoints following Material Design guidelines.
 class Breakpoints {
+  Breakpoints._();
   /// Small screens (mobile phones): < 600px width
   static const double small = 600;
 
@@ -54,6 +55,7 @@ enum ScreenSize {
 
 /// Responsive design utilities for screen size detection and layout decisions.
 class ResponsiveUtils {
+  ResponsiveUtils._();
   /// Determines the device type based on screen width and platform.
   static DeviceType getDeviceType(double width) {
     if (width < Breakpoints.small) {
