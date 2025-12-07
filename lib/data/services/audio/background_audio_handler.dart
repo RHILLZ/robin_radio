@@ -406,8 +406,7 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
         artist: mediaItem.artist ?? '',
         albumName: mediaItem.album,
         songUrl: mediaItem.extras?['songUrl'] as String? ?? '',
-        duration:
-            Duration(seconds: mediaItem.extras?['duration'] as int? ?? 0),
+        duration: Duration(seconds: mediaItem.extras?['duration'] as int? ?? 0),
       );
 
   /// Broadcast the current playback state
