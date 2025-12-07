@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-// import 'package:flutter_cache_manager/flutter_cache_manager.dart'; // TODO: Remove when file cache manager is implemented
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../exceptions/cache_service_exception.dart';
@@ -38,7 +37,6 @@ class EnhancedCacheService implements ICacheService {
   static const int _memoryMaxItems = 1000;
 
   // Cache managers
-  // late final CacheManager _fileCacheManager; // TODO(dev): Implement file cache manager usage
   late final SharedPreferences _prefs;
 
   // Memory cache
@@ -70,20 +68,8 @@ class EnhancedCacheService implements ICacheService {
     }
 
     try {
-      // Initialize SharedPreferences
+      // Initialize SharedPreferences for persistent storage
       _prefs = await SharedPreferences.getInstance();
-
-      // Initialize file cache manager
-      // TODO(dev): Implement file cache manager integration
-      // _fileCacheManager = CacheManager(
-      //   Config(
-      //     'robin_radio_cache',
-      //     stalePeriod: _defaultExpiry,
-      //     maxNrOfCacheObjects: 1000,
-      //     repo: JsonCacheInfoRepository(databaseName: 'robin_radio_cache'),
-      //     fileService: HttpFileService(),
-      //   ),
-      // );
 
       // Start periodic cleanup
       _startPeriodicCleanup();
