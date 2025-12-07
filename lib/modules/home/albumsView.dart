@@ -119,23 +119,24 @@ class _AlbumsViewState extends State<AlbumsView> {
             filteredAlbums.value = controller.albums;
           }
 
-          // Show error state if there's an error
-          if (controller.hasError) {
-            return _buildErrorView(context, controller);
+          // Priority 1: If we have albums, show them (even during errors/loading)
+          // This ensures cached content is always displayed
+          if (controller.albums.isNotEmpty) {
+            return _buildAlbumsGrid(context, controller);
           }
 
-          // Show loading state if initial loading
+          // Priority 2: Show loading state only if no albums and still loading
           if (controller.isLoading) {
             return _buildLoadingView(context, controller);
           }
 
-          // Show empty state if no albums
-          if (controller.albums.isEmpty) {
-            return _buildEmptyView(context);
+          // Priority 3: Show error state only if no albums and there's an error
+          if (controller.hasError) {
+            return _buildErrorView(context, controller);
           }
 
-          // Show albums grid
-          return _buildAlbumsGrid(context, controller);
+          // Priority 4: Show empty state if no albums and not loading/error
+          return _buildEmptyView(context);
         },
       );
 
