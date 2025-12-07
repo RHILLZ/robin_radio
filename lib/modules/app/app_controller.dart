@@ -14,6 +14,26 @@ import '../../data/services/image_preload_service.dart';
 import '../../data/services/performance_service.dart';
 import '../home/trackListView.dart';
 
+/// Represents the current state of music loading in the application.
+///
+/// Used to provide granular control over loading UI and behavior.
+enum MusicLoadingState {
+  /// Initial state before any loading has started
+  initializing,
+
+  /// Loading music data from local cache (fast)
+  loadingCache,
+
+  /// Loading music data from network/Firebase (slower)
+  loadingNetwork,
+
+  /// Music loaded successfully, content is ready
+  success,
+
+  /// Loading failed but may have cached content to show
+  error,
+}
+
 /// Main application controller that manages global app state and music data.
 ///
 /// Handles music library initialization, loading progress tracking, error handling,
@@ -37,6 +57,13 @@ class AppController extends GetxController {
 
   /// Observable error message describing any loading failures.
   final RxString _errorMessage = ''.obs;
+
+  /// Observable for the current music loading state (more granular than isLoading).
+  final Rx<MusicLoadingState> _loadingState =
+      MusicLoadingState.initializing.obs;
+
+  /// Whether a background refresh is in progress (doesn't show loading UI).
+  final RxBool _isBackgroundRefreshing = false.obs;
 
   // Loading progress tracking
   /// Observable progress value (0.0 to 1.0) for music loading operations.
@@ -69,6 +96,22 @@ class AppController extends GetxController {
 
   /// Human-readable status message for the current loading operation.
   String get loadingStatusMessage => _loadingStatusMessage.value;
+
+  /// Current loading state for more granular UI control.
+  MusicLoadingState get loadingState => _loadingState.value;
+
+  /// Whether a background refresh is currently in progress.
+  bool get isBackgroundRefreshing => _isBackgroundRefreshing.value;
+
+  /// Whether the loading screen should be shown.
+  ///
+  /// Returns true only when we're in the initial loading phase AND have no content.
+  /// If we have cached content, we don't show the loading screen even during refresh.
+  bool get shouldShowLoadingScreen =>
+      _isLoading.value &&
+      _albums.isEmpty &&
+      (_loadingState.value == MusicLoadingState.initializing ||
+          _loadingState.value == MusicLoadingState.loadingCache);
 
   /// Whether there are more albums available to load.
   ///
@@ -120,19 +163,26 @@ class AppController extends GetxController {
     );
   }
 
-  /// Initializes the music library by loading albums from the repository.
+  /// Initializes the music library using a cache-first strategy.
   ///
-  /// Handles loading progress updates, error states, and performance monitoring.
-  /// Includes timeout handling and cache fallback for improved reliability.
-  /// Ensures minimum loading duration for proper UI feedback.
+  /// This method prioritizes showing cached content immediately, then refreshes
+  /// from the network in the background. This ensures users see content quickly
+  /// and never see an error screen if cached data is available.
+  ///
+  /// Loading flow:
+  /// 1. Try to load from cache immediately (fast)
+  /// 2. If cache has content, show it and refresh in background
+  /// 3. If cache is empty, load from network with loading UI
+  /// 4. Only show error if both cache AND network fail with no content
   Future<void> _initializeMusic() async {
     final startTime = DateTime.now();
-    const minLoadingDuration = Duration(seconds: 2); // Minimum loading time
+    const minLoadingDuration = Duration(seconds: 1); // Reduced minimum time
 
     try {
       _isLoading.value = true;
       _hasError.value = false;
       _loadingProgress.value = 0.0;
+      _loadingState.value = MusicLoadingState.initializing;
       _loadingStatusMessage.value = 'Initializing...';
 
       // Start music loading performance trace
@@ -142,20 +192,52 @@ class AppController extends GetxController {
       // Step 1: Initialize services (10% progress)
       _loadingStatusMessage.value = 'Initializing services...';
       _loadingProgress.value = 0.1;
-      await Future<void>.delayed(
-        const Duration(milliseconds: 500),
-      ); // Allow UI to update
 
-      // Step 2: Check cache (20% progress)
-      _loadingStatusMessage.value = 'Checking cached music...';
+      // Step 2: Try loading from cache first (fast path)
+      _loadingState.value = MusicLoadingState.loadingCache;
+      _loadingStatusMessage.value = 'Loading cached music...';
       _loadingProgress.value = 0.2;
 
-      // Add timeout wrapper for the main operation
+      final cachedAlbums = await _musicRepository.getAlbumsFromCacheOnly();
+
+      if (cachedAlbums.isNotEmpty) {
+        // Cache hit! Show content immediately
+        _albums.value = cachedAlbums;
+        _loadingProgress.value = 1.0;
+        _loadingStatusMessage.value = 'Music loaded from cache';
+        _loadingState.value = MusicLoadingState.success;
+        _isLoading.value = false;
+
+        debugPrint(
+          'AppController: Loaded ${cachedAlbums.length} albums from cache',
+        );
+
+        // Stop performance trace for cache load
+        final totalSongs =
+            _albums.fold<int>(0, (sum, album) => sum + album.tracks.length);
+        await performanceService.stopMusicLoadTrace(
+          albumCount: _albums.length,
+          songCount: totalSongs,
+          fromCache: true,
+        );
+
+        // Trigger background refresh to get fresh data
+        unawaited(_refreshInBackground());
+        return;
+      }
+
+      // Step 3: No cache, load from network (slow path with loading UI)
+      debugPrint('AppController: No cache found, loading from network');
+      _loadingState.value = MusicLoadingState.loadingNetwork;
+      _loadingStatusMessage.value = 'Connecting to music library...';
+      _loadingProgress.value = 0.3;
+
       final albums = await _loadAlbumsWithProgress();
       _albums.value = albums;
 
       _loadingProgress.value = 1.0;
       _loadingStatusMessage.value = 'Music loaded successfully';
+      _loadingState.value = MusicLoadingState.success;
 
       // Stop music loading trace with metrics
       final totalSongs =
@@ -163,7 +245,7 @@ class AppController extends GetxController {
       await performanceService.stopMusicLoadTrace(
         albumCount: _albums.length,
         songCount: totalSongs,
-        fromCache: false, // Repository handles caching internally
+        fromCache: false,
       );
 
       // Ensure minimum loading duration for proper UI feedback
@@ -173,20 +255,44 @@ class AppController extends GetxController {
       }
     } on RepositoryException catch (e) {
       _handleError(e.message);
-      // Still enforce minimum duration even on error
-      final elapsed = DateTime.now().difference(startTime);
-      if (elapsed < minLoadingDuration) {
-        await Future<void>.delayed(minLoadingDuration - elapsed);
-      }
+      _loadingState.value = MusicLoadingState.error;
     } on Exception catch (e) {
       _handleError('Failed to initialize music: $e');
-      // Still enforce minimum duration even on error
-      final elapsed = DateTime.now().difference(startTime);
-      if (elapsed < minLoadingDuration) {
-        await Future<void>.delayed(minLoadingDuration - elapsed);
-      }
+      _loadingState.value = MusicLoadingState.error;
     } finally {
       _isLoading.value = false;
+    }
+  }
+
+  /// Refreshes music data in the background without showing loading UI.
+  ///
+  /// This is called after successfully loading from cache to fetch fresh data.
+  /// Failures are silently ignored since we already have cached content.
+  Future<void> _refreshInBackground() async {
+    if (_isBackgroundRefreshing.value) {
+      debugPrint('AppController: Background refresh already in progress');
+      return;
+    }
+
+    try {
+      _isBackgroundRefreshing.value = true;
+      debugPrint('AppController: Starting background refresh');
+
+      // Clear cache and fetch fresh data
+      await _musicRepository.refreshCache();
+      final freshAlbums = await _musicRepository.getAlbums();
+
+      if (freshAlbums.isNotEmpty) {
+        _albums.value = freshAlbums;
+        debugPrint(
+          'AppController: Background refresh complete - ${freshAlbums.length} albums',
+        );
+      }
+    } on Exception catch (e) {
+      // Silently ignore background refresh failures - we already have cached content
+      debugPrint('AppController: Background refresh failed (ignored): $e');
+    } finally {
+      _isBackgroundRefreshing.value = false;
     }
   }
 

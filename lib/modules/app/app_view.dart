@@ -74,48 +74,58 @@ class AppView extends GetView<AppController> {
             // Performance Dashboard (debug mode only)
             const PerformanceDashboard(),
 
-            // Loading overlay
-            if (controller.isLoading)
-              ColoredBox(
-                color: Colors.black54,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(
-                        color: Theme.of(context).colorScheme.primary,
-                        value: controller.loadingProgress,
-                      ),
-                      SizedBox(height: 2.h),
-                      Text(
-                        'Loading Music... ${(controller.loadingProgress * 100).toInt()}%',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+            // Loading overlay - only shown when loading AND no cached content
+            if (controller.shouldShowLoadingScreen)
+              AnimatedOpacity(
+                opacity: controller.shouldShowLoadingScreen ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: ColoredBox(
+                  color: Colors.black87,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(
+                          color: Theme.of(context).colorScheme.primary,
+                          value: controller.loadingProgress > 0
+                              ? controller.loadingProgress
+                              : null,
                         ),
-                      ),
-                      SizedBox(height: 1.h),
-                      Text(
-                        controller.loadingStatusMessage,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 2.h),
-                      SizedBox(
-                        width: 80.w,
-                        child: LinearProgressIndicator(
-                          value: controller.loadingProgress,
-                          backgroundColor: Colors.white24,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Theme.of(context).colorScheme.primary,
+                        SizedBox(height: 2.h),
+                        Text(
+                          controller.loadingProgress > 0
+                              ? 'Loading Music... ${(controller.loadingProgress * 100).toInt()}%'
+                              : 'Loading Music...',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                    ],
+                        SizedBox(height: 1.h),
+                        Text(
+                          controller.loadingStatusMessage,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 2.h),
+                        SizedBox(
+                          width: 80.w,
+                          child: LinearProgressIndicator(
+                            value: controller.loadingProgress > 0
+                                ? controller.loadingProgress
+                                : null,
+                            backgroundColor: Colors.white24,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
