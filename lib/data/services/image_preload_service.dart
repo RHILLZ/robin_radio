@@ -7,8 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
-import '../exceptions/network_service_exception.dart';
-
 /// Configuration for image preloading behavior
 class ImagePreloadConfig {
   /// Creates a new image preload configuration.
@@ -337,10 +335,7 @@ class ImagePreloadService {
 
       final file = File(filePath);
       if (!file.existsSync()) {
-        throw NetworkServiceInitializationException(
-          'File not found: $filePath',
-          'IMAGE_FILE_NOT_FOUND',
-        );
+        throw Exception('File not found: $filePath');
       }
 
       final originalSize = file.lengthSync();
@@ -376,10 +371,7 @@ class ImagePreloadService {
       return compressedData;
     } on Exception catch (e) {
       debugPrint('❌ Compression failed: $e');
-      throw NetworkServiceInitializationException(
-        'Image compression failed: $e',
-        'IMAGE_COMPRESSION_FAILED',
-      );
+      throw Exception('Image compression failed: $e');
     }
   }
 
@@ -418,10 +410,7 @@ class ImagePreloadService {
       return compressedData;
     } on Exception catch (e) {
       debugPrint('❌ Data compression failed: $e');
-      throw NetworkServiceInitializationException(
-        'Image data compression failed: $e',
-        'IMAGE_DATA_COMPRESSION_FAILED',
-      );
+      throw Exception('Image data compression failed: $e');
     }
   }
 
