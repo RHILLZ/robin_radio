@@ -80,16 +80,22 @@ class PreloadAnalytics {
 
   /// The URL of the image being preloaded.
   final String url;
+
   /// Timestamp when preloading started.
   final DateTime startTime;
+
   /// Timestamp when preloading completed (null if still in progress).
   DateTime? endTime;
+
   /// Whether the preload operation was successful.
   bool success;
+
   /// Size of the downloaded file in bytes.
   int? fileSize;
+
   /// Error message if the operation failed.
   String? error;
+
   /// Type of network connection used (wifi, mobile, etc.).
   String? connectionType;
 
@@ -113,12 +119,16 @@ class PreloadAnalytics {
 enum CompressionPreset {
   /// Small, low quality images for thumbnails
   thumbnail,
+
   /// Medium size, good quality images for previews
   preview,
+
   /// Balanced quality and size for standard use
   standard,
+
   /// High quality with larger file sizes
   highQuality,
+
   /// Maximum quality with no compression
   lossless,
 }
@@ -144,12 +154,16 @@ class CompressionConfig {
 
   /// Compression quality (0-100)
   final int quality;
+
   /// Maximum width in pixels
   final int? maxWidth;
+
   /// Maximum height in pixels
   final int? maxHeight;
+
   /// Output format for compressed image
   final CompressFormat format;
+
   /// Whether to keep EXIF data
   final bool keepExif;
 
@@ -235,7 +249,7 @@ class ImagePreloadService {
   ImagePreloadService._privateConstructor();
   static final ImagePreloadService _instance =
       ImagePreloadService._privateConstructor();
-  
+
   /// Get the singleton instance of the ImagePreloadService
   static ImagePreloadService get instance => _instance;
 

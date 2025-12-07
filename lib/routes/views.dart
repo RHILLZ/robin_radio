@@ -1,9 +1,9 @@
 import 'package:get/get.dart';
 import '../modules/app/app_view.dart';
 import '../modules/app/main_bindings.dart';
-import '../modules/home/albumsView.dart';
-import '../modules/home/mainView.dart';
-import '../modules/home/radioView.dart';
+import '../modules/home/albums_view.dart';
+import '../modules/home/main_view.dart';
+import '../modules/home/radio_view.dart';
 
 part 'routes.dart';
 

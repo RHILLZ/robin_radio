@@ -7,8 +7,8 @@ import 'package:sizer/sizer.dart';
 import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
 import '../player/player_controller.dart';
-import 'albumsView.dart';
-import 'radioView.dart';
+import 'albums_view.dart';
+import 'radio_view.dart';
 
 /// Primary navigation view for Robin Radio.
 ///

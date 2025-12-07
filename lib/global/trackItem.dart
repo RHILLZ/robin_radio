@@ -6,13 +6,13 @@ import '../data/models/song.dart';
 import '../modules/player/player_controller.dart';
 
 /// A list item widget for displaying track information in a music player.
-/// 
+///
 /// This widget renders a song as a list tile with optional track number,
 /// artist information, duration, and tap handling. It integrates with
 /// the PlayerController to handle track selection and playback.
 class TrackListItem extends GetWidget<PlayerController> {
   /// Creates a track list item widget.
-  /// 
+  ///
   /// The [song] parameter is required and contains the track information.
   /// The [index] parameter is optional and displays the track number.
   /// The [onTap] parameter is optional and overrides the default tap behavior.
@@ -25,11 +25,11 @@ class TrackListItem extends GetWidget<PlayerController> {
 
   /// The song data to display in this list item.
   final Song song;
-  
+
   /// The optional track index to display as a number in the leading avatar.
   /// When null, displays the song title initials instead.
   final int? index;
-  
+
   /// Optional callback for when the list item is tapped.
   /// When null, uses the default behavior of playing the track.
   final VoidCallback? onTap;

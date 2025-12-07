@@ -123,12 +123,12 @@ class MyApp extends StatelessWidget {
           builder: (context, child) =>
               // Prevent text scaling
               MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  platformBrightness: Theme.of(context).brightness,
-                  textScaler: TextScaler.noScaling,
-                ),
-                child: child ?? const SizedBox(),
-              ),
+            data: MediaQuery.of(context).copyWith(
+              platformBrightness: Theme.of(context).brightness,
+              textScaler: TextScaler.noScaling,
+            ),
+            child: child ?? const SizedBox(),
+          ),
           home: const AppView(),
         ),
       );

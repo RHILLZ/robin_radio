@@ -182,7 +182,8 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
                         child: ElevatedButton(
                           onPressed: _trackCustomEvent,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green.withValues(alpha: 0.7),
+                            backgroundColor:
+                                Colors.green.withValues(alpha: 0.7),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
@@ -202,7 +203,8 @@ class _PerformanceDashboardState extends State<PerformanceDashboard> {
                     decoration: BoxDecoration(
                       color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                      border:
+                          Border.all(color: Colors.blue.withValues(alpha: 0.3)),
                     ),
                     child: const Text(
                       'Performance data appears in Firebase Console within 12 hours.',

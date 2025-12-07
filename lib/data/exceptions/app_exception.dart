@@ -67,15 +67,18 @@ abstract class AppException implements Exception {
 /// - [medium]: Standard errors that may impact user experience
 /// - [high]: Serious errors that significantly impact functionality
 /// - [critical]: Severe errors that may crash the app or lose data
-enum ExceptionSeverity { 
+enum ExceptionSeverity {
   /// Minor issues that don't affect core functionality
-  low, 
+  low,
+
   /// Standard errors that may impact user experience
-  medium, 
+  medium,
+
   /// Serious errors that significantly impact functionality
-  high, 
+  high,
+
   /// Severe errors that may crash the app or lose data
-  critical 
+  critical
 }
 
 /// Authentication-related exception for user access and security issues.

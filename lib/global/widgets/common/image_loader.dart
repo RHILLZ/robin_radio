@@ -7,10 +7,13 @@ import 'package:flutter/material.dart';
 enum ProgressiveLoadingMode {
   /// No progressive loading
   none,
+
   /// Blur up effect from low to high quality
   blurUp,
+
   /// Two phase loading with thumbnail first
   twoPhase,
+
   /// Simple fade transition
   fade,
 }
@@ -19,12 +22,16 @@ enum ProgressiveLoadingMode {
 class ImageSizeConstraints {
   /// Private constructor to prevent instantiation
   ImageSizeConstraints._();
+
   /// Thumbnail size constraint
   static const int thumbnailSize = 150;
+
   /// List item size constraint
   static const int listItemSize = 300;
+
   /// Detail view size constraint
   static const int detailViewSize = 800;
+
   /// Full screen size constraint
   static const int fullScreenSize = 1200;
 
@@ -69,12 +76,16 @@ class ImageSizeConstraints {
 enum ImageContext {
   /// Thumbnail context
   thumbnail,
+
   /// List item context
   listItem,
+
   /// Detail view context
   detailView,
+
   /// Full screen context
   fullScreen,
+
   /// Custom context
   custom;
 
@@ -120,34 +131,49 @@ class ImageLoader extends StatefulWidget {
 
   /// The URL of the image to load
   final String imageUrl;
+
   /// The width of the image
   final double? width;
+
   /// The height of the image
   final double? height;
+
   /// How the image should be fitted
   final BoxFit fit;
+
   /// The border radius to apply
   final double borderRadius;
+
   /// Cache key for the image
   final String? cacheKey;
+
   /// Cache width for the image
   final int? cacheWidth;
+
   /// Cache height for the image
   final int? cacheHeight;
+
   /// Placeholder widget while loading
   final Widget Function(BuildContext, String)? placeholder;
+
   /// Error widget if loading fails
   final Widget Function(BuildContext, String, Object)? errorWidget;
+
   /// Image context for sizing optimization
   final ImageContext context;
+
   /// Whether to enable server-side resizing
   final bool enableServerSideResizing;
+
   /// Maximum cache size
   final int? maxCacheSize;
+
   /// Progressive loading mode
   final ProgressiveLoadingMode progressiveMode;
+
   /// Hero tag for hero animations
   final String? heroTag;
+
   /// Duration for transition animations
   final Duration transitionDuration;
 

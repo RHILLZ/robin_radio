@@ -3,13 +3,13 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 
 /// Default Firebase configuration options for your app.
-/// 
+///
 /// This class provides Firebase configuration for the Robin Radio app.
 /// The configuration should be generated using 'flutterfire configure'
 /// to ensure proper platform-specific settings.
 class DefaultFirebaseOptions {
   /// Returns the Firebase configuration for the current platform.
-  /// 
+  ///
   /// This getter provides the appropriate FirebaseOptions based on the
   /// platform the app is running on. The configuration includes API keys,
   /// app IDs, and other necessary Firebase settings.

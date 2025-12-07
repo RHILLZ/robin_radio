@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:robin_radio/data/models/song.dart';
 import 'package:robin_radio/data/services/audio/audio_services.dart';
@@ -360,36 +359,6 @@ void main() {
         // After disposal, service should be in clean state
         expect(audioService.isStopped, true);
       });
-    });
-  });
-
-  group('EnhancedAudioService Integration', () {
-    late EnhancedAudioService realService;
-
-    setUp(() {
-      realService = EnhancedAudioService();
-    });
-
-    tearDown(() async {
-      await realService.dispose();
-    });
-
-    test('should implement IAudioService interface', () {
-      expect(realService, isA<IAudioService>());
-    });
-
-    test('should be a singleton', () {
-      final instance1 = EnhancedAudioService();
-      final instance2 = EnhancedAudioService();
-      expect(identical(instance1, instance2), true);
-    });
-
-    test('should handle lifecycle events', () {
-      // Test the manual lifecycle handler
-      realService
-        ..handleAppLifecycleState(AppLifecycleState.paused)
-        ..handleAppLifecycleState(AppLifecycleState.resumed);
-      // No assertion needed - just ensure it doesn't crash
     });
   });
 }

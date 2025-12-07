@@ -24,13 +24,13 @@ class AlbumCover extends StatelessWidget {
 
   /// The URL of the album artwork to display.
   final String? imageUrl;
-  
+
   /// The name of the album for accessibility purposes.
   final String? albumName;
-  
+
   /// The desired width and height of the cover in logical pixels.
   final double? size;
-  
+
   /// The radius for rounded corners of the album cover.
   final double borderRadius;
 

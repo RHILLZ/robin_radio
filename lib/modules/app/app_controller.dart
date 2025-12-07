@@ -12,7 +12,7 @@ import '../../data/models/song.dart';
 import '../../data/repositories/music_repository.dart';
 import '../../data/services/image_preload_service.dart';
 import '../../data/services/performance_service.dart';
-import '../home/trackListView.dart';
+import '../home/track_list_view.dart';
 
 /// Represents the current state of music loading in the application.
 ///
@@ -142,7 +142,7 @@ class AppController extends GetxController {
     super.onInit();
     // Initialize repository from ServiceLocator
     _musicRepository = ServiceLocator.get<MusicRepository>();
-    
+
     // Set up progress listener
     _progressSubscription = _musicRepository.albumLoadingProgress.listen(
       (progress) {
@@ -154,7 +154,7 @@ class AppController extends GetxController {
         }
       },
     );
-    
+
     await _initializeServices();
     await _initializeMusic();
   }
@@ -603,7 +603,9 @@ class AppController extends GetxController {
             final tracks = await _musicRepository.getTracks(albumId);
 
             if (tracks.isNotEmpty) {
-              debugPrint('Successfully loaded ${tracks.length} tracks for album');
+              debugPrint(
+                'Successfully loaded ${tracks.length} tracks for album',
+            );
 
               // Create updated album with the loaded tracks
               albumToShow = albumToShow.copyWith(tracks: tracks);
@@ -637,7 +639,8 @@ class AppController extends GetxController {
 
     // Track album loading performance
     final performanceService = PerformanceService();
-    await performanceService.startAlbumLoadTrace(albumToShow.id ?? 'unknown_album');
+    await performanceService
+        .startAlbumLoadTrace(albumToShow.id ?? 'unknown_album');
 
     await Get.bottomSheet<void>(
       Scaffold(body: TrackListView(album: albumToShow)),
@@ -725,12 +728,12 @@ class AppController extends GetxController {
 
       // Get all items in the album folder with timeout
       final result = await albumRef.listAll().timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException(
-          'Firebase fetch timeout',
-          const Duration(seconds: 10),
-        ),
-      );
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException(
+              'Firebase fetch timeout',
+              const Duration(seconds: 10),
+            ),
+          );
 
       String? albumArt;
       final tracks = <Song>[];
@@ -741,12 +744,12 @@ class AppController extends GetxController {
         if (_isImageFile(itemName)) {
           try {
             albumArt = await item.getDownloadURL().timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => throw TimeoutException(
-                'Album art URL timeout',
-                const Duration(seconds: 5),
-              ),
-            );
+                  const Duration(seconds: 5),
+                  onTimeout: () => throw TimeoutException(
+                    'Album art URL timeout',
+                    const Duration(seconds: 5),
+                  ),
+                );
             break;
           } on Exception catch (e) {
             debugPrint('Failed to get album art URL: $e');
@@ -765,12 +768,12 @@ class AppController extends GetxController {
 
         try {
           final songUrl = await songRef.getDownloadURL().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => throw TimeoutException(
-              'Song URL timeout for $songName',
-              const Duration(seconds: 5),
-            ),
-          );
+                const Duration(seconds: 5),
+                onTimeout: () => throw TimeoutException(
+                  'Song URL timeout for $songName',
+                  const Duration(seconds: 5),
+                ),
+              );
 
           tracks.add(
             Song(
@@ -819,7 +822,7 @@ class AppController extends GetxController {
     // Cancel progress subscription
     _progressSubscription?.cancel();
     _progressSubscription = null;
-    
+
     // Clear all reactive variables to prevent memory leaks
     _albums.clear();
     _isLoading.value = false;

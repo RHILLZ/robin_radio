@@ -6,7 +6,7 @@ import 'package:sizer/sizer.dart';
 import '../../data/services/image_preload_service.dart';
 import '../../global/mini_player.dart';
 import '../../global/widgets/performance_dashboard.dart';
-import '../home/mainView.dart';
+import '../home/main_view.dart';
 import '../player/player_controller.dart';
 import '../player/player_view.dart';
 import 'app_controller.dart';

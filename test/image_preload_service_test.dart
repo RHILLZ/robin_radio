@@ -115,9 +115,7 @@ void main() {
           success: true,
           fileSize: 1024,
           connectionType: 'wifi',
-        )
-          ..endTime =
-              DateTime.now().add(const Duration(milliseconds: 500));
+        )..endTime = DateTime.now().add(const Duration(milliseconds: 500));
 
         expect(analytics.url, equals('test_url'));
         expect(analytics.success, isTrue);
@@ -137,8 +135,7 @@ void main() {
           success: true,
           fileSize: 1024,
           connectionType: 'wifi',
-        )
-          ..endTime = endTime;
+        )..endTime = endTime;
 
         final json = analytics.toJson();
         expect(json['url'], equals('test_url'));

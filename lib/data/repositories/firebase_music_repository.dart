@@ -305,7 +305,8 @@ class FirebaseMusicRepository implements MusicRepository {
           _progressController.add(
             AlbumLoadingProgress(
               message: 'Loading albums from $artistName...',
-              progress: 0.2 + (artistIndex / artistResult.prefixes.length) * 0.6,
+              progress:
+                  0.2 + (artistIndex / artistResult.prefixes.length) * 0.6,
               albumsProcessed: albumsProcessed,
               totalAlbums: totalAlbumsEstimate,
             ),
@@ -520,8 +521,8 @@ class FirebaseMusicRepository implements MusicRepository {
   /// Generates a continuous stream of random songs for radio mode.
   Future<void> _generateRadioStream() async {
     try {
-      while (_radioStreamController != null &&
-          !_radioStreamController!.isClosed) {
+      while (
+          _radioStreamController != null && !_radioStreamController!.isClosed) {
         final albums = await getAlbums();
         if (albums.isEmpty) {
           await Future<void>.delayed(const Duration(seconds: 5));

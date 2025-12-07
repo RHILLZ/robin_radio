@@ -21,16 +21,16 @@ class ErrorStateWidget extends StatelessWidget {
 
   /// The title text to display for the error.
   final String title;
-  
+
   /// The detailed error message to display.
   final String message;
-  
+
   /// Callback function to execute when the retry button is pressed.
   final VoidCallback onRetry;
-  
+
   /// The icon to display. Defaults to [Icons.error_outline].
   final IconData icon;
-  
+
   /// The color of the icon. Defaults to [Colors.red].
   final Color iconColor;
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// A consistent app title widget displaying 'Robin Radio'.
-/// 
+///
 /// This widget provides a standardized title with consistent styling
 /// for use in app bars and other UI components throughout the app.
 class AppTitle extends StatelessWidget {

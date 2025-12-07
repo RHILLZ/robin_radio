@@ -15,16 +15,16 @@ class IconTextRow extends StatelessWidget {
 
   /// The icon to display
   final IconData icon;
-  
+
   /// The text to display next to the icon
   final String text;
-  
+
   /// The spacing between the icon and text
   final double spacing;
-  
+
   /// The main axis size of the row
   final MainAxisSize mainAxisSize;
-  
+
   /// The cross axis alignment of the row
   final CrossAxisAlignment crossAxisAlignment;
 
