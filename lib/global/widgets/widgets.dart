@@ -12,6 +12,7 @@ export 'common/icon_text_row.dart';
 export 'common/image_loader.dart';
 export 'common/loading_state_widget.dart';
 export 'common/search_bar_widget.dart';
+export 'common/standard_tabs.dart';
 
 // Player widgets
 export 'player/player_control_button.dart';
