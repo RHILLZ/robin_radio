@@ -10,7 +10,6 @@ import '../../core/di/service_locator.dart';
 import '../../data/models/album.dart';
 import '../../data/models/song.dart';
 import '../../data/services/audio/audio_service_interface.dart';
-import '../../data/services/audio_player_service.dart' show AudioPlayerService;
 import '../../data/services/performance_service.dart';
 import '../app/app_controller.dart';
 
@@ -59,7 +58,7 @@ enum PlayerShuffleMode {
 /// - **State management**: Real-time updates for UI components
 /// - **Performance monitoring**: Integration with Firebase Performance
 ///
-/// The controller integrates with [AudioPlayerService] for actual audio playback
+/// The controller integrates with [IAudioService] for actual audio playback
 /// and maintains reactive state using GetX observables for real-time UI updates.
 ///
 /// Usage:
@@ -535,26 +534,14 @@ class PlayerController extends GetxController {
     _coverURL.value = null;
     _playerState.value = PlayerState.stopped;
 
-    // THIRD: Defer audio cleanup to prevent UI blocking
-    // Use a separate microtask to avoid blocking the main thread
-    // unawaited(Future.microtask(() async {
-    //   try {
-    //     // Stop audio service with aggressive timeout
-    //     await _audioService.stop().timeout(
-    //       const Duration(milliseconds: 1500), // Reduced timeout
-    //       onTimeout: () {
-    //         if (kDebugMode) {
-    //           print('Audio service stop timed out, forcing cleanup');
-    //         }
-    //       },
-    //     );
-    //   } on Exception catch (e) {
-    //     if (kDebugMode) {
-    //       print('Error stopping audio service: $e');
-    //     }
-    //     // Continue cleanup even if audio service fails
-    //   }
-    // }),);
+    // THIRD: Stop the audio service
+    try {
+      await _audioService.stop();
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        print('Error stopping audio service: $e');
+      }
+    }
   }
 
   /// Toggles between play and pause states.
