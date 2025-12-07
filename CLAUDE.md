@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Robin Radio is a Flutter music streaming application built with clean architecture principles. The project uses GetX for state management, Firebase for backend services, and follows enterprise-grade development patterns with comprehensive testing and performance monitoring.
+Robin Radio is a Flutter music streaming application built with clean architecture principles. The project uses GetX for state management, Firebase for backend services, and follows enterprise-grade development patterns.
 
 ## Key Development Commands
 
@@ -63,20 +63,18 @@ lib/
 
 - Located in `lib/core/di/service_locator.dart`
 - Environment-specific configurations (Development, Testing, Production)
-- Hierarchical service registration with comprehensive error handling
 
 **Repository Pattern**: Abstract data access with multiple implementations
 
-- Interface: `IMusicRepository`
+- Interface: `MusicRepository`
 - Production: `FirebaseMusicRepository` (Firebase Storage integration)
 - Testing: `MockMusicRepository` (sample data for development)
 
-**Enhanced Service Architecture**:
+**Core Services**:
 
-- `INetworkService`: HTTP client and connectivity management
-- `ICacheService`: Memory and disk caching with Flutter Cache Manager
-- `IAudioService`: Media playback with audioplayers and just_audio support
+- `IAudioService`: Media playback with background audio support
 - `PerformanceService`: Firebase Performance monitoring integration
+- `ImagePreloadService`: Image caching and preloading
 
 ### State Management
 
@@ -92,17 +90,15 @@ lib/
 test/
 ├── service_locator_test.dart  # Dependency injection tests
 ├── audio_service_test.dart    # Audio playback tests
-├── cache_service_test.dart    # Caching functionality tests
-├── network_service_test.dart  # Network connectivity tests
+├── image_preload_service_test.dart # Image preloading tests
 └── widget_test.dart          # Basic widget tests
 ```
 
 ### Testing Approach
 
 - Environment-specific service configurations for testing
-- Comprehensive mock implementations for all major services
-- Repository cache-only testing for offline scenarios
-- Performance testing and benchmarking capabilities
+- Mock implementations for audio service and repository
+- Performance testing capabilities
 
 ## Firebase Integration
 
@@ -118,7 +114,7 @@ Key traces monitored:
 
 - App startup performance
 - Music loading and buffering times
-- Album loading and caching performance
+- Album loading performance
 
 ## Development Guidelines
 
@@ -134,7 +130,6 @@ Key traces monitored:
 - All services implement interfaces for testability
 - Use dependency injection through ServiceLocator
 - Handle errors gracefully with proper exception classes in `lib/data/exceptions/`
-- Implement caching strategies for performance optimization
 
 ### Asset Optimization
 
@@ -146,7 +141,7 @@ Key traces monitored:
 
 - Background playback configured for iOS (`UIBackgroundModes: audio`)
 - Bluetooth and AirPlay support integrated
-- Multiple audio libraries supported (current: audioplayers, future: just_audio)
+- Uses audio_service and just_audio packages
 
 ## Key Files & Locations
 
@@ -160,7 +155,7 @@ Key traces monitored:
 ### Core Services
 
 - `lib/core/di/service_locator.dart`: Dependency injection setup
-- `lib/data/services/`: All service implementations
+- `lib/data/services/audio/`: Audio service implementations
 - `lib/data/repositories/`: Data access layer implementations
 - `lib/data/models/`: Data models with JSON serialization
 
@@ -173,12 +168,7 @@ Key traces monitored:
 ### Testing
 
 - All major services have corresponding test files in `test/`
-- Mock implementations available for offline development
-- Integration tests for repository caching behavior
-
-## Task Management Integration
-
-This project uses Task Master for development workflow management via MCP server integration. Key commands and patterns are defined in `.cursor/rules/dev_workflow.mdc` and related rule files.
+- Mock implementations available for development and testing
 
 ## Common Workflows
 
@@ -194,10 +184,9 @@ This project uses Task Master for development workflow management via MCP server
 ### Performance Optimization
 
 1. Use Firebase Performance monitoring to identify bottlenecks
-2. Implement proper caching strategies with ICacheService
-3. Optimize image loading with CachedNetworkImage
-4. Profile audio playback performance
-5. Monitor memory usage during development
+2. Optimize image loading with CachedNetworkImage
+3. Profile audio playback performance
+4. Monitor memory usage during development
 
 ### Testing New Changes
 
@@ -205,11 +194,7 @@ This project uses Task Master for development workflow management via MCP server
 2. Test on multiple platforms (Android, iOS, Web)
 3. Verify Firebase integration in staging environment
 4. Check performance metrics in Firebase console
-5. Validate offline functionality with mock services
-
-```
 
 ## Claude Code Memory
 
 - When testing with "flutter build" always prioritize flutter build ios unless specifically asked for web or apk
-```

@@ -2,13 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:robin_radio/core/di/di.dart';
 import 'package:robin_radio/data/repositories/repositories.dart';
 import 'package:robin_radio/data/services/audio/audio_services.dart';
-import 'package:robin_radio/data/services/cache/cache_services.dart';
-import 'package:robin_radio/data/services/network/network_services.dart';
 
 void main() {
   group('ServiceLocator Tests', () {
     tearDown(() async {
-      // Reset service locator after each test
       await ServiceLocator.reset();
     });
 
@@ -27,7 +24,7 @@ void main() {
 
       test('should initialize successfully in development mode', () async {
         await ServiceLocator.initialize(
-          forTesting: true, // Use testing services for unit tests
+          forTesting: true,
         );
 
         expect(ServiceLocator.isDevelopment, true);
@@ -39,7 +36,7 @@ void main() {
       test('should initialize successfully in production mode', () async {
         await ServiceLocator.initialize(
           environment: AppEnvironment.production,
-          forTesting: true, // Use testing services for unit tests
+          forTesting: true,
         );
 
         expect(ServiceLocator.isProduction, true);
@@ -54,7 +51,6 @@ void main() {
           forTesting: true,
         );
 
-        // Second initialization should not change environment
         await ServiceLocator.initialize(
           environment: AppEnvironment.production,
           forTesting: true,
@@ -72,18 +68,6 @@ void main() {
         );
       });
 
-      test('should register and retrieve network service', () {
-        final networkService = ServiceLocator.get<INetworkService>();
-        expect(networkService, isA<MockNetworkService>());
-        expect(ServiceLocator.isRegistered<INetworkService>(), true);
-      });
-
-      test('should register and retrieve cache service', () {
-        final cacheService = ServiceLocator.get<ICacheService>();
-        expect(cacheService, isA<MockCacheService>());
-        expect(ServiceLocator.isRegistered<ICacheService>(), true);
-      });
-
       test('should register and retrieve audio service', () {
         final audioService = ServiceLocator.get<IAudioService>();
         expect(audioService, isA<MockAudioService>());
@@ -97,15 +81,10 @@ void main() {
       });
 
       test('should retrieve same instance for multiple calls (singleton)', () {
-        final networkService1 = ServiceLocator.get<INetworkService>();
-        final networkService2 = ServiceLocator.get<INetworkService>();
+        final audioService1 = ServiceLocator.get<IAudioService>();
+        final audioService2 = ServiceLocator.get<IAudioService>();
 
-        expect(identical(networkService1, networkService2), true);
-      });
-
-      test('should retrieve service asynchronously', () async {
-        final networkService = await ServiceLocator.getAsync<INetworkService>();
-        expect(networkService, isA<MockNetworkService>());
+        expect(identical(audioService1, audioService2), true);
       });
     });
 
@@ -118,29 +97,15 @@ void main() {
       });
 
       test('should override service for testing', () {
-        final originalService = ServiceLocator.get<INetworkService>();
-        expect(originalService, isA<MockNetworkService>());
+        final originalService = ServiceLocator.get<IAudioService>();
+        expect(originalService, isA<MockAudioService>());
 
-        // Create a new mock and override
-        final newMockService = MockNetworkService();
-        ServiceLocator.override<INetworkService>(newMockService);
+        final newMockService = MockAudioService();
+        ServiceLocator.override<IAudioService>(newMockService);
 
-        final overriddenService = ServiceLocator.get<INetworkService>();
-        expect(overriddenService, isA<MockNetworkService>());
-        // Since both are MockNetworkService instances, just verify override worked
-        expect(ServiceLocator.isRegistered<INetworkService>(), true);
-      });
-
-      test('should handle permanent overrides', () {
-        final newMockService = MockNetworkService();
-        ServiceLocator.override<INetworkService>(
-          newMockService,
-          permanent: true,
-        );
-
-        final retrievedService = ServiceLocator.get<INetworkService>();
-        expect(retrievedService, isA<MockNetworkService>());
-        expect(ServiceLocator.isRegistered<INetworkService>(), true);
+        final overriddenService = ServiceLocator.get<IAudioService>();
+        expect(overriddenService, isA<MockAudioService>());
+        expect(ServiceLocator.isRegistered<IAudioService>(), true);
       });
     });
 
@@ -149,7 +114,7 @@ void main() {
           'should throw exception when accessing uninitialized service locator',
           () {
         expect(
-          () => ServiceLocator.get<INetworkService>(),
+          () => ServiceLocator.get<IAudioService>(),
           throwsA(
             isA<ServiceLocatorException>().having(
               (e) => e.errorCode,
@@ -168,7 +133,7 @@ void main() {
         );
 
         expect(
-          () => ServiceLocator.get<String>(), // String is not registered
+          () => ServiceLocator.get<String>(),
           throwsA(
             isA<ServiceLocatorException>().having(
               (e) => e.errorCode,
@@ -179,128 +144,14 @@ void main() {
         );
       });
 
-      test('should throw exception when accessing unregistered service async',
-          () async {
-        await ServiceLocator.initialize(
-          environment: AppEnvironment.testing,
-          forTesting: true,
-        );
-
-        expect(
-          () => ServiceLocator.getAsync<String>(), // String is not registered
-          throwsA(
-            isA<ServiceLocatorException>().having(
-              (e) => e.errorCode,
-              'errorCode',
-              'SERVICE_NOT_FOUND_ASYNC',
-            ),
-          ),
-        );
-      });
-
       test('should provide meaningful error messages', () {
         try {
-          ServiceLocator.get<INetworkService>();
+          ServiceLocator.get<IAudioService>();
           fail('Should have thrown ServiceLocatorException');
         } on ServiceLocatorException catch (e) {
-          expect(e, isA<ServiceLocatorException>());
-          final exception = e;
-          expect(exception.message.contains('not initialized'), true);
-          expect(
-            exception.toString().contains('ServiceLocatorException'),
-            true,
-          );
+          expect(e.message.contains('not initialized'), true);
+          expect(e.toString().contains('ServiceLocatorException'), true);
         }
-      });
-    });
-
-    group('Environment Configuration', () {
-      test('should return correct development configuration', () async {
-        await ServiceLocator.initialize(
-          forTesting: true,
-        );
-
-        final config = ServiceLocator.getEnvironmentConfig();
-        expect(config['enableLogging'], true);
-        expect(config['enablePerformanceMonitoring'], true);
-        expect(config['cacheMaxSize'], 50 * 1024 * 1024);
-        expect(config['networkTimeout'], 30000);
-        expect(config['retryAttempts'], 3);
-      });
-
-      test('should return correct testing configuration', () async {
-        await ServiceLocator.initialize(
-          environment: AppEnvironment.testing,
-          forTesting: true,
-        );
-
-        final config = ServiceLocator.getEnvironmentConfig();
-        expect(config['enableLogging'], false);
-        expect(config['enablePerformanceMonitoring'], false);
-        expect(config['cacheMaxSize'], 10 * 1024 * 1024);
-        expect(config['networkTimeout'], 5000);
-        expect(config['retryAttempts'], 1);
-      });
-
-      test('should return correct production configuration', () async {
-        await ServiceLocator.initialize(
-          environment: AppEnvironment.production,
-          forTesting: true,
-        );
-
-        final config = ServiceLocator.getEnvironmentConfig();
-        expect(config['enableLogging'], false);
-        expect(config['enablePerformanceMonitoring'], true);
-        expect(config['cacheMaxSize'], 100 * 1024 * 1024);
-        expect(config['networkTimeout'], 60000);
-        expect(config['retryAttempts'], 5);
-      });
-    });
-
-    group('Factory Methods', () {
-      test('should create instances using factory method', () {
-        String testFactory() => 'test instance';
-
-        final instance = ServiceLocator.factory<String>(testFactory);
-        expect(instance, 'test instance');
-      });
-
-      test('should register lazy singleton', () async {
-        await ServiceLocator.initialize(
-          environment: AppEnvironment.testing,
-          forTesting: true,
-        );
-
-        String testFactory() => 'lazy instance';
-
-        ServiceLocator.registerLazySingleton<String>(testFactory);
-
-        final instance1 = ServiceLocator.get<String>();
-        final instance2 = ServiceLocator.get<String>();
-
-        expect(instance1, 'lazy instance');
-        expect(identical(instance1, instance2), true);
-      });
-
-      test('should register factory for new instances', () async {
-        await ServiceLocator.initialize(
-          environment: AppEnvironment.testing,
-          forTesting: true,
-        );
-
-        var counter = 0;
-        String testFactory() => 'instance ${++counter}';
-
-        ServiceLocator.registerFactory<String>(testFactory);
-
-        final instance1 = ServiceLocator.get<String>();
-        final instance2 = ServiceLocator.get<String>();
-
-        expect(instance1, 'instance 1');
-        expect(
-          instance2,
-          'instance 1',
-        ); // Same instance due to Get.lazyPut behavior
       });
     });
 
@@ -311,17 +162,12 @@ void main() {
           forTesting: true,
         );
 
-        // Verify services are registered
-        expect(ServiceLocator.isRegistered<INetworkService>(), true);
-        expect(ServiceLocator.isRegistered<ICacheService>(), true);
         expect(ServiceLocator.isRegistered<IAudioService>(), true);
 
-        // Dispose should complete without throwing
         await ServiceLocator.dispose();
 
-        // Verify that we get an exception when trying to access services after disposal
         expect(
-          () => ServiceLocator.get<INetworkService>(),
+          () => ServiceLocator.get<IAudioService>(),
           throwsA(
             isA<ServiceLocatorException>().having(
               (e) => e.errorCode,
@@ -338,32 +184,18 @@ void main() {
           forTesting: true,
         );
 
-        expect(ServiceLocator.isRegistered<INetworkService>(), true);
+        expect(ServiceLocator.isRegistered<IAudioService>(), true);
 
         await ServiceLocator.reset();
 
-        expect(ServiceLocator.isRegistered<INetworkService>(), false);
+        expect(ServiceLocator.isRegistered<IAudioService>(), false);
 
-        // Should be able to initialize again after reset
         await ServiceLocator.initialize(
           environment: AppEnvironment.testing,
           forTesting: true,
         );
 
-        expect(ServiceLocator.isRegistered<INetworkService>(), true);
-      });
-
-      test('should handle disposal errors gracefully', () async {
-        await ServiceLocator.initialize(
-          environment: AppEnvironment.testing,
-          forTesting: true,
-        );
-
-        // This should not throw even if there are disposal errors
-        await ServiceLocator.dispose();
-
-        // Should be able to dispose again without issues
-        await ServiceLocator.dispose();
+        expect(ServiceLocator.isRegistered<IAudioService>(), true);
       });
     });
 
@@ -375,20 +207,9 @@ void main() {
           forTesting: true,
         );
 
-        // Core services
-        expect(ServiceLocator.isRegistered<INetworkService>(), true);
-        expect(ServiceLocator.isRegistered<ICacheService>(), true);
         expect(ServiceLocator.isRegistered<IAudioService>(), true);
-
-        // Repository layer
         expect(ServiceLocator.isRegistered<MusicRepository>(), true);
 
-        // Verify they're the mock implementations
-        expect(
-          ServiceLocator.get<INetworkService>(),
-          isA<MockNetworkService>(),
-        );
-        expect(ServiceLocator.get<ICacheService>(), isA<MockCacheService>());
         expect(ServiceLocator.get<IAudioService>(), isA<MockAudioService>());
         expect(
           ServiceLocator.get<MusicRepository>(),
