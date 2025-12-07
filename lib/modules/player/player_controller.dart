@@ -74,6 +74,12 @@ class PlayerController extends GetxController {
   /// Reference to the main app controller for global state management.
   final appController = Get.find<AppController>();
 
+  // Stream subscriptions for proper lifecycle management
+  StreamSubscription<Duration>? _durationSubscription;
+  StreamSubscription<Duration>? _positionSubscription;
+  StreamSubscription<PlaybackState>? _playbackStateSubscription;
+  StreamSubscription<Song?>? _trackSubscription;
+
   // Observable state variables
   final _playerState = PlayerState.stopped.obs;
   final _playerDuration = Duration.zero.obs;
@@ -235,12 +241,15 @@ class PlayerController extends GetxController {
     await _audioService.initialize();
 
     // Set up player event listeners using the IAudioService streams
-    _audioService.duration.listen(_onDurationChanged);
-    _audioService.position.listen(_onPositionChanged);
-    _audioService.playbackState.listen(_onPlaybackStateChanged);
-    _audioService.currentTrack.listen((song) {
-      if (song == null) {
-        _onPlayerComplete(null);
+    // Store subscriptions for proper lifecycle management
+    _durationSubscription = _audioService.duration.listen(_onDurationChanged);
+    _positionSubscription = _audioService.position.listen(_onPositionChanged);
+    _playbackStateSubscription =
+        _audioService.playbackState.listen(_onPlaybackStateChanged);
+    _trackSubscription = _audioService.currentTrack.listen((song) {
+      // Update current track for UI display in album mode
+      if (song != null && playerMode == PlayerMode.album) {
+        _currentSong.value = song;
       }
     });
 
@@ -268,6 +277,11 @@ class PlayerController extends GetxController {
     final playerState = _mapPlaybackStateToPlayerState(state);
     _playerState.value = playerState;
     _isBuffering.value = state == PlaybackState.buffering;
+
+    // Handle track completion for high-level player logic
+    if (state == PlaybackState.completed) {
+      _onPlayerComplete(null);
+    }
   }
 
   PlayerState _mapPlaybackStateToPlayerState(PlaybackState state) {
@@ -676,6 +690,11 @@ class PlayerController extends GetxController {
 
   @override
   void onClose() {
+    // Cancel all stream subscriptions to prevent memory leaks
+    _durationSubscription?.cancel();
+    _positionSubscription?.cancel();
+    _playbackStateSubscription?.cancel();
+    _trackSubscription?.cancel();
     // Don't dispose the audio service since it's managed by ServiceLocator
     super.onClose();
   }

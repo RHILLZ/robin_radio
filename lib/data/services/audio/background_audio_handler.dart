@@ -53,6 +53,11 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
     // Listen to player state changes
     _playerStateSubscription = _player.playerStateStream.listen((state) {
       _broadcastState();
+
+      // Auto-advance when track completes in normal/shuffle modes
+      if (state.processingState == ProcessingState.completed) {
+        _handleTrackCompletion();
+      }
     });
 
     // Listen to position changes
@@ -285,6 +290,28 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
         await _player.setLoopMode(LoopMode.off);
         break;
     }
+  }
+
+  /// Handle track completion and auto-advance to next track
+  Future<void> _handleTrackCompletion() async {
+    // Don't auto-advance if repeat one is enabled (handled by LoopMode.one)
+    if (_playbackMode == PlaybackMode.repeatOne) {
+      return;
+    }
+
+    // For normal and shuffle modes, advance to next track
+    final nextIndex = _getNextIndex();
+    if (nextIndex != -1) {
+      try {
+        await _player.seek(Duration.zero, index: nextIndex);
+        await _player.play();
+      } on Exception catch (e) {
+        if (kDebugMode) {
+          print('Error auto-advancing to next track: $e');
+        }
+      }
+    }
+    // If nextIndex == -1, we're at the end with no repeat - let it stay completed
   }
 
   /// Play a specific song

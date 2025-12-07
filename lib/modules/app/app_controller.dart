@@ -75,8 +75,12 @@ class AppController extends GetxController {
   /// Subscription to album loading progress updates
   StreamSubscription<AlbumLoadingProgress>? _progressSubscription;
 
-  /// Set of album IDs that are currently being reloaded
+  /// Set of album IDs that are currently being reloaded (for UI indicators)
   final RxSet<String> _albumsBeingReloaded = <String>{}.obs;
+
+  /// Completers for tracking in-progress album refreshes (for race condition handling)
+  /// Allows concurrent callers to wait for the same refresh operation instead of skipping
+  final Map<String, Completer<void>> _refreshCompleters = {};
 
   // Getters
   /// Current list of albums loaded from the music repository.
@@ -428,13 +432,15 @@ class AppController extends GetxController {
   ///
   /// Shows loading indicator for the specific album while refreshing.
   /// Updates only the specified album without affecting other cached data.
+  /// If a refresh is already in progress for this album, waits for it to complete
+  /// instead of starting a duplicate operation (prevents race conditions).
   ///
   /// [albumId] The unique identifier of the album to refresh.
   Future<void> refreshSingleAlbum(String albumId) async {
-    // Check if this album is already being reloaded
-    if (_albumsBeingReloaded.contains(albumId)) {
-      debugPrint('Album $albumId is already being refreshed, skipping...');
-      return;
+    // If a refresh is already in progress for this album, wait for it
+    if (_refreshCompleters.containsKey(albumId)) {
+      debugPrint('Album $albumId refresh already in progress, waiting...');
+      return _refreshCompleters[albumId]!.future;
     }
 
     // Find the current album
@@ -447,6 +453,10 @@ class AppController extends GetxController {
     debugPrint(
       'Targeted refresh for album: ${currentAlbum.albumName} ($albumId)',
     );
+
+    // Create a completer to track this refresh operation
+    final completer = Completer<void>();
+    _refreshCompleters[albumId] = completer;
 
     // Add to loading set to show loading indicator
     _albumsBeingReloaded.add(albumId);
@@ -492,6 +502,9 @@ class AppController extends GetxController {
       } else {
         throw Exception('Failed to fetch album data from Firebase');
       }
+
+      // Complete successfully
+      completer.complete();
     } on Exception catch (e) {
       debugPrint('Unexpected error refreshing album $albumId: $e');
 
@@ -504,8 +517,12 @@ class AppController extends GetxController {
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
       );
+
+      // Complete with error so waiting callers know it failed
+      completer.completeError(e);
     } finally {
-      // Remove from loading set
+      // Remove from tracking maps
+      _refreshCompleters.remove(albumId);
       _albumsBeingReloaded.remove(albumId);
     }
   }
@@ -545,60 +562,76 @@ class AppController extends GetxController {
     if (albumToShow.tracks.isEmpty && albumToShow.id != null) {
       final albumId = albumToShow.id!;
 
-      // Check if this album is already being reloaded
-      if (_albumsBeingReloaded.contains(albumId)) {
+      // If a reload is already in progress for this album, wait for it
+      if (_refreshCompleters.containsKey(albumId)) {
         debugPrint(
-          'Album "${albumToShow.albumName}" is already being reloaded, skipping...',
+          'Album "${albumToShow.albumName}" reload already in progress, waiting...',
         );
-        return;
-      }
-
-      debugPrint(
-        'Album "${albumToShow.albumName}" has no tracks, attempting targeted reload...',
-      );
-
-      // Add to loading set to show loading indicator
-      _albumsBeingReloaded.add(albumId);
-
-      try {
-        // First, try to find the album in our current albums list
-        final foundAlbum = getAlbumById(albumId);
-        if (foundAlbum != null && foundAlbum.tracks.isNotEmpty) {
-          debugPrint(
-            'Found album with ${foundAlbum.tracks.length} tracks in current list',
-          );
-          albumToShow = foundAlbum;
-        } else {
-          // Use targeted loading - get tracks for just this album
-          debugPrint('Loading tracks for album ID: $albumId');
-          final tracks = await _musicRepository.getTracks(albumId);
-
-          if (tracks.isNotEmpty) {
-            debugPrint('Successfully loaded ${tracks.length} tracks for album');
-
-            // Create updated album with the loaded tracks
-            albumToShow = albumToShow.copyWith(tracks: tracks);
-
-            // Update just this album in our albums list
-            final albumIndex = _albums.indexWhere((a) => a.id == albumId);
-            if (albumIndex >= 0) {
-              final updatedAlbums = List<Album>.from(_albums);
-              updatedAlbums[albumIndex] = albumToShow;
-              _albums.value = updatedAlbums;
-              debugPrint('Updated album in albums list');
-            }
-          } else {
-            debugPrint(
-              'Warning: No tracks found for album after targeted reload',
-            );
+        try {
+          await _refreshCompleters[albumId]!.future;
+          // After waiting, get the updated album
+          final updatedAlbum = getAlbumById(albumId);
+          if (updatedAlbum != null && updatedAlbum.tracks.isNotEmpty) {
+            albumToShow = updatedAlbum;
           }
+        } on Exception {
+          // If the in-progress reload failed, continue with what we have
         }
-      } on Exception catch (e) {
-        debugPrint('Failed to reload album tracks: $e');
-        // Continue with original album even if it has no tracks
-      } finally {
-        // Remove from loading set
-        _albumsBeingReloaded.remove(albumId);
+      } else {
+        debugPrint(
+          'Album "${albumToShow.albumName}" has no tracks, attempting targeted reload...',
+        );
+
+        // Create a completer to track this reload operation
+        final completer = Completer<void>();
+        _refreshCompleters[albumId] = completer;
+
+        // Add to loading set to show loading indicator
+        _albumsBeingReloaded.add(albumId);
+
+        try {
+          // First, try to find the album in our current albums list
+          final foundAlbum = getAlbumById(albumId);
+          if (foundAlbum != null && foundAlbum.tracks.isNotEmpty) {
+            debugPrint(
+              'Found album with ${foundAlbum.tracks.length} tracks in current list',
+            );
+            albumToShow = foundAlbum;
+          } else {
+            // Use targeted loading - get tracks for just this album
+            debugPrint('Loading tracks for album ID: $albumId');
+            final tracks = await _musicRepository.getTracks(albumId);
+
+            if (tracks.isNotEmpty) {
+              debugPrint('Successfully loaded ${tracks.length} tracks for album');
+
+              // Create updated album with the loaded tracks
+              albumToShow = albumToShow.copyWith(tracks: tracks);
+
+              // Update just this album in our albums list
+              final albumIndex = _albums.indexWhere((a) => a.id == albumId);
+              if (albumIndex >= 0) {
+                final updatedAlbums = List<Album>.from(_albums);
+                updatedAlbums[albumIndex] = albumToShow;
+                _albums.value = updatedAlbums;
+                debugPrint('Updated album in albums list');
+              }
+            } else {
+              debugPrint(
+                'Warning: No tracks found for album after targeted reload',
+              );
+            }
+          }
+          completer.complete();
+        } on Exception catch (e) {
+          debugPrint('Failed to reload album tracks: $e');
+          completer.completeError(e);
+          // Continue with original album even if it has no tracks
+        } finally {
+          // Remove from tracking maps
+          _refreshCompleters.remove(albumId);
+          _albumsBeingReloaded.remove(albumId);
+        }
       }
     }
 
