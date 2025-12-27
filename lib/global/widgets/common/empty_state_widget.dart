@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sizer/sizer.dart';
 
 /// A widget for displaying empty state screens with customizable content.
 ///
@@ -54,19 +53,19 @@ class EmptyStateWidget extends StatelessWidget {
                 size: 80,
                 color: iconColor,
               ),
-              SizedBox(height: 2.h),
+              const SizedBox(height: 16),
               Text(
                 title,
                 style:
                     const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 1.h),
+              const SizedBox(height: 8),
               Text(
                 message,
                 style: const TextStyle(fontSize: 16),
               ),
               if (showRefreshButton && onRefresh != null) ...[
-                SizedBox(height: 3.h),
+                const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: onRefresh,
                   icon: const Icon(Icons.refresh),

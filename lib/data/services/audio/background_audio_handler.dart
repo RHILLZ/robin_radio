@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart' as audio_service;
@@ -35,6 +36,12 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
 
   /// Random number generator for shuffle mode
   final Random _random = Random();
+
+  /// Set of URLs that have been prefetched to avoid redundant requests
+  final Set<String> _prefetchedUrls = <String>{};
+
+  /// Number of upcoming tracks to prefetch
+  static const int _prefetchCount = 2;
 
   /// Stream subscription for player state changes
   StreamSubscription<PlayerState>? _playerStateSubscription;
@@ -382,6 +389,9 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
         },
       ),
     );
+
+    // Prefetch upcoming tracks when a new track starts
+    unawaited(_prefetchUpcomingTracks());
   }
 
   /// Convert Song to MediaItem
@@ -525,6 +535,164 @@ class BackgroundAudioHandler extends audio_service.BaseAudioHandler
     } while (randomIndex == _currentIndex);
 
     return randomIndex;
+  }
+
+  /// Prefetch upcoming tracks to reduce playback latency
+  ///
+  /// This method preloads audio data for the next [_prefetchCount] tracks
+  /// in the queue based on the current playback mode. Prefetched URLs are
+  /// tracked to avoid redundant network requests.
+  Future<void> _prefetchUpcomingTracks() async {
+    final queueList = queue.value;
+    if (queueList.isEmpty) {
+      return;
+    }
+
+    final indicesToPrefetch = _getUpcomingIndices();
+    if (indicesToPrefetch.isEmpty) {
+      return;
+    }
+
+    for (final index in indicesToPrefetch) {
+      if (index < 0 || index >= queueList.length) {
+        continue;
+      }
+
+      final mediaItem = queueList[index];
+      final songUrl = mediaItem.extras?['songUrl'] as String?;
+
+      if (songUrl == null || songUrl.isEmpty) {
+        continue;
+      }
+
+      // Skip if already prefetched
+      if (_prefetchedUrls.contains(songUrl)) {
+        continue;
+      }
+
+      // Mark as prefetched to avoid redundant requests
+      _prefetchedUrls.add(songUrl);
+
+      // Prefetch in background without blocking
+      unawaited(_prefetchAudioUrl(songUrl));
+    }
+  }
+
+  /// Get indices of upcoming tracks based on playback mode
+  List<int> _getUpcomingIndices() {
+    final queueLength = queue.value.length;
+    if (queueLength <= 1) {
+      return const [];
+    }
+
+    final indices = <int>[];
+
+    switch (_playbackMode) {
+      case PlaybackMode.normal:
+        // Get next _prefetchCount tracks sequentially
+        for (var i = 1; i <= _prefetchCount; i++) {
+          final nextIndex = _currentIndex + i;
+          if (nextIndex < queueLength) {
+            indices.add(nextIndex);
+          }
+        }
+        break;
+
+      case PlaybackMode.repeatAll:
+        // Get next _prefetchCount tracks, wrapping around
+        for (var i = 1; i <= _prefetchCount; i++) {
+          final nextIndex = (_currentIndex + i) % queueLength;
+          if (nextIndex != _currentIndex) {
+            indices.add(nextIndex);
+          }
+        }
+        break;
+
+      case PlaybackMode.repeatOne:
+        // No need to prefetch - same track repeats
+        break;
+
+      case PlaybackMode.shuffle:
+        // For shuffle, we can't predict - but we can prefetch a few random ones
+        // to improve perceived performance
+        final available = List<int>.generate(queueLength, (i) => i)
+          ..remove(_currentIndex);
+        available.shuffle(_random);
+        indices.addAll(available.take(_prefetchCount));
+        break;
+    }
+
+    return indices;
+  }
+
+  /// Prefetch audio data from a URL using HTTP range request
+  ///
+  /// Uses a small range request to initiate caching on CDN/server side
+  /// and to verify the URL is accessible before playback.
+  Future<void> _prefetchAudioUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      final httpClient = HttpClient();
+
+      final request = await httpClient.getUrl(uri);
+      // Request only first 64KB to trigger CDN caching without downloading entire file
+      request.headers.set(HttpHeaders.rangeHeader, 'bytes=0-65535');
+
+      final response = await request.close().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Prefetch timeout for $url');
+            },
+          );
+
+      // Drain response to complete the request
+      await response.drain<void>();
+      httpClient.close();
+
+      if (kDebugMode) {
+        print('AudioHandler: Prefetched audio: ${uri.pathSegments.last}');
+      }
+    } on Exception catch (e) {
+      // Prefetch failures are non-critical - just log and continue
+      if (kDebugMode) {
+        print('AudioHandler: Prefetch failed: $e');
+      }
+      // Remove from prefetched set so it can be retried
+      _prefetchedUrls.remove(url);
+    }
+  }
+
+  /// Clear prefetched URLs cache (call when queue changes significantly)
+  void clearPrefetchCache() {
+    _prefetchedUrls.clear();
+  }
+
+  /// Clear the queue and reset playback state
+  ///
+  /// This properly clears the just_audio playlist, resets the index,
+  /// and clears the queue to prepare for new content.
+  Future<void> clearQueue() async {
+    try {
+      _currentIndex = 0;
+      queue.add([]);
+
+      // Stop playback and clear the audio source
+      await _player.stop();
+      await _player.setAudioSource(
+        ConcatenatingAudioSource(children: []),
+        initialIndex: 0,
+      );
+
+      clearPrefetchCache();
+
+      if (kDebugMode) {
+        print('AudioHandler: Queue cleared successfully');
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        print('Error clearing queue: $e');
+      }
+    }
   }
 
   /// Clean up resources when the handler is destroyed

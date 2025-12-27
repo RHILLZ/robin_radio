@@ -14,7 +14,7 @@ class PerformanceDashboard extends StatefulWidget {
 }
 
 class _PerformanceDashboardState extends State<PerformanceDashboard> {
-  final PerformanceService _performanceService = PerformanceService();
+  PerformanceService get _performanceService => Get.find<PerformanceService>();
   bool _isPerformanceEnabled = false;
   bool _isVisible = false;
 

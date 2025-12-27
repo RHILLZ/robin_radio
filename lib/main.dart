@@ -12,6 +12,7 @@ import 'package:sizer/sizer.dart';
 import 'core/di/service_locator.dart';
 import 'data/services/performance_service.dart';
 import 'firebase_options.dart';
+import 'global/widgets/common/image_loader.dart';
 import 'modules/app/app_view.dart';
 import 'modules/app/main_bindings.dart';
 import 'routes/views.dart';
@@ -24,6 +25,9 @@ import 'routes/views.dart';
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+
+    // Configure image cache early for optimal memory usage
+    ImageCacheConfig.configure();
 
     // Load and decode theme
     final themeStr = await rootBundle.loadString('assets/appainter_theme.json');
@@ -44,7 +48,7 @@ void main() async {
     await ServiceLocator.initialize();
 
     // Start app startup performance trace
-    final performanceService = PerformanceService();
+    final performanceService = Get.find<PerformanceService>();
     await performanceService.startAppStartTrace();
 
     // Initialize Performance Monitoring

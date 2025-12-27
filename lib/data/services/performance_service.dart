@@ -1,6 +1,13 @@
 import 'package:firebase_performance/firebase_performance.dart';
 import 'package:flutter/foundation.dart';
 
+/// Whether Firebase Performance tracing is supported on the current platform.
+///
+/// On web, Firebase Performance has a known issue where calling newTrace()
+/// multiple times causes "initializePerformance() already called" errors.
+/// We disable tracing on web to avoid these errors until the SDK is fixed.
+bool get _isTracingSupported => !kIsWeb;
+
 /// Comprehensive performance monitoring service for application analytics and optimization.
 ///
 /// Provides Firebase Performance Monitoring integration for tracking key application
@@ -42,13 +49,9 @@ import 'package:flutter/foundation.dart';
 /// is not properly configured, ensuring the service doesn't break application
 /// functionality in development or edge-case deployment scenarios.
 class PerformanceService {
-  /// Factory constructor returning the singleton instance.
+  /// Creates a new instance of [PerformanceService].
   ///
-  /// Ensures consistent performance tracking across the application
-  /// while maintaining efficient resource usage.
-  factory PerformanceService() => _instance;
-  PerformanceService._internal();
-  static final PerformanceService _instance = PerformanceService._internal();
+  /// Lifecycle is managed by ServiceLocator via GetX dependency injection.
 
   final FirebasePerformance _performance = FirebasePerformance.instance;
 
@@ -57,6 +60,10 @@ class PerformanceService {
   Trace? _musicLoadTrace;
   Trace? _albumLoadTrace;
   Trace? _playerInitTrace;
+  Trace? _imageLoadTrace;
+  Trace? _audioBufferTrace;
+  Trace? _searchTrace;
+  Trace? _navigationTrace;
 
   /// Initialize performance monitoring and enable data collection.
   ///
@@ -128,6 +135,13 @@ class PerformanceService {
   /// }
   /// ```
   Future<void> startAppStartTrace() async {
+    if (!_isTracingSupported) {
+      if (kDebugMode) {
+        print('App start trace skipped (web platform)');
+      }
+      return;
+    }
+
     try {
       _appStartTrace = _performance.newTrace('app_start');
       await _appStartTrace?.start();
@@ -227,6 +241,13 @@ class PerformanceService {
   /// }
   /// ```
   Future<void> startMusicLoadTrace() async {
+    if (!_isTracingSupported) {
+      if (kDebugMode) {
+        print('Music load trace skipped (web platform)');
+      }
+      return;
+    }
+
     try {
       _musicLoadTrace = _performance.newTrace('music_load');
       await _musicLoadTrace?.start();
@@ -349,6 +370,13 @@ class PerformanceService {
   /// }
   /// ```
   Future<void> startAlbumLoadTrace(String albumId) async {
+    if (!_isTracingSupported) {
+      if (kDebugMode) {
+        print('Album load trace skipped (web platform)');
+      }
+      return;
+    }
+
     try {
       _albumLoadTrace = _performance.newTrace('album_load');
       _albumLoadTrace?.putAttribute('album_id', albumId);
@@ -446,6 +474,13 @@ class PerformanceService {
   /// }
   /// ```
   Future<void> startPlayerInitTrace() async {
+    if (!_isTracingSupported) {
+      if (kDebugMode) {
+        print('Player init trace skipped (web platform)');
+      }
+      return;
+    }
+
     try {
       _playerInitTrace = _performance.newTrace('player_init');
       await _playerInitTrace?.start();
@@ -541,7 +576,14 @@ class PerformanceService {
   ///   }
   /// }
   /// ```
-  Future<Trace> createCustomTrace(String name) async {
+  Future<Trace?> createCustomTrace(String name) async {
+    if (!_isTracingSupported) {
+      if (kDebugMode) {
+        print('Custom trace "$name" skipped (web platform)');
+      }
+      return null;
+    }
+
     final trace = _performance.newTrace(name);
     await trace.start();
     return trace;
@@ -593,6 +635,13 @@ class PerformanceService {
     Map<String, String>? attributes,
     Map<String, int>? metrics,
   }) async {
+    if (!_isTracingSupported) {
+      if (kDebugMode) {
+        print('Custom event "$eventName" skipped (web platform)');
+      }
+      return;
+    }
+
     try {
       final trace = _performance.newTrace(eventName);
       await trace.start();
@@ -674,6 +723,492 @@ class PerformanceService {
         print('Error tracking memory usage: $e');
       }
     }
+  }
+
+  // ============================================================
+  // Image Loading Performance Traces
+  // ============================================================
+
+  /// Start tracking image loading performance.
+  ///
+  /// Begins monitoring the process of loading an image from a URL,
+  /// including network fetch time, decoding, and rendering preparation.
+  /// Essential for optimizing album artwork and cover image loading.
+  ///
+  /// [imageUrl] The URL of the image being loaded. Recorded as an
+  ///           attribute to identify specific images or patterns.
+  ///
+  /// The image load trace measures:
+  /// - Network fetch time
+  /// - Image decoding performance
+  /// - Cache hit/miss patterns
+  /// - Image size impact on loading times
+  ///
+  /// Example usage:
+  /// ```dart
+  /// Future<void> loadAlbumCover(String url) async {
+  ///   await PerformanceService().startImageLoadTrace(url);
+  ///   try {
+  ///     await imageLoader.load(url);
+  ///     await PerformanceService().stopImageLoadTrace(
+  ///       imageUrl: url,
+  ///       fromCache: false,
+  ///       imageSize: 1024,
+  ///     );
+  ///   } catch (e) {
+  ///     await PerformanceService().stopImageLoadTrace();
+  ///     rethrow;
+  ///   }
+  /// }
+  /// ```
+  Future<void> startImageLoadTrace(String imageUrl) async {
+    if (!_isTracingSupported) {
+      if (kDebugMode) {
+        print('Image load trace skipped (web platform)');
+      }
+      return;
+    }
+
+    try {
+      _imageLoadTrace = _performance.newTrace('image_load');
+      _imageLoadTrace?.putAttribute('image_url', _truncateUrl(imageUrl));
+      await _imageLoadTrace?.start();
+
+      if (kDebugMode) {
+        print('Image load trace started for: ${_truncateUrl(imageUrl)}');
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        print('Error starting image load trace: $e');
+      }
+    }
+  }
+
+  /// Stop image loading trace and record performance metrics.
+  ///
+  /// Completes the image loading performance measurement and enriches
+  /// the trace with information about the loaded image.
+  ///
+  /// [imageUrl] The URL of the loaded image for verification.
+  /// [fromCache] Whether the image was loaded from cache.
+  /// [imageSize] The size of the loaded image in bytes (optional).
+  /// [width] The width of the loaded image in pixels (optional).
+  /// [height] The height of the loaded image in pixels (optional).
+  Future<void> stopImageLoadTrace({
+    String? imageUrl,
+    bool? fromCache,
+    int? imageSize,
+    int? width,
+    int? height,
+  }) async {
+    try {
+      if (_imageLoadTrace != null) {
+        if (fromCache != null) {
+          _imageLoadTrace!.putAttribute('from_cache', fromCache.toString());
+        }
+        if (imageSize != null) {
+          _imageLoadTrace!.setMetric('image_size_bytes', imageSize);
+        }
+        if (width != null) {
+          _imageLoadTrace!.setMetric('image_width', width);
+        }
+        if (height != null) {
+          _imageLoadTrace!.setMetric('image_height', height);
+        }
+
+        await _imageLoadTrace?.stop();
+        _imageLoadTrace = null;
+
+        if (kDebugMode) {
+          print('Image load trace stopped');
+        }
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        print('Error stopping image load trace: $e');
+      }
+    }
+  }
+
+  /// Convenience method to trace a complete image load operation.
+  ///
+  /// Wraps an async image loading operation with performance tracing,
+  /// automatically handling start/stop and error scenarios.
+  ///
+  /// [imageUrl] The URL of the image to load.
+  /// [loadOperation] The async function that performs the actual loading.
+  ///
+  /// Returns the result of the load operation.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// final image = await PerformanceService().traceImageLoad(
+  ///   imageUrl,
+  ///   () => imageProvider.load(imageUrl),
+  /// );
+  /// ```
+  Future<T> traceImageLoad<T>(
+    String imageUrl,
+    Future<T> Function() loadOperation,
+  ) async {
+    await startImageLoadTrace(imageUrl);
+    try {
+      final result = await loadOperation();
+      await stopImageLoadTrace(imageUrl: imageUrl);
+      return result;
+    } catch (e) {
+      await stopImageLoadTrace(imageUrl: imageUrl);
+      rethrow;
+    }
+  }
+
+  // ============================================================
+  // Audio Buffering Performance Traces
+  // ============================================================
+
+  /// Start tracking audio buffering performance.
+  ///
+  /// Begins monitoring the audio buffering process for a specific track,
+  /// measuring time from buffer start to playback-ready state.
+  ///
+  /// [trackId] The unique identifier of the track being buffered.
+  /// [trackName] Optional human-readable track name for logging.
+  ///
+  /// The audio buffer trace measures:
+  /// - Initial buffering time
+  /// - Network conditions during buffering
+  /// - Track metadata impact on buffering
+  /// - Audio codec/format effects
+  ///
+  /// Example usage:
+  /// ```dart
+  /// Future<void> bufferTrack(Song song) async {
+  ///   await PerformanceService().startAudioBufferTrace(
+  ///     song.id,
+  ///     trackName: song.songName,
+  ///   );
+  ///   try {
+  ///     await audioPlayer.setUrl(song.url);
+  ///     await PerformanceService().stopAudioBufferTrace(
+  ///       bufferDurationMs: bufferTime,
+  ///       trackDurationMs: song.duration,
+  ///     );
+  ///   } catch (e) {
+  ///     await PerformanceService().stopAudioBufferTrace();
+  ///     rethrow;
+  ///   }
+  /// }
+  /// ```
+  Future<void> startAudioBufferTrace(
+    String trackId, {
+    String? trackName,
+  }) async {
+    if (!_isTracingSupported) {
+      if (kDebugMode) {
+        print('Audio buffer trace skipped (web platform)');
+      }
+      return;
+    }
+
+    try {
+      _audioBufferTrace = _performance.newTrace('audio_buffer');
+      _audioBufferTrace?.putAttribute('track_id', trackId);
+      if (trackName != null) {
+        _audioBufferTrace?.putAttribute(
+          'track_name',
+          _truncateString(trackName, 100),
+        );
+      }
+      await _audioBufferTrace?.start();
+
+      if (kDebugMode) {
+        print('Audio buffer trace started for: $trackId');
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        print('Error starting audio buffer trace: $e');
+      }
+    }
+  }
+
+  /// Stop audio buffering trace and record performance metrics.
+  ///
+  /// Completes the audio buffering performance measurement with
+  /// detailed metrics about the buffering operation.
+  ///
+  /// [bufferDurationMs] Time taken to buffer in milliseconds.
+  /// [trackDurationMs] Total track duration in milliseconds.
+  /// [bufferSizeBytes] Size of buffered audio data in bytes.
+  /// [audioFormat] The audio format/codec used (e.g., 'mp3', 'aac').
+  Future<void> stopAudioBufferTrace({
+    int? bufferDurationMs,
+    int? trackDurationMs,
+    int? bufferSizeBytes,
+    String? audioFormat,
+  }) async {
+    try {
+      if (_audioBufferTrace != null) {
+        if (bufferDurationMs != null) {
+          _audioBufferTrace!.setMetric('buffer_duration_ms', bufferDurationMs);
+        }
+        if (trackDurationMs != null) {
+          _audioBufferTrace!.setMetric('track_duration_ms', trackDurationMs);
+        }
+        if (bufferSizeBytes != null) {
+          _audioBufferTrace!.setMetric('buffer_size_bytes', bufferSizeBytes);
+        }
+        if (audioFormat != null) {
+          _audioBufferTrace!.putAttribute('audio_format', audioFormat);
+        }
+
+        await _audioBufferTrace?.stop();
+        _audioBufferTrace = null;
+
+        if (kDebugMode) {
+          print('Audio buffer trace stopped');
+        }
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        print('Error stopping audio buffer trace: $e');
+      }
+    }
+  }
+
+  // ============================================================
+  // Search Operation Performance Traces
+  // ============================================================
+
+  /// Start tracking search operation performance.
+  ///
+  /// Begins monitoring a search operation, measuring the time from
+  /// query submission to results display.
+  ///
+  /// [query] The search query string being executed.
+  /// [searchType] The type of search (e.g., 'albums', 'tracks', 'all').
+  ///
+  /// Example usage:
+  /// ```dart
+  /// Future<List<Album>> searchAlbums(String query) async {
+  ///   await PerformanceService().startSearchTrace(query, searchType: 'albums');
+  ///   try {
+  ///     final results = await repository.search(query);
+  ///     await PerformanceService().stopSearchTrace(
+  ///       resultCount: results.length,
+  ///     );
+  ///     return results;
+  ///   } catch (e) {
+  ///     await PerformanceService().stopSearchTrace();
+  ///     rethrow;
+  ///   }
+  /// }
+  /// ```
+  Future<void> startSearchTrace(String query, {String? searchType}) async {
+    if (!_isTracingSupported) {
+      if (kDebugMode) {
+        print('Search trace skipped (web platform)');
+      }
+      return;
+    }
+
+    try {
+      _searchTrace = _performance.newTrace('search_operation');
+      _searchTrace?.putAttribute('query_length', query.length.toString());
+      if (searchType != null) {
+        _searchTrace?.putAttribute('search_type', searchType);
+      }
+      await _searchTrace?.start();
+
+      if (kDebugMode) {
+        print('Search trace started for query length: ${query.length}');
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        print('Error starting search trace: $e');
+      }
+    }
+  }
+
+  /// Stop search operation trace and record performance metrics.
+  ///
+  /// Completes the search performance measurement with result metrics.
+  ///
+  /// [resultCount] Number of results returned by the search.
+  /// [fromCache] Whether results came from local cache.
+  Future<void> stopSearchTrace({
+    int? resultCount,
+    bool? fromCache,
+  }) async {
+    try {
+      if (_searchTrace != null) {
+        if (resultCount != null) {
+          _searchTrace!.setMetric('result_count', resultCount);
+        }
+        if (fromCache != null) {
+          _searchTrace!.putAttribute('from_cache', fromCache.toString());
+        }
+
+        await _searchTrace?.stop();
+        _searchTrace = null;
+
+        if (kDebugMode) {
+          print('Search trace stopped with $resultCount results');
+        }
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        print('Error stopping search trace: $e');
+      }
+    }
+  }
+
+  // ============================================================
+  // Navigation Transition Performance Traces
+  // ============================================================
+
+  /// Start tracking navigation transition performance.
+  ///
+  /// Begins monitoring a navigation transition, measuring the time
+  /// from navigation initiation to destination screen ready state.
+  ///
+  /// [fromRoute] The source route/screen name.
+  /// [toRoute] The destination route/screen name.
+  /// [transitionType] The type of transition (e.g., 'push', 'replace', 'pop').
+  ///
+  /// Example usage:
+  /// ```dart
+  /// Future<void> navigateToAlbum(Album album) async {
+  ///   await PerformanceService().startNavigationTrace(
+  ///     fromRoute: 'albums_list',
+  ///     toRoute: 'album_detail',
+  ///     transitionType: 'push',
+  ///   );
+  ///   await Get.to(() => AlbumDetailView(album: album));
+  ///   await PerformanceService().stopNavigationTrace();
+  /// }
+  /// ```
+  Future<void> startNavigationTrace({
+    required String fromRoute,
+    required String toRoute,
+    String? transitionType,
+  }) async {
+    if (!_isTracingSupported) {
+      if (kDebugMode) {
+        print('Navigation trace skipped (web platform)');
+      }
+      return;
+    }
+
+    try {
+      _navigationTrace = _performance.newTrace('navigation_transition');
+      _navigationTrace?.putAttribute('from_route', fromRoute);
+      _navigationTrace?.putAttribute('to_route', toRoute);
+      if (transitionType != null) {
+        _navigationTrace?.putAttribute('transition_type', transitionType);
+      }
+      await _navigationTrace?.start();
+
+      if (kDebugMode) {
+        print('Navigation trace started: $fromRoute -> $toRoute');
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        print('Error starting navigation trace: $e');
+      }
+    }
+  }
+
+  /// Stop navigation transition trace and record completion status.
+  ///
+  /// Completes the navigation performance measurement.
+  ///
+  /// [success] Whether the navigation completed successfully.
+  /// [dataLoadTimeMs] Time taken to load destination screen data.
+  Future<void> stopNavigationTrace({
+    bool? success,
+    int? dataLoadTimeMs,
+  }) async {
+    try {
+      if (_navigationTrace != null) {
+        if (success != null) {
+          _navigationTrace!.putAttribute('success', success.toString());
+        }
+        if (dataLoadTimeMs != null) {
+          _navigationTrace!.setMetric('data_load_time_ms', dataLoadTimeMs);
+        }
+
+        await _navigationTrace?.stop();
+        _navigationTrace = null;
+
+        if (kDebugMode) {
+          print('Navigation trace stopped');
+        }
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        print('Error stopping navigation trace: $e');
+      }
+    }
+  }
+
+  // ============================================================
+  // Album List Loading Performance
+  // ============================================================
+
+  /// Trace album list loading operation with automatic lifecycle management.
+  ///
+  /// Convenience method that wraps album loading with performance tracing,
+  /// automatically handling start/stop and error scenarios.
+  ///
+  /// [loadOperation] The async function that loads the albums.
+  /// [source] The data source (e.g., 'firebase', 'cache', 'local').
+  ///
+  /// Returns the loaded albums.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// final albums = await PerformanceService().traceAlbumListLoad(
+  ///   () => repository.getAlbums(),
+  ///   source: 'firebase',
+  /// );
+  /// ```
+  Future<List<T>> traceAlbumListLoad<T>(
+    Future<List<T>> Function() loadOperation, {
+    String? source,
+  }) async {
+    await startMusicLoadTrace();
+    try {
+      final result = await loadOperation();
+      await stopMusicLoadTrace(
+        albumCount: result.length,
+        fromCache: source == 'cache',
+      );
+      return result;
+    } catch (e) {
+      await stopMusicLoadTrace();
+      rethrow;
+    }
+  }
+
+  // ============================================================
+  // Helper Methods
+  // ============================================================
+
+  /// Truncate a URL to a reasonable length for attribute storage.
+  String _truncateUrl(String url) {
+    const maxLength = 100;
+    if (url.length <= maxLength) {
+      return url;
+    }
+    return '${url.substring(0, maxLength)}...';
+  }
+
+  /// Truncate a string to a specified maximum length.
+  String _truncateString(String str, int maxLength) {
+    if (str.length <= maxLength) {
+      return str;
+    }
+    return '${str.substring(0, maxLength)}...';
   }
 
   /// Create an HTTP metric for tracking network request performance.

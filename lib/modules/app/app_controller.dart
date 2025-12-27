@@ -72,6 +72,12 @@ class AppController extends GetxController {
   /// Observable status message describing the current loading operation.
   final RxString _loadingStatusMessage = 'Initializing...'.obs;
 
+  /// Observable elapsed time since loading started
+  final Rx<Duration?> _elapsedTime = Rx<Duration?>(null);
+
+  /// Observable estimated time remaining until completion
+  final Rx<Duration?> _estimatedTimeRemaining = Rx<Duration?>(null);
+
   /// Subscription to album loading progress updates
   StreamSubscription<AlbumLoadingProgress>? _progressSubscription;
 
@@ -101,21 +107,46 @@ class AppController extends GetxController {
   /// Human-readable status message for the current loading operation.
   String get loadingStatusMessage => _loadingStatusMessage.value;
 
+  /// Elapsed time since loading started
+  Duration? get elapsedTime => _elapsedTime.value;
+
+  /// Estimated time remaining until completion
+  Duration? get estimatedTimeRemaining => _estimatedTimeRemaining.value;
+
   /// Current loading state for more granular UI control.
   MusicLoadingState get loadingState => _loadingState.value;
 
   /// Whether a background refresh is currently in progress.
   bool get isBackgroundRefreshing => _isBackgroundRefreshing.value;
 
-  /// Whether the loading screen should be shown.
+  /// Whether the loading screen should be shown (blocking load).
   ///
-  /// Returns true only when we're in the initial loading phase AND have no content.
-  /// If we have cached content, we don't show the loading screen even during refresh.
-  bool get shouldShowLoadingScreen =>
-      _isLoading.value &&
-      _albums.isEmpty &&
-      (_loadingState.value == MusicLoadingState.initializing ||
-          _loadingState.value == MusicLoadingState.loadingCache);
+  /// Returns true when we're loading AND have no valid content to display.
+  /// The loading screen blocks all user interaction until music is fully loaded.
+  /// This ensures users can't navigate to incomplete views during loading.
+  bool get shouldShowLoadingScreen {
+    // PRIMARY CHECK: If progress is less than 100%, ALWAYS show loading screen
+    // This ensures we wait for ALL albums to be loaded, not just some
+    if (_loadingProgress.value < 1.0) {
+      return true;
+    }
+
+    // SECONDARY CHECK: If progress is 100% but albums aren't valid yet, keep showing
+    // This handles the case where loading completes but albums are empty or invalid
+    if (_loadingProgress.value >= 1.0 &&
+        !_areAlbumsValid(_albums) &&
+        _isLoading.value) {
+      return true;
+    }
+
+    // TERTIARY CHECK: If loading is true but no valid albums yet, show loading screen
+    if (_isLoading.value && !_areAlbumsValid(_albums)) {
+      return true;
+    }
+
+    // Otherwise, hide loading screen (progress is 100% and we have valid albums OR loading is false)
+    return false;
+  }
 
   /// Whether there are more albums available to load.
   ///
@@ -137,6 +168,31 @@ class AppController extends GetxController {
     return _albumsBeingReloaded.contains(albumId);
   }
 
+  /// Validates that an album has complete data (at least one track with valid URL).
+  ///
+  /// An album is considered complete if it has at least one track with a non-empty songUrl.
+  bool _isAlbumComplete(Album album) {
+    if (album.tracks.isEmpty) {
+      return false;
+    }
+    return album.tracks.any((track) => track.songUrl.isNotEmpty);
+  }
+
+  /// Validates that the albums list has at least one complete album.
+  ///
+  /// Used to determine if cached content is valid for display.
+  bool _areAlbumsValid(List<Album> albums) {
+    if (albums.isEmpty) {
+      return false;
+    }
+    return albums.any(_isAlbumComplete);
+  }
+
+  /// Whether content is ready for user interaction.
+  ///
+  /// Returns true only when we have valid albums AND are not in a loading state.
+  bool get isContentReady => _areAlbumsValid(_albums) && !_isLoading.value;
+
   @override
   Future<void> onInit() async {
     super.onInit();
@@ -149,8 +205,30 @@ class AppController extends GetxController {
         _loadingStatusMessage.value = progress.message;
         // Only update progress if it's greater than current progress
         // This prevents backward progress during different loading phases
-        if (progress.progress > _loadingProgress.value) {
+        // Exception: allow progress to reset to 0 if we're starting fresh
+        if (progress.progress > _loadingProgress.value ||
+            (_loadingProgress.value >= 1.0 && progress.progress < 0.1)) {
           _loadingProgress.value = progress.progress;
+        }
+        // Update time tracking
+        _elapsedTime.value = progress.elapsedTime;
+        _estimatedTimeRemaining.value = progress.estimatedTimeRemaining;
+
+        // When progress reaches 100%, ensure we have valid albums before allowing
+        // loading screen to disappear (handled by shouldShowLoadingScreen)
+        // Note: shouldShowLoadingScreen will keep screen visible until progress = 100%
+      },
+      onError: (Object error) {
+        debugPrint('AppController: Progress stream error: $error');
+        // Don't update progress on error, but log it
+      },
+      onDone: () {
+        debugPrint('AppController: Progress stream closed');
+        // Stream closed - if progress isn't 100%, something went wrong
+        if (_loadingProgress.value < 1.0) {
+          debugPrint(
+            'AppController: Progress stream closed before reaching 100% (${_loadingProgress.value})',
+          );
         }
       },
     );
@@ -190,27 +268,37 @@ class AppController extends GetxController {
       _loadingStatusMessage.value = 'Initializing...';
 
       // Start music loading performance trace
-      final performanceService = PerformanceService();
+      final performanceService = Get.find<PerformanceService>();
       await performanceService.startMusicLoadTrace();
 
-      // Step 1: Initialize services (10% progress)
+      // Step 1: Initialize services
       _loadingStatusMessage.value = 'Initializing services...';
-      _loadingProgress.value = 0.1;
+      _loadingProgress.value = 0.0;
 
       // Step 2: Try loading from cache first (fast path)
       _loadingState.value = MusicLoadingState.loadingCache;
       _loadingStatusMessage.value = 'Loading cached music...';
-      _loadingProgress.value = 0.2;
+      _loadingProgress.value =
+          0.0; // Let repository or cache result set progress
 
       final cachedAlbums = await _musicRepository.getAlbumsFromCacheOnly();
 
-      if (cachedAlbums.isNotEmpty) {
-        // Cache hit! Show content immediately
+      // Validate that cache has complete albums (with tracks)
+      if (_areAlbumsValid(cachedAlbums)) {
+        // Valid cache hit! Show content immediately
         _albums.value = cachedAlbums;
         _loadingProgress.value = 1.0;
         _loadingStatusMessage.value = 'Music loaded from cache';
         _loadingState.value = MusicLoadingState.success;
-        _isLoading.value = false;
+
+        // Log incomplete albums for debugging
+        final incompleteCount =
+            cachedAlbums.where((a) => !_isAlbumComplete(a)).length;
+        if (incompleteCount > 0) {
+          debugPrint(
+            'AppController: $incompleteCount albums have incomplete data',
+          );
+        }
 
         debugPrint(
           'AppController: Loaded ${cachedAlbums.length} albums from cache',
@@ -225,21 +313,62 @@ class AppController extends GetxController {
           fromCache: true,
         );
 
+        // Ensure minimum loading duration to prevent UI flicker
+        final elapsed = DateTime.now().difference(startTime);
+        if (elapsed < minLoadingDuration) {
+          await Future<void>.delayed(minLoadingDuration - elapsed);
+        }
+
+        _isLoading.value = false;
+
         // Trigger background refresh to get fresh data
         unawaited(_refreshInBackground());
         return;
+      } else if (cachedAlbums.isNotEmpty) {
+        debugPrint(
+          'AppController: Cache has ${cachedAlbums.length} albums but none are complete, loading from network',
+        );
       }
 
       // Step 3: No cache, load from network (slow path with loading UI)
       debugPrint('AppController: No cache found, loading from network');
       _loadingState.value = MusicLoadingState.loadingNetwork;
       _loadingStatusMessage.value = 'Connecting to music library...';
-      _loadingProgress.value = 0.3;
+      // Don't set hardcoded progress - let repository stream handle it
+      _loadingProgress.value = 0.0;
 
       final albums = await _loadAlbumsWithProgress();
-      _albums.value = albums;
 
-      _loadingProgress.value = 1.0;
+      // Set albums and clear any previous errors immediately when albums are loaded
+      // Clear errors as soon as we have albums, even if they're not fully valid yet
+      // This prevents error screen from showing when albums exist
+      _albums.value = albums;
+      if (albums.isNotEmpty) {
+        // Clear errors whenever we have albums, regardless of validity
+        // Validity will be checked later to determine if loading should complete
+        _hasError.value = false;
+        _errorMessage.value = '';
+      }
+
+      // Wait for progress to reach 100% - the repository emits final progress (100%)
+      // before returning, but we need to ensure the stream has processed it
+      // Poll until progress is 100% or timeout after reasonable delay
+      var attempts = 0;
+      const maxAttempts = 50; // 5 seconds max wait (50 * 100ms)
+      while (_loadingProgress.value < 1.0 && attempts < maxAttempts) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        attempts++;
+      }
+
+      // If progress still isn't 100%, set it manually as fallback
+      // This should rarely happen since repository emits 100% before returning
+      if (_loadingProgress.value < 1.0) {
+        debugPrint(
+          'AppController: Progress not at 100% after wait, setting manually',
+        );
+        _loadingProgress.value = 1.0;
+      }
+
       _loadingStatusMessage.value = 'Music loaded successfully';
       _loadingState.value = MusicLoadingState.success;
 
@@ -257,6 +386,25 @@ class AppController extends GetxController {
       if (elapsed < minLoadingDuration) {
         await Future<void>.delayed(minLoadingDuration - elapsed);
       }
+
+      // Only set loading to false after progress is 100% and albums are valid
+      // The shouldShowLoadingScreen check will ensure screen stays visible until then
+      if (_loadingProgress.value >= 1.0 && _areAlbumsValid(_albums)) {
+        // Successfully loaded valid albums - clear any errors and stop loading
+        _hasError.value = false;
+        _errorMessage.value = '';
+        _isLoading.value = false;
+      } else if (_albums.isEmpty) {
+        // If albums are empty after loading, this is an error condition
+        _handleError(
+          'No albums found. Please check your internet connection and try again.',
+        );
+      } else if (_loadingProgress.value >= 1.0 && !_areAlbumsValid(_albums)) {
+        // Albums loaded but none have valid tracks - this is also an error
+        _handleError(
+          'Albums loaded but no playable tracks found. Please check your internet connection and try again.',
+        );
+      }
     } on RepositoryException catch (e) {
       _handleError(e.message);
       _loadingState.value = MusicLoadingState.error;
@@ -264,7 +412,15 @@ class AppController extends GetxController {
       _handleError('Failed to initialize music: $e');
       _loadingState.value = MusicLoadingState.error;
     } finally {
-      _isLoading.value = false;
+      // Only set loading to false if progress is 100% and albums are valid
+      // This ensures loading screen stays visible until everything is complete
+      if (_loadingProgress.value >= 1.0 && _areAlbumsValid(_albums)) {
+        _isLoading.value = false;
+      } else if (_hasError.value) {
+        // On error, hide loading screen even if not complete
+        _isLoading.value = false;
+      }
+      // Otherwise, keep loading true - shouldShowLoadingScreen will handle visibility
     }
   }
 
@@ -286,10 +442,15 @@ class AppController extends GetxController {
       await _musicRepository.refreshCache();
       final freshAlbums = await _musicRepository.getAlbums();
 
-      if (freshAlbums.isNotEmpty) {
+      // Only replace albums if fresh data is valid (has complete albums)
+      if (_areAlbumsValid(freshAlbums)) {
         _albums.value = freshAlbums;
         debugPrint(
           'AppController: Background refresh complete - ${freshAlbums.length} albums',
+        );
+      } else {
+        debugPrint(
+          'AppController: Background refresh returned invalid data, keeping cache',
         );
       }
     } on Exception catch (e) {
@@ -300,66 +461,94 @@ class AppController extends GetxController {
     }
   }
 
-  /// Load albums with progressive updates and timeout handling
+  /// Load albums with progressive updates and timeout handling.
+  ///
+  /// Uses a completer-based approach to handle the race condition between
+  /// timeout and album loading. If albums finish loading after the timeout
+  /// fires, they are still applied to the UI and the error state is cleared.
   Future<List<Album>> _loadAlbumsWithProgress() async {
-    // Try to get albums with a 30-second timeout
-    try {
-      return await Future.any([
-        _loadAlbumsWithProgressUpdates(),
-        Future<void>.delayed(const Duration(seconds: 30)).then<List<Album>>(
-          (_) => throw TimeoutException(
-            'Loading music timed out after 30 seconds',
-            const Duration(seconds: 30),
-          ),
-        ),
-      ]);
-    } on Exception catch (e) {
-      if (e.toString().contains('timeout') ||
-          e.toString().contains('TimeoutException')) {
-        // If timeout occurs, try to load from cache only
-        _loadingStatusMessage.value = 'Network timeout, checking cache...';
+    // Create a completer to handle the result
+    final completer = Completer<List<Album>>();
+    var timeoutFired = false;
+
+    // Start the actual loading
+    final loadingFuture = _loadAlbumsWithProgressUpdates();
+
+    // Set up timeout timer (2 minutes)
+    // The two-pass loading approach (discover all artists, then load albums) can take
+    // longer than 30 seconds for large music libraries
+    final timeoutTimer = Timer(const Duration(minutes: 2), () async {
+      if (!completer.isCompleted) {
+        timeoutFired = true;
+
+        // Try cache first
+        _loadingStatusMessage.value =
+            'Loading taking longer than expected, checking cache...';
         _loadingProgress.value = 0.8;
 
         try {
-          // Use cache-only method to avoid further network requests
           final cachedAlbums = await _musicRepository.getAlbumsFromCacheOnly();
-          if (cachedAlbums.isNotEmpty) {
-            return cachedAlbums;
+          if (cachedAlbums.isNotEmpty && !completer.isCompleted) {
+            completer.complete(cachedAlbums);
+            return;
           }
         } on Exception {
-          // Cache also failed (this should rarely happen with the cache-only method)
+          // Cache failed, continue to error
         }
 
-        throw const DataRepositoryException(
-          'Unable to load music. Please check your internet connection and try again.',
-          'NETWORK_TIMEOUT',
-        );
+        // No cache available, complete with error
+        if (!completer.isCompleted) {
+          completer.completeError(
+            const DataRepositoryException(
+              'Loading music took too long. Please check your internet connection and try again.',
+              'NETWORK_TIMEOUT',
+            ),
+          );
+        }
       }
-      rethrow;
-    }
+    });
+
+    // Wait for loading to complete
+    unawaited(
+      loadingFuture.then((albums) {
+        timeoutTimer.cancel();
+
+        if (!completer.isCompleted) {
+          // Normal case: loading completed before timeout
+          completer.complete(albums);
+        } else if (timeoutFired && albums.isNotEmpty) {
+          // KEY FIX: Loading completed AFTER timeout - update albums silently
+          // This prevents the error screen from showing when albums eventually load
+          debugPrint(
+            'AppController: Albums loaded after timeout (${albums.length} albums), updating UI...',
+          );
+          _albums.value = albums;
+          _hasError.value = false;
+          _errorMessage.value = '';
+          _loadingProgress.value = 1.0;
+          _loadingStatusMessage.value = 'Music loaded successfully';
+          _loadingState.value = MusicLoadingState.success;
+          _isLoading.value = false;
+        }
+      }).catchError((Object error) {
+        timeoutTimer.cancel();
+        if (!completer.isCompleted) {
+          completer.completeError(error);
+        }
+      }),
+    );
+
+    return completer.future;
   }
 
   /// Load albums with detailed progress updates
+  ///
+  /// Progress updates come from the repository's progress stream, not hardcoded values.
+  /// This ensures accurate progress based on actual album processing.
   Future<List<Album>> _loadAlbumsWithProgressUpdates() async {
-    // Simulate progressive loading with status updates
-    _loadingStatusMessage.value = 'Connecting to music library...';
-    _loadingProgress.value = 0.3;
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-
-    _loadingStatusMessage.value = 'Loading artists...';
-    _loadingProgress.value = 0.4;
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-
-    _loadingStatusMessage.value = 'Loading albums...';
-    _loadingProgress.value = 0.6;
-
-    // Load albums using repository
+    // Let the repository's progress stream handle all progress updates
+    // The repository will emit progress from 0.1 (discovery) to 1.0 (complete)
     final albums = await _musicRepository.getAlbums();
-
-    _loadingStatusMessage.value = 'Processing music data...';
-    _loadingProgress.value = 0.9;
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-
     return albums;
   }
 
@@ -605,7 +794,7 @@ class AppController extends GetxController {
             if (tracks.isNotEmpty) {
               debugPrint(
                 'Successfully loaded ${tracks.length} tracks for album',
-            );
+              );
 
               // Create updated album with the loaded tracks
               albumToShow = albumToShow.copyWith(tracks: tracks);
@@ -638,7 +827,7 @@ class AppController extends GetxController {
     }
 
     // Track album loading performance
-    final performanceService = PerformanceService();
+    final performanceService = Get.find<PerformanceService>();
     await performanceService
         .startAlbumLoadTrace(albumToShow.id ?? 'unknown_album');
 

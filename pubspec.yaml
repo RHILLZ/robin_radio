@@ -46,6 +46,7 @@ dependencies:
   json_theme: ^7.0.0+3
   just_audio: ^0.9.36
   miniplayer: ^1.0.1
+  rxdart: ^0.28.0
   shared_preferences: ^2.5.2
   sizer: ^3.0.5
 

@@ -3,6 +3,122 @@ import 'dart:ui' as ui;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+/// Image cache configuration for the application.
+///
+/// Provides centralized management of Flutter's in-memory image cache
+/// with sensible defaults optimized for music streaming apps where
+/// album artwork is frequently displayed.
+///
+/// ## Cache Sizing Strategy
+///
+/// - **Maximum images**: 100 entries (covers typical album browse sessions)
+/// - **Maximum size**: 100 MB (balances memory usage with cache effectiveness)
+///
+/// These limits prevent excessive memory usage while maintaining
+/// good cache hit rates for recently viewed album covers.
+class ImageCacheConfig {
+  ImageCacheConfig._();
+
+  /// Maximum number of images to keep in memory cache
+  static const int maxCacheEntries = 100;
+
+  /// Maximum total size of cached images in bytes (100 MB)
+  static const int maxCacheSizeBytes = 100 * 1024 * 1024;
+
+  /// Whether the cache has been configured
+  static bool _isConfigured = false;
+
+  /// Configure the global image cache with optimized settings.
+  ///
+  /// Should be called early in app initialization, typically in main()
+  /// or during the first widget build.
+  ///
+  /// This method is idempotent - calling it multiple times has no effect
+  /// after the first configuration.
+  static void configure() {
+    if (_isConfigured) {
+      return;
+    }
+
+    final imageCache = PaintingBinding.instance.imageCache
+      ..maximumSize = maxCacheEntries
+      ..maximumSizeBytes = maxCacheSizeBytes;
+
+    // Ensure cache is configured
+    assert(imageCache.maximumSize == maxCacheEntries);
+    _isConfigured = true;
+  }
+
+  /// Clear the image cache to free memory.
+  ///
+  /// Useful when the app enters background or when memory pressure is detected.
+  static void clear() {
+    PaintingBinding.instance.imageCache.clear();
+  }
+
+  /// Evict a specific image from the cache by its key.
+  static void evict(String key) {
+    PaintingBinding.instance.imageCache.evict(key);
+  }
+
+  /// Get current cache statistics for debugging.
+  static ImageCacheStats getStats() {
+    final cache = PaintingBinding.instance.imageCache;
+    return ImageCacheStats(
+      currentSize: cache.currentSize,
+      currentSizeBytes: cache.currentSizeBytes,
+      maximumSize: cache.maximumSize,
+      maximumSizeBytes: cache.maximumSizeBytes,
+      liveImageCount: cache.liveImageCount,
+      pendingImageCount: cache.pendingImageCount,
+    );
+  }
+}
+
+/// Statistics about the current image cache state.
+class ImageCacheStats {
+  /// Creates image cache statistics
+  const ImageCacheStats({
+    required this.currentSize,
+    required this.currentSizeBytes,
+    required this.maximumSize,
+    required this.maximumSizeBytes,
+    required this.liveImageCount,
+    required this.pendingImageCount,
+  });
+
+  /// Current number of cached images
+  final int currentSize;
+
+  /// Current total size of cached images in bytes
+  final int currentSizeBytes;
+
+  /// Maximum number of images allowed in cache
+  final int maximumSize;
+
+  /// Maximum total size of cached images in bytes
+  final int maximumSizeBytes;
+
+  /// Number of images currently being used by widgets
+  final int liveImageCount;
+
+  /// Number of images currently being loaded
+  final int pendingImageCount;
+
+  /// Cache utilization as a percentage (0.0 to 1.0)
+  double get utilizationPercent => currentSize / maximumSize;
+
+  /// Memory utilization as a percentage (0.0 to 1.0)
+  double get memoryUtilizationPercent =>
+      currentSizeBytes / maximumSizeBytes;
+
+  @override
+  String toString() =>
+      'ImageCacheStats(entries: $currentSize/$maximumSize, '
+      'memory: ${(currentSizeBytes / 1024 / 1024).toStringAsFixed(1)}MB/'
+      '${(maximumSizeBytes / 1024 / 1024).toStringAsFixed(1)}MB)';
+}
+
 /// Progressive loading mode options
 enum ProgressiveLoadingMode {
   /// No progressive loading
@@ -107,6 +223,19 @@ enum ImageContext {
 }
 
 /// A reusable image loader widget with progressive loading and intelligent resizing.
+///
+/// Provides multiple loading modes for optimal UX:
+/// - **none**: Standard loading with placeholder
+/// - **blurUp**: Progressive blur-to-sharp transition
+/// - **twoPhase**: Thumbnail then full resolution
+/// - **fade**: Simple fade-in on load
+///
+/// ## Performance Optimizations
+///
+/// - Lazy animation controller initialization (only created when needed)
+/// - Server-side resizing support for bandwidth optimization
+/// - Smart cache sizing based on display context
+/// - Memory-efficient thumbnail generation
 class ImageLoader extends StatefulWidget {
   /// Creates an ImageLoader widget
   const ImageLoader({
@@ -183,43 +312,74 @@ class ImageLoader extends StatefulWidget {
 
 class _ImageLoaderState extends State<ImageLoader>
     with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late AnimationController _blurController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _blurAnimation;
+  // Lazy-initialized animation controllers (only created when needed)
+  AnimationController? _fadeController;
+  AnimationController? _blurController;
 
   bool _isMainImageLoaded = false;
   bool _isThumbnailLoaded = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _fadeController = AnimationController(
+  // Lazily create fade controller only when needed
+  AnimationController get fadeController {
+    _fadeController ??= AnimationController(
       duration: widget.transitionDuration,
       vsync: this,
     );
-    _blurController = AnimationController(
-      duration: widget.transitionDuration,
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
-    );
-    _blurAnimation = Tween<double>(begin: 5, end: 0).animate(
-      CurvedAnimation(parent: _blurController, curve: Curves.easeOut),
-    );
+    return _fadeController!;
   }
+
+  // Lazily create blur controller only when needed
+  AnimationController get blurController {
+    _blurController ??= AnimationController(
+      duration: widget.transitionDuration,
+      vsync: this,
+    );
+    return _blurController!;
+  }
+
+  // Lazy animation getters
+  Animation<double> get fadeAnimation => Tween<double>(begin: 0, end: 1)
+      .animate(CurvedAnimation(parent: fadeController, curve: Curves.easeIn));
+
+  Animation<double> get blurAnimation => Tween<double>(begin: 5, end: 0)
+      .animate(CurvedAnimation(parent: blurController, curve: Curves.easeOut));
 
   @override
   void dispose() {
-    _fadeController.dispose();
-    _blurController.dispose();
+    _fadeController?.dispose();
+    _blurController?.dispose();
     super.dispose();
   }
 
+  // ============================================================
+  // Cache Size Calculation Helpers
+  // ============================================================
+
+  /// Calculate optimal cache width based on widget configuration
+  int get _optimalCacheWidth {
+    return widget.cacheWidth ??
+        widget.maxCacheSize ??
+        (widget.width != null
+            ? ImageSizeConstraints.calculateCacheSize(widget.width)
+            : widget.context.maxSize);
+  }
+
+  /// Calculate optimal cache height based on widget configuration
+  int get _optimalCacheHeight {
+    return widget.cacheHeight ??
+        widget.maxCacheSize ??
+        (widget.height != null
+            ? ImageSizeConstraints.calculateCacheSize(widget.height)
+            : widget.context.maxSize);
+  }
+
+  /// Generate cache key for the image
+  String get _cacheKey =>
+      widget.cacheKey ??
+      '${widget.imageUrl}_${_optimalCacheWidth}x$_optimalCacheHeight';
+
   /// Generate optimized image URL with size parameters for server-side resizing
-  String _getOptimizedImageUrl() {
+  String get _optimizedImageUrl {
     if (!widget.enableServerSideResizing) {
       return widget.imageUrl;
     }
@@ -229,135 +389,73 @@ class _ImageLoaderState extends State<ImageLoader>
       return widget.imageUrl;
     }
 
-    // Calculate optimal size
-    final targetWidth = _calculateOptimalCacheWidth();
-    final targetHeight = _calculateOptimalCacheHeight();
-
-    // Add size parameters if the URL doesn't already have them
     final queryParams = Map<String, String>.from(uri.queryParameters);
 
-    // Only add size params if they're not already present
-    if (!queryParams.containsKey('width') && !queryParams.containsKey('w')) {
-      queryParams['width'] = targetWidth.toString();
-    }
-    if (!queryParams.containsKey('height') && !queryParams.containsKey('h')) {
-      queryParams['height'] = targetHeight.toString();
-    }
-
-    // Common server-side resizing parameters
-    if (!queryParams.containsKey('quality') && !queryParams.containsKey('q')) {
-      queryParams['quality'] = '85'; // Good balance of quality vs size
-    }
-    if (!queryParams.containsKey('format') && !queryParams.containsKey('f')) {
-      queryParams['format'] = 'webp'; // Prefer WebP if server supports it
-    }
+    // Only add size params if not already present
+    _addIfMissing(queryParams, ['width', 'w'], _optimalCacheWidth.toString());
+    _addIfMissing(queryParams, ['height', 'h'], _optimalCacheHeight.toString());
+    _addIfMissing(queryParams, ['quality', 'q'], '85');
+    _addIfMissing(queryParams, ['format', 'f'], 'webp');
 
     return uri.replace(queryParameters: queryParams).toString();
   }
 
-  /// Calculate optimal cache width based on display width and context
-  int _calculateOptimalCacheWidth() {
-    if (widget.cacheWidth != null) {
-      return widget.cacheWidth!;
+  /// Add value to map if none of the keys are present
+  void _addIfMissing(Map<String, String> map, List<String> keys, String value) {
+    if (!keys.any(map.containsKey)) {
+      map[keys.first] = value;
     }
-    if (widget.maxCacheSize != null) {
-      return widget.maxCacheSize!;
-    }
-
-    if (widget.width != null) {
-      return ImageSizeConstraints.calculateCacheSize(widget.width);
-    }
-
-    return widget.context.maxSize;
   }
 
-  /// Calculate optimal cache height based on display height and context
-  int _calculateOptimalCacheHeight() {
-    if (widget.cacheHeight != null) {
-      return widget.cacheHeight!;
-    }
-    if (widget.maxCacheSize != null) {
-      return widget.maxCacheSize!;
-    }
-
-    if (widget.height != null) {
-      return ImageSizeConstraints.calculateCacheSize(widget.height);
-    }
-
-    return widget.context.maxSize;
-  }
+  // ============================================================
+  // Image Loading Callbacks
+  // ============================================================
 
   void _onMainImageLoaded() {
-    if (!_isMainImageLoaded) {
-      setState(() {
-        _isMainImageLoaded = true;
-      });
-      _fadeController.forward();
-      if (widget.progressiveMode == ProgressiveLoadingMode.blurUp) {
-        _blurController.forward();
-      }
+    if (_isMainImageLoaded) {
+      return;
+    }
+
+    setState(() => _isMainImageLoaded = true);
+    fadeController.forward();
+
+    if (widget.progressiveMode == ProgressiveLoadingMode.blurUp) {
+      blurController.forward();
     }
   }
 
   void _onThumbnailLoaded() {
-    if (!_isThumbnailLoaded) {
-      setState(() {
-        _isThumbnailLoaded = true;
-      });
+    if (_isThumbnailLoaded) {
+      return;
     }
+    setState(() => _isThumbnailLoaded = true);
   }
+
+  // ============================================================
+  // Image Builder Methods
+  // ============================================================
 
   Widget _buildProgressiveImage() {
-    final optimizedUrl = _getOptimizedImageUrl();
-    final optimalCacheWidth = _calculateOptimalCacheWidth();
-    final optimalCacheHeight = _calculateOptimalCacheHeight();
-
     switch (widget.progressiveMode) {
       case ProgressiveLoadingMode.none:
-        return _buildStandardImage(
-          optimizedUrl,
-          optimalCacheWidth,
-          optimalCacheHeight,
-        );
-
+        return _buildStandardImage();
       case ProgressiveLoadingMode.blurUp:
-        return _buildBlurUpImage(
-          optimizedUrl,
-          optimalCacheWidth,
-          optimalCacheHeight,
-        );
-
+        return _buildBlurUpImage();
       case ProgressiveLoadingMode.twoPhase:
-        return _buildTwoPhaseImage(
-          optimizedUrl,
-          optimalCacheWidth,
-          optimalCacheHeight,
-        );
-
+        return _buildTwoPhaseImage();
       case ProgressiveLoadingMode.fade:
-        return _buildFadeImage(
-          optimizedUrl,
-          optimalCacheWidth,
-          optimalCacheHeight,
-        );
+        return _buildFadeImage();
     }
   }
 
-  Widget _buildStandardImage(String url, int cacheWidth, int cacheHeight) =>
-      CachedNetworkImage(
-        imageUrl: url,
-        cacheKey:
-            widget.cacheKey ?? '${widget.imageUrl}_${cacheWidth}x$cacheHeight',
-        width: widget.width,
-        height: widget.height,
-        fit: widget.fit,
-        memCacheWidth: cacheWidth,
-        memCacheHeight: cacheHeight,
+  Widget _buildStandardImage() => _cachedImage(
+        url: _optimizedImageUrl,
+        cacheWidth: _optimalCacheWidth,
+        cacheHeight: _optimalCacheHeight,
         placeholder: widget.placeholder ?? _defaultPlaceholder,
-        errorWidget: widget.errorWidget ?? _defaultErrorWidget,
       );
 
-  Widget _buildBlurUpImage(String url, int cacheWidth, int cacheHeight) {
+  Widget _buildBlurUpImage() {
     final thumbnailUrl =
         ImageSizeConstraints.generateThumbnailUrl(widget.imageUrl);
 
@@ -367,47 +465,32 @@ class _ImageLoaderState extends State<ImageLoader>
         // Thumbnail with blur effect
         if (!_isMainImageLoaded)
           AnimatedBuilder(
-            animation: _blurAnimation,
+            animation: blurAnimation,
             builder: (context, child) => ImageFiltered(
               imageFilter: ui.ImageFilter.blur(
-                sigmaX: _blurAnimation.value,
-                sigmaY: _blurAnimation.value,
+                sigmaX: blurAnimation.value,
+                sigmaY: blurAnimation.value,
               ),
-              child: CachedNetworkImage(
-                imageUrl: thumbnailUrl,
-                width: widget.width,
-                height: widget.height,
-                fit: widget.fit,
-                memCacheWidth: 50,
-                memCacheHeight: 50,
+              child: _cachedImage(
+                url: thumbnailUrl,
+                cacheWidth: 50,
+                cacheHeight: 50,
                 placeholder: widget.placeholder ?? _defaultPlaceholder,
-                errorWidget: widget.errorWidget ?? _defaultErrorWidget,
               ),
             ),
           ),
 
         // Main image with fade transition
         AnimatedBuilder(
-          animation: _fadeAnimation,
+          animation: fadeAnimation,
           builder: (context, child) => Opacity(
-            opacity: _fadeAnimation.value,
-            child: CachedNetworkImage(
-              imageUrl: url,
-              cacheKey: widget.cacheKey ??
-                  '${widget.imageUrl}_${cacheWidth}x$cacheHeight',
-              width: widget.width,
-              height: widget.height,
-              fit: widget.fit,
-              memCacheWidth: cacheWidth,
-              memCacheHeight: cacheHeight,
-              placeholder: (context, url) => const SizedBox.shrink(),
-              errorWidget: widget.errorWidget ?? _defaultErrorWidget,
-              imageBuilder: (context, imageProvider) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _onMainImageLoaded();
-                });
-                return Image(image: imageProvider, fit: widget.fit);
-              },
+            opacity: fadeAnimation.value,
+            child: _cachedImage(
+              url: _optimizedImageUrl,
+              cacheWidth: _optimalCacheWidth,
+              cacheHeight: _optimalCacheHeight,
+              placeholder: (_, __) => const SizedBox.shrink(),
+              onLoaded: _onMainImageLoaded,
             ),
           ),
         ),
@@ -415,7 +498,7 @@ class _ImageLoaderState extends State<ImageLoader>
     );
   }
 
-  Widget _buildTwoPhaseImage(String url, int cacheWidth, int cacheHeight) {
+  Widget _buildTwoPhaseImage() {
     final thumbnailUrl = ImageSizeConstraints.generateThumbnailUrl(
       widget.imageUrl,
       maxSize: 100,
@@ -426,46 +509,25 @@ class _ImageLoaderState extends State<ImageLoader>
       children: [
         // Thumbnail phase
         if (!_isMainImageLoaded)
-          CachedNetworkImage(
-            imageUrl: thumbnailUrl,
-            width: widget.width,
-            height: widget.height,
-            fit: widget.fit,
-            memCacheWidth: 100,
-            memCacheHeight: 100,
+          _cachedImage(
+            url: thumbnailUrl,
+            cacheWidth: 100,
+            cacheHeight: 100,
             placeholder: widget.placeholder ?? _defaultPlaceholder,
-            errorWidget: widget.errorWidget ?? _defaultErrorWidget,
-            imageBuilder: (context, imageProvider) {
-              // Fix: Wrap setState call in addPostFrameCallback to avoid calling setState during build
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _onThumbnailLoaded();
-              });
-              return Image(image: imageProvider, fit: widget.fit);
-            },
+            onLoaded: _onThumbnailLoaded,
           ),
 
-        // Main image phase
+        // Main image phase with fade
         AnimatedBuilder(
-          animation: _fadeAnimation,
+          animation: fadeAnimation,
           builder: (context, child) => Opacity(
-            opacity: _fadeAnimation.value,
-            child: CachedNetworkImage(
-              imageUrl: url,
-              cacheKey: widget.cacheKey ??
-                  '${widget.imageUrl}_${cacheWidth}x$cacheHeight',
-              width: widget.width,
-              height: widget.height,
-              fit: widget.fit,
-              memCacheWidth: cacheWidth,
-              memCacheHeight: cacheHeight,
-              placeholder: (context, url) => const SizedBox.shrink(),
-              errorWidget: widget.errorWidget ?? _defaultErrorWidget,
-              imageBuilder: (context, imageProvider) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _onMainImageLoaded();
-                });
-                return Image(image: imageProvider, fit: widget.fit);
-              },
+            opacity: fadeAnimation.value,
+            child: _cachedImage(
+              url: _optimizedImageUrl,
+              cacheWidth: _optimalCacheWidth,
+              cacheHeight: _optimalCacheHeight,
+              placeholder: (_, __) => const SizedBox.shrink(),
+              onLoaded: _onMainImageLoaded,
             ),
           ),
         ),
@@ -473,32 +535,67 @@ class _ImageLoaderState extends State<ImageLoader>
     );
   }
 
-  Widget _buildFadeImage(String url, int cacheWidth, int cacheHeight) =>
-      AnimatedBuilder(
-        animation: _fadeAnimation,
-        builder: (context, child) => AnimatedOpacity(
-          opacity: _isMainImageLoaded ? 1.0 : 0.0,
-          duration: widget.transitionDuration,
-          child: CachedNetworkImage(
-            imageUrl: url,
-            cacheKey: widget.cacheKey ??
-                '${widget.imageUrl}_${cacheWidth}x$cacheHeight',
-            width: widget.width,
-            height: widget.height,
-            fit: widget.fit,
-            memCacheWidth: cacheWidth,
-            memCacheHeight: cacheHeight,
-            placeholder: widget.placeholder ?? _defaultPlaceholder,
-            errorWidget: widget.errorWidget ?? _defaultErrorWidget,
-            imageBuilder: (context, imageProvider) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _onMainImageLoaded();
-              });
-              return Image(image: imageProvider, fit: widget.fit);
-            },
+  Widget _buildFadeImage() => Stack(
+        fit: StackFit.expand,
+        children: [
+          // Placeholder layer
+          if (!_isMainImageLoaded)
+            widget.placeholder?.call(context, _optimizedImageUrl) ??
+                _defaultPlaceholder(context, _optimizedImageUrl),
+
+          // Main image with fade transition
+          _cachedImage(
+            url: _optimizedImageUrl,
+            cacheWidth: _optimalCacheWidth,
+            cacheHeight: _optimalCacheHeight,
+            placeholder: (_, __) => const SizedBox.shrink(),
+            onLoaded: _onMainImageLoaded,
+            useFadeTransition: true,
           ),
-        ),
+        ],
       );
+
+  // ============================================================
+  // Reusable CachedNetworkImage Builder
+  // ============================================================
+
+  /// Builds a CachedNetworkImage with common configuration
+  Widget _cachedImage({
+    required String url,
+    required int cacheWidth,
+    required int cacheHeight,
+    Widget Function(BuildContext, String)? placeholder,
+    VoidCallback? onLoaded,
+    bool useFadeTransition = false,
+  }) {
+    return CachedNetworkImage(
+      imageUrl: url,
+      cacheKey: url == _optimizedImageUrl ? _cacheKey : null,
+      width: widget.width,
+      height: widget.height,
+      fit: widget.fit,
+      memCacheWidth: cacheWidth,
+      memCacheHeight: cacheHeight,
+      placeholder: placeholder,
+      errorWidget: widget.errorWidget ?? _defaultErrorWidget,
+      imageBuilder: onLoaded != null
+          ? (context, imageProvider) {
+              WidgetsBinding.instance.addPostFrameCallback((_) => onLoaded());
+              return useFadeTransition
+                  ? AnimatedOpacity(
+                      opacity: _isMainImageLoaded ? 1.0 : 0.0,
+                      duration: widget.transitionDuration,
+                      child: Image(image: imageProvider, fit: widget.fit),
+                    )
+                  : Image(image: imageProvider, fit: widget.fit);
+            }
+          : null,
+    );
+  }
+
+  // ============================================================
+  // Default Placeholder and Error Widgets
+  // ============================================================
 
   static Widget _defaultPlaceholder(BuildContext context, String url) =>
       ColoredBox(
@@ -533,10 +630,7 @@ class _ImageLoaderState extends State<ImageLoader>
 
     // Wrap with Hero if heroTag is provided
     if (widget.heroTag != null) {
-      imageWidget = Hero(
-        tag: widget.heroTag!,
-        child: imageWidget,
-      );
+      imageWidget = Hero(tag: widget.heroTag!, child: imageWidget);
     }
 
     return imageWidget;

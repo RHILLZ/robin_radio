@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sizer/sizer.dart';
 
 /// A reusable widget for displaying error states with retry functionality.
 ///
@@ -45,13 +44,13 @@ class ErrorStateWidget extends StatelessWidget {
                 size: 80,
                 color: iconColor,
               ),
-              SizedBox(height: 2.h),
+              const SizedBox(height: 16),
               Text(
                 title,
                 style:
                     const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 1.h),
+              const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
@@ -60,7 +59,7 @@ class ErrorStateWidget extends StatelessWidget {
                   style: const TextStyle(fontSize: 16),
                 ),
               ),
-              SizedBox(height: 3.h),
+              const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),

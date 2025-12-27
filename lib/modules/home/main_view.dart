@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../global/cosmic_theme.dart';
 import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
 import '../player/player_controller.dart';
@@ -36,71 +37,163 @@ class MainView extends StatelessWidget {
 
     return DefaultTabController(
       length: 2,
-      child: NestedScrollView(
-        floatHeaderSlivers: true,
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverAppBar(
-            actions: [
-              // Play/pause button for quick access
-              Obx(() {
-                if (playerController.tracks.isNotEmpty ||
-                    playerController.playerMode == PlayerMode.radio) {
-                  return playerController.playerIcon(size: 30);
-                }
-                return const SizedBox.shrink();
-              }),
-
-              // Menu button
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'refresh') {
-                    Get.find<AppController>().refreshMusic();
-                  } else if (value == 'close_player') {
-                    playerController.closePlayer();
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'refresh',
-                    child: IconTextRow(
-                      icon: Icons.refresh,
-                      text: 'Refresh Music',
-                    ),
-                  ),
-                  if (playerController.tracks.isNotEmpty ||
-                      playerController.playerMode == PlayerMode.radio)
-                    const PopupMenuItem(
-                      value: 'close_player',
-                      child: IconTextRow(
-                        icon: Icons.close,
-                        text: 'Close Player',
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: CosmicColors.cosmicGradient,
+        ),
+        child: NestedScrollView(
+          floatHeaderSlivers: true,
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverAppBar(
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              flexibleSpace: ClipRRect(
+                child: BackdropFilter(
+                  filter: CosmicGlass.blur,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: CosmicColors.cardGradient(opacity: 0.7),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: CosmicColors.lavenderGlow.withValues(alpha: 0.15),
+                        ),
                       ),
                     ),
+                  ),
+                ),
+              ),
+              actions: [
+                // Play/pause button with glow effect
+                Obx(() {
+                  if (playerController.tracks.isNotEmpty ||
+                      playerController.playerMode == PlayerMode.radio) {
+                    return DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: CosmicColors.vibrantPurple.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: playerController.playerIcon(size: 30),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
+
+                // Menu button with cosmic styling
+                Theme(
+                  data: Theme.of(context).copyWith(
+                    popupMenuTheme: PopupMenuThemeData(
+                      color: CosmicColors.royalPurple,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: CosmicColors.lavenderGlow.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      shadowColor: CosmicColors.vibrantPurple.withValues(alpha: 0.5),
+                      elevation: 12,
+                    ),
+                  ),
+                  child: PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: CosmicColors.lavenderGlow.withValues(alpha: 0.9),
+                    ),
+                    onSelected: (value) {
+                      if (value == 'refresh') {
+                        Get.find<AppController>().refreshMusic();
+                      } else if (value == 'close_player') {
+                        playerController.closePlayer();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<String>(
+                        value: 'refresh',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.refresh,
+                              color: CosmicColors.goldenAmber,
+                              size: 20,
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Refresh Music',
+                              style: TextStyle(
+                                color: CosmicColors.lavenderGlow,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (playerController.tracks.isNotEmpty ||
+                          playerController.playerMode == PlayerMode.radio)
+                        const PopupMenuItem<String>(
+                          value: 'close_player',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.close,
+                                color: CosmicColors.goldenAmber,
+                                size: 20,
+                              ),
+                              SizedBox(width: 12),
+                              Text(
+                                'Close Player',
+                                style: TextStyle(
+                                  color: CosmicColors.lavenderGlow,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              floating: true,
+              snap: true,
+              expandedHeight: 5.h,
+              title: const AppTitle(),
+              bottom: TabBar(
+                indicatorWeight: 3,
+                indicatorColor: CosmicColors.goldenAmber,
+                indicatorSize: TabBarIndicatorSize.label,
+                labelColor: Colors.white,
+                unselectedLabelColor: CosmicColors.lavenderGlow.withValues(alpha: 0.5),
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1,
+                ),
+                dividerColor: Colors.transparent,
+                splashFactory: InkSparkle.splashFactory,
+                overlayColor: WidgetStateProperty.all(
+                  CosmicColors.vibrantPurple.withValues(alpha: 0.2),
+                ),
+                tabs: const [
+                  RadioTab(),
+                  AlbumsTab(),
                 ],
               ),
-            ],
-            floating: true,
-            snap: true,
-            expandedHeight: 5.h,
-            title: const AppTitle(),
-            bottom: TabBar(
-              indicatorWeight: 3,
-              indicatorColor: Colors.white,
-              labelColor: Colors.white,
-              unselectedLabelColor:
-                  Theme.of(context).colorScheme.onSurface.withAlpha(100),
-              tabs: const [
-                RadioTab(),
-                AlbumsTab(),
-              ],
             ),
-          ),
-        ],
-        body: const TabBarView(
-          children: [
-            RadioView(),
-            AlbumsView(),
           ],
+          body: const TabBarView(
+            children: [
+              RadioView(),
+              AlbumsView(),
+            ],
+          ),
         ),
       ),
     );

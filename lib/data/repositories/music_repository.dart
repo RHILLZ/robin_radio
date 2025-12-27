@@ -58,6 +58,8 @@ class AlbumLoadingProgress {
     required this.progress,
     required this.albumsProcessed,
     required this.totalAlbums,
+    this.elapsedTime,
+    this.estimatedTimeRemaining,
   });
 
   /// Human-readable message describing the current operation
@@ -71,6 +73,12 @@ class AlbumLoadingProgress {
 
   /// Total number of albums to process (if known)
   final int totalAlbums;
+
+  /// Time elapsed since loading started
+  final Duration? elapsedTime;
+
+  /// Estimated time remaining until completion
+  final Duration? estimatedTimeRemaining;
 }
 
 /// Abstract base class defining the contract for music data repositories.

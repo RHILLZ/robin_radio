@@ -40,6 +40,15 @@ class AlbumCover extends StatelessWidget {
     final useExplicitSize = size != null && size!.isFinite && size! > 0;
     final coverSize = useExplicitSize ? size : null;
 
+    // Wrap in RepaintBoundary to isolate album cover repaints
+    // Album covers are frequently displayed in lists and player views,
+    // preventing repaint propagation improves scroll and animation performance
+    return RepaintBoundary(
+      child: _buildCoverContent(coverSize),
+    );
+  }
+
+  Widget _buildCoverContent(double? coverSize) {
     // If no image URL, show logo fallback immediately
     if (imageUrl == null || imageUrl!.isEmpty) {
       return Container(
@@ -75,6 +84,9 @@ class AlbumCover extends StatelessWidget {
         context: ImageContext.detailView,
         progressiveMode: ProgressiveLoadingMode.fade,
         transitionDuration: const Duration(milliseconds: 600),
+        // Disable server-side resizing for Firebase Storage URLs
+        // Firebase Storage URLs are signed and adding query params breaks them
+        enableServerSideResizing: false,
         placeholder: (context, url) => Container(
           width: coverSize,
           height: coverSize,

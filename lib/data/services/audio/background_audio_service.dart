@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart' as audio_service;
 import 'package:flutter/foundation.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../../exceptions/audio_service_exception.dart';
 import '../../models/song.dart';
 import 'audio_service_interface.dart';
+import 'audio_state.dart';
 import 'background_audio_handler.dart';
 
 /// Enhanced audio service with background playback and media notifications
@@ -17,6 +19,18 @@ import 'background_audio_handler.dart';
 /// - Lock screen controls
 /// - System media session integration
 /// - Media button handling
+///
+/// ## State Management Optimization
+///
+/// This implementation uses a single [BehaviorSubject<AudioState>] instead of
+/// 9 separate StreamControllers. Benefits include:
+/// - **Reduced memory overhead**: Single subject vs 9 StreamControllers
+/// - **Atomic state updates**: Related state changes emit together
+/// - **Simplified disposal**: One subscription to manage
+/// - **Better debugging**: Complete state snapshot available at any point
+///
+/// Individual streams are derived using `.map()` and `.distinct()` operators
+/// for interface compatibility while maintaining consolidated state benefits.
 class BackgroundAudioService implements IAudioService {
   /// Creates a new background audio service instance
   factory BackgroundAudioService() => _instance;
@@ -33,132 +47,113 @@ class BackgroundAudioService implements IAudioService {
   /// Whether the service has been disposed
   bool _isDisposed = false;
 
-  /// Current playback state
-  PlaybackState _currentState = PlaybackState.stopped;
+  /// Unified audio state using BehaviorSubject for efficient state management.
+  ///
+  /// Consolidates 9 separate StreamControllers into a single reactive stream,
+  /// reducing memory overhead and enabling atomic state updates.
+  final BehaviorSubject<AudioState> _audioState =
+      BehaviorSubject<AudioState>.seeded(AudioState.initial);
 
-  /// Current song
-  Song? _currentSong;
-
-  /// Current position
-  Duration _currentPosition = Duration.zero;
-
-  /// Track duration
-  Duration _trackDuration = Duration.zero;
-
-  /// Current volume
-  double _currentVolume = 1;
-
-  /// Current playback speed
-  double _currentSpeed = 1;
-
-  /// Current playback mode
-  PlaybackMode _currentMode = PlaybackMode.normal;
-
-  /// Current queue
-  final List<Song> _queue = <Song>[];
-
-  /// Stream controllers for reactive state management
-  final StreamController<PlaybackState> _stateController =
-      StreamController<PlaybackState>.broadcast();
-  final StreamController<Song?> _trackController =
-      StreamController<Song?>.broadcast();
-  final StreamController<Duration> _positionController =
-      StreamController<Duration>.broadcast();
-  final StreamController<Duration> _durationController =
-      StreamController<Duration>.broadcast();
-  final StreamController<double> _volumeController =
-      StreamController<double>.broadcast();
-  final StreamController<double> _speedController =
-      StreamController<double>.broadcast();
-  final StreamController<PlaybackMode> _modeController =
-      StreamController<PlaybackMode>.broadcast();
-  final StreamController<List<Song>> _queueController =
-      StreamController<List<Song>>.broadcast();
-  final StreamController<double> _bufferingController =
-      StreamController<double>.broadcast();
+  /// Internal mutable queue for efficient queue operations.
+  /// The immutable queue in AudioState is updated when this changes.
+  final List<Song> _mutableQueue = <Song>[];
 
   /// Audio service subscriptions
   StreamSubscription<audio_service.PlaybackState>? _playbackStateSubscription;
   StreamSubscription<audio_service.MediaItem?>? _mediaItemSubscription;
 
-  // Public stream getters
-  @override
-  Stream<PlaybackState> get playbackState => _stateController.stream;
+  // ============================================================
+  // Public stream getters - derived from unified AudioState stream
+  // Using .map() and .distinct() for efficient, deduplicated streams
+  // ============================================================
 
   @override
-  Stream<Song?> get currentTrack => _trackController.stream;
+  Stream<PlaybackState> get playbackState =>
+      _audioState.stream.map((s) => s.playbackState).distinct();
 
   @override
-  Stream<Duration> get position => _positionController.stream;
+  Stream<Song?> get currentTrack =>
+      _audioState.stream.map((s) => s.currentTrack).distinct();
 
   @override
-  Stream<Duration> get duration => _durationController.stream;
+  Stream<Duration> get position =>
+      _audioState.stream.map((s) => s.position).distinct();
 
   @override
-  Stream<double> get volume => _volumeController.stream;
+  Stream<Duration> get duration =>
+      _audioState.stream.map((s) => s.duration).distinct();
 
   @override
-  Stream<double> get playbackSpeed => _speedController.stream;
+  Stream<double> get volume =>
+      _audioState.stream.map((s) => s.volume).distinct();
 
   @override
-  Stream<PlaybackMode> get playbackMode => _modeController.stream;
+  Stream<double> get playbackSpeed =>
+      _audioState.stream.map((s) => s.speed).distinct();
 
   @override
-  Stream<List<Song>> get queueStream => _queueController.stream;
+  Stream<PlaybackMode> get playbackMode =>
+      _audioState.stream.map((s) => s.mode).distinct();
 
   @override
-  Stream<double> get bufferingProgress => _bufferingController.stream;
-
-  // Public property getters
-  @override
-  PlaybackState get currentState => _currentState;
+  Stream<List<Song>> get queueStream =>
+      _audioState.stream.map((s) => s.queue).distinct();
 
   @override
-  Song? get currentSong => _currentSong;
+  Stream<double> get bufferingProgress =>
+      _audioState.stream.map((s) => s.bufferingProgress).distinct();
+
+  // ============================================================
+  // Public property getters - derived from current AudioState value
+  // ============================================================
+
+  /// Current audio state snapshot
+  AudioState get state => _audioState.value;
 
   @override
-  Duration get currentPosition => _currentPosition;
+  PlaybackState get currentState => state.playbackState;
 
   @override
-  Duration get trackDuration => _trackDuration;
+  Song? get currentSong => state.currentTrack;
 
   @override
-  double get currentVolume => _currentVolume;
+  Duration get currentPosition => state.position;
 
   @override
-  double get currentSpeed => _currentSpeed;
+  Duration get trackDuration => state.duration;
 
   @override
-  PlaybackMode get currentMode => _currentMode;
+  double get currentVolume => state.volume;
 
   @override
-  List<Song> get queue => List.unmodifiable(_queue);
+  double get currentSpeed => state.speed;
 
   @override
-  bool get isPlaying => _currentState == PlaybackState.playing;
+  PlaybackMode get currentMode => state.mode;
 
   @override
-  bool get isPaused => _currentState == PlaybackState.paused;
+  List<Song> get queue => List.unmodifiable(_mutableQueue);
 
   @override
-  bool get isStopped => _currentState == PlaybackState.stopped;
+  bool get isPlaying => state.isPlaying;
 
   @override
-  bool get isBuffering => _currentState == PlaybackState.buffering;
+  bool get isPaused => state.isPaused;
 
   @override
-  double get progress {
-    if (_trackDuration.inMilliseconds <= 0) {
-      return 0;
-    }
-    return _currentPosition.inMilliseconds / _trackDuration.inMilliseconds;
-  }
+  bool get isStopped => state.isStopped;
 
   @override
-  String get formattedPosition => formatDuration(_currentPosition);
+  bool get isBuffering => state.isBuffering;
 
   @override
-  String get formattedDuration => formatDuration(_trackDuration);
+  double get progress => state.progress;
+
+  @override
+  String get formattedPosition => state.formattedPosition;
+
+  @override
+  String get formattedDuration => state.formattedDuration;
 
   @override
   Future<void> initialize() async {
@@ -206,25 +201,26 @@ class BackgroundAudioService implements IAudioService {
     });
   }
 
-  /// Update internal playback state from audio service state
-  void _updatePlaybackState(audio_service.PlaybackState state) {
-    // Map audio service state to internal state
-    final newState =
-        _mapAudioServiceState(state.processingState, state.playing);
-    _setState(newState);
+  /// Update internal playback state from audio service state.
+  ///
+  /// Performs atomic state update combining playback state, position, and speed.
+  void _updatePlaybackState(audio_service.PlaybackState serviceState) {
+    final newPlaybackState =
+        _mapAudioServiceState(serviceState.processingState, serviceState.playing);
 
-    // Update position
-    _currentPosition = state.position;
-    _positionController.add(_currentPosition);
-
-    // Update speed if changed
-    if (_currentSpeed != state.speed) {
-      _currentSpeed = state.speed;
-      _speedController.add(_currentSpeed);
-    }
+    // Atomic update: combine state, position, and speed changes
+    _audioState.add(
+      state.copyWith(
+        playbackState: newPlaybackState,
+        position: serviceState.position,
+        speed: serviceState.speed,
+      ),
+    );
   }
 
-  /// Update current song from media item
+  /// Update current song from media item.
+  ///
+  /// Performs atomic state update combining track and duration changes.
   void _updateCurrentSong(audio_service.MediaItem mediaItem) {
     final song = Song(
       id: mediaItem.id,
@@ -235,13 +231,13 @@ class BackgroundAudioService implements IAudioService {
       duration: mediaItem.duration,
     );
 
-    _currentSong = song;
-    _trackController.add(_currentSong);
-
-    if (mediaItem.duration != null) {
-      _trackDuration = mediaItem.duration!;
-      _durationController.add(_trackDuration);
-    }
+    // Atomic update: combine track and duration changes
+    _audioState.add(
+      state.copyWith(
+        currentTrack: song,
+        duration: mediaItem.duration ?? state.duration,
+      ),
+    );
   }
 
   /// Map audio service processing state to internal state
@@ -277,13 +273,17 @@ class BackgroundAudioService implements IAudioService {
     try {
       await _ensureInitialized();
 
-      // Add to queue if not already present
-      if (!_queue.contains(track)) {
-        await addToQueue(track);
-      }
+      // CRITICAL FIX: Clear existing queue before playing new content
+      // This prevents queue state mismatch when switching between radio/album modes
+      _mutableQueue.clear();
+      _audioState.add(state.copyWith(queue: const <Song>[]));
 
-      // Play through background handler
-      await _handler!.playSong(track, playlist: _queue);
+      // Add the new track to the fresh queue
+      _mutableQueue.add(track);
+      _audioState.add(state.copyWith(queue: List.unmodifiable(_mutableQueue)));
+
+      // Play through background handler (will set up new audio source)
+      await _handler!.playSong(track, playlist: _mutableQueue);
 
       if (startPosition != null) {
         await seek(startPosition);
@@ -306,7 +306,7 @@ class BackgroundAudioService implements IAudioService {
     }
 
     if (!isPlaying) {
-      throw AudioOperationException.invalidState('pause', _currentState.name);
+      throw AudioOperationException.invalidState('pause', currentState.name);
     }
 
     try {
@@ -324,7 +324,7 @@ class BackgroundAudioService implements IAudioService {
     }
 
     if (!isPaused) {
-      throw AudioOperationException.invalidState('resume', _currentState.name);
+      throw AudioOperationException.invalidState('resume', currentState.name);
     }
 
     try {
@@ -344,9 +344,14 @@ class BackgroundAudioService implements IAudioService {
     try {
       await _ensureInitialized();
       await _handler!.stop();
-      _currentSong = null;
-      _currentPosition = Duration.zero;
-      _trackController.add(null);
+
+      // Atomic update: clear track and reset position
+      _audioState.add(
+        state.copyWith(
+          clearCurrentTrack: true,
+          position: Duration.zero,
+        ),
+      );
     } on Exception catch (e) {
       throw AudioPlaybackException.playbackFailed('Stop failed: $e');
     }
@@ -358,7 +363,7 @@ class BackgroundAudioService implements IAudioService {
       throw const AudioOperationException.serviceDisposed();
     }
 
-    if (position.isNegative || position > _trackDuration) {
+    if (position.isNegative || position > trackDuration) {
       throw AudioOperationException.invalidParameter(
         'position',
         position.toString(),
@@ -386,8 +391,7 @@ class BackgroundAudioService implements IAudioService {
       );
     }
 
-    _currentVolume = volume;
-    _volumeController.add(volume);
+    _audioState.add(state.copyWith(volume: volume));
 
     // Note: Volume control through audio_service would require custom implementation
     // For now, we just track the value
@@ -408,8 +412,7 @@ class BackgroundAudioService implements IAudioService {
 
     try {
       await _ensureInitialized();
-      _currentSpeed = speed;
-      _speedController.add(speed);
+      _audioState.add(state.copyWith(speed: speed));
 
       // Note: Speed control through audio_service would require custom implementation
       // The handler should handle this internally
@@ -420,8 +423,7 @@ class BackgroundAudioService implements IAudioService {
 
   @override
   Future<void> setPlaybackMode(PlaybackMode mode) async {
-    _currentMode = mode;
-    _modeController.add(mode);
+    _audioState.add(state.copyWith(mode: mode));
 
     // Update handler's playback mode
     if (_handler != null) {
@@ -431,7 +433,7 @@ class BackgroundAudioService implements IAudioService {
 
   @override
   Future<void> skipToNext() async {
-    if (_queue.isEmpty) {
+    if (_mutableQueue.isEmpty) {
       throw const AudioQueueException.emptyQueue();
     }
 
@@ -445,7 +447,7 @@ class BackgroundAudioService implements IAudioService {
 
   @override
   Future<void> skipToPrevious() async {
-    if (_queue.isEmpty) {
+    if (_mutableQueue.isEmpty) {
       throw const AudioQueueException.emptyQueue();
     }
 
@@ -461,17 +463,18 @@ class BackgroundAudioService implements IAudioService {
 
   @override
   Future<void> addToQueue(Song track, {int? index}) async {
-    if (index != null && (index < 0 || index > _queue.length)) {
-      throw AudioQueueException.invalidIndex(index, _queue.length);
+    if (index != null && (index < 0 || index > _mutableQueue.length)) {
+      throw AudioQueueException.invalidIndex(index, _mutableQueue.length);
     }
 
     if (index == null) {
-      _queue.add(track);
+      _mutableQueue.add(track);
     } else {
-      _queue.insert(index, track);
+      _mutableQueue.insert(index, track);
     }
 
-    _queueController.add(List.unmodifiable(_queue));
+    // Update immutable queue in AudioState
+    _audioState.add(state.copyWith(queue: List.unmodifiable(_mutableQueue)));
 
     // Add to audio service queue
     if (_isInitialized && _handler != null) {
@@ -482,12 +485,14 @@ class BackgroundAudioService implements IAudioService {
 
   @override
   Future<void> removeFromQueue(int index) async {
-    if (index < 0 || index >= _queue.length) {
-      throw AudioQueueException.invalidIndex(index, _queue.length);
+    if (index < 0 || index >= _mutableQueue.length) {
+      throw AudioQueueException.invalidIndex(index, _mutableQueue.length);
     }
 
-    _queue.removeAt(index);
-    _queueController.add(List.unmodifiable(_queue));
+    _mutableQueue.removeAt(index);
+
+    // Update immutable queue in AudioState
+    _audioState.add(state.copyWith(queue: List.unmodifiable(_mutableQueue)));
 
     // Remove from audio service queue
     if (_isInitialized) {
@@ -497,12 +502,14 @@ class BackgroundAudioService implements IAudioService {
 
   @override
   Future<void> clearQueue() async {
-    _queue.clear();
-    _queueController.add(List.unmodifiable(_queue));
+    _mutableQueue.clear();
 
-    if (_isInitialized) {
-      await stop();
-      // Clear audio service queue would require custom implementation
+    // Update immutable queue in AudioState
+    _audioState.add(state.copyWith(queue: const <Song>[]));
+
+    // Clear the handler's queue (including just_audio playlist)
+    if (_isInitialized && _handler != null) {
+      await _handler!.clearQueue();
     }
   }
 
@@ -543,14 +550,6 @@ class BackgroundAudioService implements IAudioService {
         },
       );
 
-  /// Set internal state and notify listeners
-  void _setState(PlaybackState state) {
-    if (_currentState != state) {
-      _currentState = state;
-      _stateController.add(state);
-    }
-  }
-
   /// Ensure the service is initialized
   Future<void> _ensureInitialized() async {
     if (!_isInitialized) {
@@ -576,16 +575,8 @@ class BackgroundAudioService implements IAudioService {
         await _handler!.cleanUp();
       }
 
-      // Close stream controllers
-      await _stateController.close();
-      await _trackController.close();
-      await _positionController.close();
-      await _durationController.close();
-      await _volumeController.close();
-      await _speedController.close();
-      await _modeController.close();
-      await _queueController.close();
-      await _bufferingController.close();
+      // Close the single BehaviorSubject (replaces 9 StreamController closes)
+      await _audioState.close();
 
       _isInitialized = false;
 

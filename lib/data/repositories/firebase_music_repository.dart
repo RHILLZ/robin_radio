@@ -11,18 +11,21 @@ import '../models/album.dart';
 import '../models/song.dart';
 import 'music_repository.dart';
 
+/// Helper class for album processing tasks (Dart 2.x compatible alternative to records)
+class _AlbumTask {
+  _AlbumTask({required this.albumRef, required this.artistName});
+  final Reference albumRef;
+  final String artistName;
+}
+
 /// Firebase implementation of [MusicRepository].
 ///
 /// Provides music data access through Firebase Storage with local caching,
 /// retry logic, and comprehensive error handling.
 class FirebaseMusicRepository implements MusicRepository {
-  /// Factory constructor returning singleton instance.
-  factory FirebaseMusicRepository() => _instance;
-  FirebaseMusicRepository._internal();
-
-  /// Singleton instance.
-  static final FirebaseMusicRepository _instance =
-      FirebaseMusicRepository._internal();
+  /// Creates a new instance of [FirebaseMusicRepository].
+  ///
+  /// Lifecycle is managed by ServiceLocator via GetX dependency injection.
 
   // Firebase Storage instance
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -30,13 +33,24 @@ class FirebaseMusicRepository implements MusicRepository {
   // Cache configuration
   static const String _cacheKey = 'robin_radio_music_cache';
   static const String _cacheTimeKey = '${_cacheKey}_time';
+  static const String _urlCacheKey = 'robin_radio_url_cache';
+  static const String _urlCacheTimeKey = '${_urlCacheKey}_time';
   static const Duration _cacheExpiry = Duration(hours: 24);
+  static const Duration _urlCacheExpiry = Duration(hours: 1);
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 1);
+  static const int _maxConcurrentAlbumProcessing = 3;
 
   // In-memory cache for performance
   List<Album>? _albumsCache;
   DateTime? _cacheTime;
+
+  // In-memory download URL cache (path -> URL)
+  final Map<String, String> _urlCache = {};
+  late DateTime _urlCacheTime = DateTime.now();
+
+  // Discovery cache to avoid duplicate listAll() calls
+  final Map<String, ListResult> _discoveryCache = {};
 
   // Stream controller for radio mode
   StreamController<Song>? _radioStreamController;
@@ -246,6 +260,10 @@ class FirebaseMusicRepository implements MusicRepository {
   /// Loads albums from Firebase Storage with retry logic.
   Future<List<Album>> _loadAlbumsFromFirebase() async {
     final albums = <Album>[];
+    final startTime = DateTime.now();
+
+    // Load URL cache from persistent storage for faster URL resolution
+    await _loadUrlCache();
 
     try {
       // Add connection timeout for Firebase operations
@@ -265,17 +283,21 @@ class FirebaseMusicRepository implements MusicRepository {
       );
 
       // Emit initial progress
+      final initialElapsed = DateTime.now().difference(startTime);
       _progressController.add(
         AlbumLoadingProgress(
           message: 'Found ${artistResult.prefixes.length} artists',
-          progress: 0.1,
+          progress: 0.05,
           albumsProcessed: 0,
           totalAlbums: 0,
+          elapsedTime: initialElapsed,
         ),
       );
 
+      // FIRST PASS: Discover all artists and calculate complete totalAlbumsEstimate
+      // Cache results to avoid duplicate listAll() calls in second pass
       var totalAlbumsEstimate = 0;
-      var albumsProcessed = 0;
+      _discoveryCache.clear(); // Clear any stale cache
 
       for (var artistIndex = 0;
           artistIndex < artistResult.prefixes.length;
@@ -294,160 +316,142 @@ class FirebaseMusicRepository implements MusicRepository {
                 ),
           );
 
+          // Cache the discovery result to avoid duplicate API call
+          _discoveryCache[artistName] = albumsResult;
+
           debugPrint(
             'MusicRepository: Artist $artistName has ${albumsResult.prefixes.length} albums',
           );
 
-          // Update total albums estimate
+          // Count albums for total estimate
           totalAlbumsEstimate += albumsResult.prefixes.length;
-
-          // Emit progress for artist discovery
-          _progressController.add(
-            AlbumLoadingProgress(
-              message: 'Loading albums from $artistName...',
-              progress:
-                  0.2 + (artistIndex / artistResult.prefixes.length) * 0.6,
-              albumsProcessed: albumsProcessed,
-              totalAlbums: totalAlbumsEstimate,
-            ),
-          );
-
-          for (var albumIndex = 0;
-              albumIndex < albumsResult.prefixes.length;
-              albumIndex++) {
-            final albumRef = albumsResult.prefixes[albumIndex];
-            final albumName = albumRef.name;
-
-            try {
-              String? albumArt;
-              final tracks = <Song>[];
-
-              final songsResult = await _executeWithRetry(
-                () async => albumRef.listAll().timeout(
-                      const Duration(seconds: 8),
-                      onTimeout: () => throw TimeoutException(
-                        'Album listing timeout for $albumName',
-                        const Duration(seconds: 8),
-                      ),
-                    ),
-              );
-
-              // First pass: find album art (with timeout)
-              for (final item in songsResult.items) {
-                final itemName = item.name;
-                if (_isImageFile(itemName)) {
-                  try {
-                    albumArt = await _executeWithRetry(
-                      () async => item.getDownloadURL().timeout(
-                            const Duration(seconds: 5),
-                            onTimeout: () => throw TimeoutException(
-                              'Album art URL timeout',
-                              const Duration(seconds: 5),
-                            ),
-                          ),
-                    );
-                    break;
-                  } on Exception catch (e) {
-                    debugPrint(
-                      'MusicRepository: Failed to get album art for $albumName: $e',
-                    );
-                    // Continue without album art
-                  }
-                }
-              }
-
-              // Second pass: process songs (with timeout and error recovery)
-              for (final songRef in songsResult.items) {
-                final songName = songRef.name;
-
-                // Skip image files
-                if (_isImageFile(songName)) {
-                  continue;
-                }
-
-                try {
-                  final songUrl = await _executeWithRetry(
-                    () async => songRef.getDownloadURL().timeout(
-                          const Duration(seconds: 5),
-                          onTimeout: () => throw TimeoutException(
-                            'Song URL timeout for $songName',
-                            const Duration(seconds: 5),
-                          ),
-                        ),
-                  );
-
-                  tracks.add(
-                    Song(
-                      id: '${artistName}_${albumName}_$songName',
-                      songName: songName,
-                      songUrl: songUrl,
-                      artist: artistName,
-                      albumName: albumName,
-                    ),
-                  );
-                } on Exception catch (e) {
-                  debugPrint(
-                    'MusicRepository: Failed to load song $songName: $e',
-                  );
-                  // Continue with other songs
-                }
-              }
-
-              // Only add albums that have tracks
-              if (tracks.isNotEmpty) {
-                albums.add(
-                  Album(
-                    id: '${artistName}_$albumName',
-                    albumName: albumName,
-                    tracks: tracks,
-                    albumCover: albumArt,
-                    artist: artistName,
-                  ),
-                );
-                debugPrint(
-                  'MusicRepository: Added album $albumName with ${tracks.length} tracks',
-                );
-
-                // Update albums processed count and emit progress
-                albumsProcessed++;
-                _progressController.add(
-                  AlbumLoadingProgress(
-                    message: 'Added album "$albumName"',
-                    progress: 0.2 +
-                        (albumsProcessed /
-                                (totalAlbumsEstimate > 0
-                                    ? totalAlbumsEstimate
-                                    : 1)) *
-                            0.6,
-                    albumsProcessed: albumsProcessed,
-                    totalAlbums: totalAlbumsEstimate,
-                  ),
-                );
-              }
-            } on Exception catch (e) {
-              debugPrint(
-                'MusicRepository: Failed to load album $albumName: $e',
-              );
-              // Continue with other albums
-            }
-          }
         } on Exception catch (e) {
-          debugPrint('MusicRepository: Failed to load artist $artistName: $e');
+          debugPrint(
+            'MusicRepository: Failed to discover artist $artistName: $e',
+          );
           // Continue with other artists
         }
+      }
+
+      // Emit discovery complete progress (10%)
+      final discoveryElapsed = DateTime.now().difference(startTime);
+      _progressController.add(
+        AlbumLoadingProgress(
+          message:
+              'Found $totalAlbumsEstimate albums across ${artistResult.prefixes.length} artists',
+          progress: 0.1,
+          albumsProcessed: 0,
+          totalAlbums: totalAlbumsEstimate,
+          elapsedTime: discoveryElapsed,
+        ),
+      );
+
+      // SECOND PASS: Process albums in parallel batches (10% to 100%)
+      // Collect all album refs with their artist names for parallel processing
+      final albumTasks = <_AlbumTask>[];
+      for (final artist in artistResult.prefixes) {
+        final artistName = artist.name;
+        final albumsResult = _discoveryCache[artistName];
+        if (albumsResult == null) {
+          debugPrint(
+            'MusicRepository: No cached result for $artistName, skipping',
+          );
+          continue;
+        }
+        for (final albumRef in albumsResult.prefixes) {
+          albumTasks.add(_AlbumTask(albumRef: albumRef, artistName: artistName));
+        }
+      }
+
+      debugPrint(
+        'MusicRepository: Processing ${albumTasks.length} albums in batches of $_maxConcurrentAlbumProcessing',
+      );
+
+      var albumsProcessed = 0;
+      final batchStartTimes = <Duration>[];
+
+      // Process albums in parallel batches
+      for (var i = 0; i < albumTasks.length; i += _maxConcurrentAlbumProcessing) {
+        final batchStartTime = DateTime.now();
+        final batchEnd = (i + _maxConcurrentAlbumProcessing).clamp(0, albumTasks.length);
+        final batch = albumTasks.sublist(i, batchEnd);
+
+        // Process batch in parallel using Future.wait()
+        final batchResults = await Future.wait(
+          batch.map(
+            (task) => _processAlbum(task.albumRef, task.artistName),
+          ),
+          eagerError: false, // Continue even if some albums fail
+        );
+
+        // Collect successful results
+        for (final album in batchResults) {
+          if (album != null) {
+            albums.add(album);
+          }
+        }
+
+        // Track batch processing time for ETA calculation
+        final batchDuration = DateTime.now().difference(batchStartTime);
+        batchStartTimes.add(batchDuration);
+
+        // Update progress after each batch
+        albumsProcessed += batch.length;
+        final elapsed = DateTime.now().difference(startTime);
+
+        // Calculate estimated time remaining based on batch processing times
+        Duration? estimatedRemaining;
+        if (batchStartTimes.isNotEmpty && totalAlbumsEstimate > 0) {
+          // Use average of recent batches for more accurate estimate
+          final recentBatches = batchStartTimes.length > 3
+              ? batchStartTimes.sublist(batchStartTimes.length - 3)
+              : batchStartTimes;
+          final avgBatchTime = recentBatches.fold<int>(
+                  0, (sum, duration) => sum + duration.inMilliseconds) /
+              recentBatches.length;
+          final remainingBatches =
+              ((totalAlbumsEstimate - albumsProcessed) / _maxConcurrentAlbumProcessing)
+                  .ceil();
+          estimatedRemaining = Duration(
+            milliseconds: (avgBatchTime * remainingBatches).round(),
+          );
+        }
+
+        // Progress: 10% (discovery) + 90% (album processing)
+        final progress = totalAlbumsEstimate > 0
+            ? 0.1 + (albumsProcessed / totalAlbumsEstimate) * 0.9
+            : 0.1;
+
+        _progressController.add(
+          AlbumLoadingProgress(
+            message:
+                'Processing albums ($albumsProcessed/$totalAlbumsEstimate)',
+            progress: progress.clamp(0.1, 1.0),
+            albumsProcessed: albumsProcessed,
+            totalAlbums: totalAlbumsEstimate,
+            elapsedTime: elapsed,
+            estimatedTimeRemaining: estimatedRemaining,
+          ),
+        );
       }
 
       debugPrint(
         'MusicRepository: Successfully loaded ${albums.length} albums from Firebase',
       );
 
-      // Emit final progress
+      // Save URL cache to persistent storage for future app launches
+      await _saveUrlCache();
+
+      // Emit final progress (100%)
+      final finalElapsed = DateTime.now().difference(startTime);
       _progressController.add(
         AlbumLoadingProgress(
           message: 'Successfully loaded ${albums.length} albums',
           progress: 1,
           albumsProcessed: albums.length,
-          totalAlbums: albums.length,
+          totalAlbums: totalAlbumsEstimate,
+          elapsedTime: finalElapsed,
+          estimatedTimeRemaining: Duration.zero,
         ),
       );
 
@@ -518,6 +522,93 @@ class FirebaseMusicRepository implements MusicRepository {
     }
   }
 
+  /// Loads download URL cache from persistent storage.
+  Future<void> _loadUrlCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString(_urlCacheKey);
+      final cachedTimeStr = prefs.getString(_urlCacheTimeKey);
+
+      if (cachedData != null && cachedTimeStr != null) {
+        final cachedTime = DateTime.parse(cachedTimeStr);
+
+        // Check if URL cache is still valid (1 hour TTL)
+        if (DateTime.now().difference(cachedTime) < _urlCacheExpiry) {
+          final decoded = jsonDecode(cachedData) as Map<String, dynamic>;
+          _urlCache.clear();
+          decoded.forEach((key, value) {
+            _urlCache[key] = value as String;
+          });
+          _urlCacheTime = cachedTime;
+
+          debugPrint(
+            'MusicRepository: Loaded ${_urlCache.length} URLs from cache',
+          );
+        } else {
+          debugPrint('MusicRepository: URL cache expired, clearing');
+          _urlCache.clear();
+        }
+      }
+    } on Exception catch (e) {
+      debugPrint('MusicRepository: URL cache loading error: $e');
+      // Non-critical, continue without cached URLs
+    }
+  }
+
+  /// Saves download URL cache to persistent storage.
+  Future<void> _saveUrlCache() async {
+    if (_urlCache.isEmpty) {
+      return;
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = jsonEncode(_urlCache);
+
+      await prefs.setString(_urlCacheKey, encoded);
+      await prefs.setString(_urlCacheTimeKey, DateTime.now().toIso8601String());
+
+      debugPrint('MusicRepository: Saved ${_urlCache.length} URLs to cache');
+    } on Exception catch (e) {
+      debugPrint('MusicRepository: URL cache saving error: $e');
+      // Don't throw here as caching is non-critical
+    }
+  }
+
+  /// Gets a download URL with caching support.
+  /// Checks in-memory cache first, then falls back to Firebase with retry logic.
+  Future<String> _getCachedDownloadUrl(Reference ref) async {
+    final path = ref.fullPath;
+
+    // Check in-memory cache first
+    if (_urlCache.containsKey(path)) {
+      // Verify cache hasn't expired
+      if (DateTime.now().difference(_urlCacheTime) < _urlCacheExpiry) {
+        return _urlCache[path]!;
+      } else {
+        // Cache expired, clear it
+        debugPrint('MusicRepository: URL cache expired during operation');
+        _urlCache.clear();
+      }
+    }
+
+    // Fetch from Firebase with retry logic
+    final url = await _executeWithRetry(
+      () async => ref.getDownloadURL().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => throw TimeoutException(
+              'URL timeout for ${ref.name}',
+              const Duration(seconds: 5),
+            ),
+          ),
+    );
+
+    // Cache the result
+    _urlCache[path] = url;
+
+    return url;
+  }
+
   /// Generates a continuous stream of random songs for radio mode.
   Future<void> _generateRadioStream() async {
     try {
@@ -575,6 +666,93 @@ class FirebaseMusicRepository implements MusicRepository {
         extension.endsWith('.jpeg') ||
         extension.endsWith('.png') ||
         extension.endsWith('.webp');
+  }
+
+  /// Processes a single album and returns the Album object if successful.
+  /// Returns null if the album has no tracks or processing fails.
+  Future<Album?> _processAlbum(Reference albumRef, String artistName) async {
+    final albumName = albumRef.name;
+
+    try {
+      String? albumArt;
+      final tracks = <Song>[];
+
+      final songsResult = await _executeWithRetry(
+        () async => albumRef.listAll().timeout(
+              const Duration(seconds: 8),
+              onTimeout: () => throw TimeoutException(
+                'Album listing timeout for $albumName',
+                const Duration(seconds: 8),
+              ),
+            ),
+      );
+
+      // First pass: find album art (with URL caching)
+      for (final item in songsResult.items) {
+        final itemName = item.name;
+        if (_isImageFile(itemName)) {
+          try {
+            albumArt = await _getCachedDownloadUrl(item);
+            break;
+          } on Exception catch (e) {
+            debugPrint(
+              'MusicRepository: Failed to get album art for $albumName: $e',
+            );
+            // Continue without album art
+          }
+        }
+      }
+
+      // Second pass: process songs (with timeout and error recovery)
+      for (final songRef in songsResult.items) {
+        final songName = songRef.name;
+
+        // Skip image files
+        if (_isImageFile(songName)) {
+          continue;
+        }
+
+        try {
+          final songUrl = await _getCachedDownloadUrl(songRef);
+
+          tracks.add(
+            Song(
+              id: '${artistName}_${albumName}_$songName',
+              songName: songName,
+              songUrl: songUrl,
+              artist: artistName,
+              albumName: albumName,
+            ),
+          );
+        } on Exception catch (e) {
+          debugPrint(
+            'MusicRepository: Failed to load song $songName: $e',
+          );
+          // Continue with other songs
+        }
+      }
+
+      // Only return albums that have tracks
+      if (tracks.isNotEmpty) {
+        debugPrint(
+          'MusicRepository: Added album $albumName with ${tracks.length} tracks',
+        );
+        return Album(
+          id: '${artistName}_$albumName',
+          albumName: albumName,
+          tracks: tracks,
+          albumCover: albumArt,
+          artist: artistName,
+        );
+      }
+
+      return null;
+    } on Exception catch (e) {
+      debugPrint(
+        'MusicRepository: Failed to load album $albumName: $e',
+      );
+      return null;
+    }
   }
 
   /// Handles exceptions and converts them to appropriate repository exceptions.

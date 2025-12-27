@@ -58,20 +58,28 @@ class PlayerView extends GetView<PlayerController> {
                         children: [
                           SizedBox(height: 2.h),
 
-                          // Album cover - responsive sizing
-                          _buildResponsiveAlbumCover(context),
+                          // Album cover - responsive sizing with RepaintBoundary
+                          RepaintBoundary(
+                            child: _buildResponsiveAlbumCover(context),
+                          ),
 
                           // Track info
                           _buildTrackInfo(context, currentTrack),
 
-                          // Progress bar
-                          _buildProgressBar(context),
+                          // Progress bar with RepaintBoundary for frequent updates
+                          RepaintBoundary(
+                            child: _buildProgressBar(context),
+                          ),
 
-                          // Player controls
-                          _buildPlayerControls(context),
+                          // Player controls with RepaintBoundary
+                          RepaintBoundary(
+                            child: _buildPlayerControls(context),
+                          ),
 
                           // Additional controls (shuffle, repeat)
-                          _buildAdditionalControls(context),
+                          RepaintBoundary(
+                            child: _buildAdditionalControls(context),
+                          ),
 
                           SizedBox(height: 2.h),
                         ],

@@ -6,6 +6,7 @@ import 'package:sizer/sizer.dart';
 
 import '../../data/models/album.dart';
 import '../../data/services/image_preload_service.dart';
+import '../../global/cosmic_theme.dart';
 import '../../global/widgets/widgets.dart';
 import '../app/app_controller.dart';
 
@@ -119,8 +120,16 @@ class _AlbumsViewState extends State<AlbumsView> {
             filteredAlbums.value = controller.albums;
           }
 
+          // Priority 0: Show loading if content is not ready yet (defensive check)
+          // This catches edge cases where the main loading screen might not be shown
+          if (!controller.isContentReady && controller.isLoading) {
+            return _buildLoadingView(context, controller);
+          }
+
           // Priority 1: If we have albums, show them (even during errors/loading)
           // This ensures cached content is always displayed
+          // IMPORTANT: Show albums even if hasError is true, as albums might have been
+          // loaded successfully but error flag wasn't cleared properly
           if (controller.albums.isNotEmpty) {
             return _buildAlbumsGrid(context, controller);
           }
@@ -130,8 +139,9 @@ class _AlbumsViewState extends State<AlbumsView> {
             return _buildLoadingView(context, controller);
           }
 
-          // Priority 3: Show error state only if no albums and there's an error
-          if (controller.hasError) {
+          // Priority 3: Show error state only if no albums AND there's an error
+          // AND we're not still loading (to avoid showing error during loading)
+          if (controller.hasError && !controller.isLoading) {
             return _buildErrorView(context, controller);
           }
 
@@ -168,23 +178,34 @@ class _AlbumsViewState extends State<AlbumsView> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.search_off,
                           size: 80,
-                          color: Colors.grey,
+                          color: CosmicColors.lavenderGlow.withValues(alpha: 0.6),
                         ),
                         SizedBox(height: 2.h),
-                        const Text(
+                        Text(
                           'No Results Found',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: CosmicColors.lavenderGlow
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 8,
+                              ),
+                            ],
                           ),
                         ),
                         SizedBox(height: 1.h),
                         Text(
                           'No albums match "${searchQuery.value}"',
-                          style: const TextStyle(fontSize: 16),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: CosmicColors.goldenAmber.withValues(alpha: 0.8),
+                          ),
                         ),
                       ],
                     ),
@@ -219,21 +240,27 @@ class _AlbumsViewState extends State<AlbumsView> {
             ),
           ],
         ),
-        // Search floating action button
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            // Show search field and request focus
-            isSearchVisible.value = true;
-            // Use a small delay to ensure the field is visible before focusing
-            Future.delayed(
-              const Duration(milliseconds: 100),
-              _searchFocusNode.requestFocus,
-            );
-          },
-          tooltip: 'Search',
-          backgroundColor: const Color(0xFF6C30C4), // Match AppBar color
-          foregroundColor: Colors.white, // White icon
-          child: const Icon(Icons.search),
+        // Search floating action button with cosmic glow
+        floatingActionButton: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: CosmicColors.neonGlow(intensity: 0.4),
+          ),
+          child: FloatingActionButton(
+            onPressed: () {
+              // Show search field and request focus
+              isSearchVisible.value = true;
+              // Use a small delay to ensure the field is visible before focusing
+              Future.delayed(
+                const Duration(milliseconds: 100),
+                _searchFocusNode.requestFocus,
+              );
+            },
+            tooltip: 'Search',
+            backgroundColor: CosmicColors.vibrantPurple,
+            foregroundColor: Colors.white,
+            child: const Icon(Icons.search),
+          ),
         ),
       );
 

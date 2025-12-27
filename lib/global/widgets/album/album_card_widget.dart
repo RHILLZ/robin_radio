@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../../../data/models/album.dart';
 import '../../../modules/app/app_controller.dart';
 import '../../albumCover.dart';
+import '../../cosmic_theme.dart';
 
 /// Interactive card widget for displaying album information in grid and list layouts.
 ///
@@ -202,105 +204,174 @@ class AlbumCardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) => RepaintBoundary(
         child: GetBuilder<AppController>(
+          id: 'album_card_${album.id}',
           builder: (appController) {
             final isLoading = appController.isAlbumLoading(album.id);
 
             return GestureDetector(
-              onTap: isLoading ? null : onTap, // Disable tap during loading
-              child: Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              onTap: isLoading ? null : onTap,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: CosmicColors.ambientGlow(intensity: 0.25),
                 ),
-                child: Stack(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Album cover
-                        Expanded(
-                          child: Hero(
-                            tag: 'album-${album.id}',
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(12),
-                              ),
-                              child: RepaintBoundary(
-                                child: AlbumCover(
-                                  imageUrl: album.albumCover,
-                                  albumName: album.albumName,
-                                ),
-                              ),
-                            ),
-                          ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: CosmicGlass.blur,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: CosmicColors.cardGradient(opacity: 0.7),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: CosmicColors.lavenderGlow.withValues(alpha: 0.15),
                         ),
-
-                        // Album info
-                        Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                      child: Stack(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text(
-                                album.albumName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                              // Album cover with neon glow effect
+                              Expanded(
+                                child: Hero(
+                                  tag: 'album-${album.id}',
+                                  child: Container(
+                                    margin: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: CosmicColors.vibrantPurple
+                                              .withValues(alpha: 0.3),
+                                          blurRadius: 12,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          RepaintBoundary(
+                                            child: AlbumCover(
+                                              imageUrl: album.albumCover,
+                                              albumName: album.albumName,
+                                            ),
+                                          ),
+                                          // Vinyl sheen overlay
+                                          Positioned.fill(
+                                            child: DecoratedBox(
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    Colors.white
+                                                        .withValues(alpha: 0.08),
+                                                    Colors.transparent,
+                                                    CosmicColors.voidBlack
+                                                        .withValues(alpha: 0.15),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                album.artist ?? 'Unknown Artist',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.color,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                isLoading
-                                    ? 'Loading tracks...'
-                                    : '${album.trackCount} tracks',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isLoading
-                                      ? Theme.of(context).primaryColor
-                                      : Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.color,
+
+                              // Album info with cosmic styling
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Album title with subtle glow
+                                    Text(
+                                      album.albumName,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                        shadows: [
+                                          Shadow(
+                                            color: CosmicColors.lavenderGlow
+                                                .withValues(alpha: 0.3),
+                                            blurRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    // Artist name in golden amber
+                                    Text(
+                                      album.artist ?? 'Unknown Artist',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: CosmicColors.goldenAmber
+                                            .withValues(alpha: 0.85),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    // Track count in lavender
+                                    Text(
+                                      isLoading
+                                          ? 'Loading tracks...'
+                                          : '${album.trackCount} tracks',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isLoading
+                                            ? CosmicColors.vibrantPurple
+                                            : CosmicColors.lavenderGlow
+                                                .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
 
-                    // Loading overlay
-                    if (isLoading)
-                      Positioned.fill(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 3,
+                          // Loading overlay with cosmic glow
+                          if (isLoading)
+                            Positioned.fill(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: CosmicColors.deepPurple
+                                      .withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      boxShadow: CosmicColors.neonGlow(
+                                        intensity: 0.4,
+                                      ),
+                                    ),
+                                    child: const CircularProgressIndicator(
+                                      color: CosmicColors.lavenderGlow,
+                                      strokeWidth: 3,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ),
               ),
             );

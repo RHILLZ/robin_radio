@@ -1,8 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sizer/sizer.dart';
 
-/// A customizable search bar widget with reactive visibility.
+import '../../cosmic_theme.dart';
+
+/// A customizable search bar widget with reactive visibility and cosmic styling.
 class SearchBarWidget extends StatelessWidget {
   /// Creates a SearchBarWidget with the given parameters.
   const SearchBarWidget({
@@ -38,28 +42,66 @@ class SearchBarWidget extends StatelessWidget {
         () => RepaintBoundary(
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            height: isVisible.value ? 12.h : 0,
+            height: isVisible.value ? 10.h : 0,
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 200),
               opacity: isVisible.value ? 1.0 : 0.0,
               child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  decoration: InputDecoration(
-                    hintText: hintText,
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: onClear,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: CosmicColors.cardGradient(opacity: 0.6),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color:
+                              CosmicColors.lavenderGlow.withValues(alpha: 0.2),
+                        ),
+                        boxShadow: CosmicColors.ambientGlow(intensity: 0.2),
+                      ),
+                      child: TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                        cursorColor: CosmicColors.lavenderGlow,
+                        decoration: InputDecoration(
+                          hintText: hintText,
+                          hintStyle: TextStyle(
+                            color:
+                                CosmicColors.lavenderGlow.withValues(alpha: 0.5),
+                            fontSize: 16,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color:
+                                CosmicColors.lavenderGlow.withValues(alpha: 0.7),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              Icons.clear,
+                              color: CosmicColors.lavenderGlow
+                                  .withValues(alpha: 0.7),
+                            ),
+                            onPressed: onClear,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 16,
+                          ),
+                        ),
+                        onChanged: onChanged,
+                      ),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  onChanged: onChanged,
                 ),
               ),
             ),

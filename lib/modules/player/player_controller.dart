@@ -234,7 +234,7 @@ class PlayerController extends GetxController {
 
   Future<void> _initializePlayer() async {
     // Start player initialization performance trace
-    final performanceService = PerformanceService();
+    final performanceService = Get.find<PerformanceService>();
     await performanceService.startPlayerInitTrace();
 
     // Initialize the audio service
@@ -303,28 +303,24 @@ class PlayerController extends GetxController {
 
   Future<void> _onPlayerComplete(void _) async {
     if (playerMode == PlayerMode.radio) {
+      // Radio mode: restart with new random track
       await playRadio();
       return;
     }
 
-    // Handle repeat modes
-    if (repeatMode == PlayerRepeatMode.one) {
-      await playTrack();
-      return;
-    }
-
-    // Move to next track
-    if (trackIndex < _tracks.length - 1) {
-      _trackIndex.value++;
-      await playTrack();
-    } else if (repeatMode == PlayerRepeatMode.all) {
-      _trackIndex.value = 0;
-      await playTrack();
-    } else {
-      // End of playlist
+    // Album mode: The BackgroundAudioHandler handles auto-advance via
+    // _handleTrackCompletion(). We only need to handle end-of-playlist
+    // scenarios here to close the player UI when playback ends.
+    //
+    // Note: repeatOne and repeatAll are handled by the handler's playback modes.
+    // We only need to handle the "no repeat, end of playlist" case.
+    if (repeatMode == PlayerRepeatMode.none &&
+        trackIndex >= _tracks.length - 1) {
+      // End of playlist with no repeat - close player
       Get.back<void>();
       await closePlayer();
     }
+    // Otherwise, let the handler's _handleTrackCompletion() handle track advancement
   }
 
   /// Calculates the current playback progress as a value between 0.0 and 1.0.
